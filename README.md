@@ -40,7 +40,19 @@ Open the site. On the **Sheet** tab, under **Cloud**, click **Create admin accou
 - `schema.sql`: database tables
 - `.env.example`: the two settings you must provide
 
+---
 
+## Staff-only edition (locked)
 
-postgresql://neondb_owner:npg_sBXYWHfy49pR@ep-proud-rain-b20itpxv-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+The app is now served only to signed-in users.
 
+- `public/index.html` is the **sign-in page** (first run: it asks you to create the administrator account).
+- `private/app.html` is the **real app**. It is never served as a static file. `api/app.js` checks the session cookie and only then returns it at `/app`. No cookie = redirect to the sign-in page.
+- `vercel.json` rewrites `/app` to `/api/app` and bundles the `private/` folder into the function.
+- **Company name, logo and watermark** are fixed to "IMPI Protection Agency" for staff accounts. Only the administrator sees the company-name and logo controls.
+- **Logo:** add your logo file as `public/impi-logo.png`. It appears on the sign-in page and in every exported title block. Without it the title block shows the company name as text.
+
+### Deploy
+Upload the whole folder to GitHub (keep the `api`, `private` and `public` folders and `vercel.json`). Vercel redeploys on its own. Existing accounts, plans and images in Neon are untouched.
+
+Note: branding is locked in the app's interface. It stops staff changing it by accident or habit, not a determined technical user.
