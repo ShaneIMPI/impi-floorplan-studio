@@ -61,7 +61,7 @@ Note: branding is locked in the app's interface. It stops staff changing it by a
 
 - **Sheet tab → Plan type & grid**: choose *Indoor / exhibition*, set a grid module (e.g. 3 m). The grid shows on screen and prints on the sheet with lettered columns (A, B, C…) and numbered rows (1, 2, 3…) so there are grid lines between stands. Turn printing/labels off there if not wanted. The Measure tool still works anywhere.
 - **Library → Exhibition**: stands (3×3, 6×3, 6×6, 9×6, island 9×9), columns, registration desk, lounge, storage. Stands lock to grid corners when placed. **Number the stands** (Sheet tab) numbers them row by row.
-- **Shade cloth** is now a plain solid black line. A line-style selector appears in the toolbar when the Fence tool is active.
+- **Shade cloth** keeps its green banded look; the plain solid black line is a separate style (Plain black line). A line-style selector appears in the toolbar when the Fence tool is active.
 - **Event logo**: Sheet tab → Upload event logo. It prints at the top of the right-hand panel with the event details below it.
 - **Footer**: logos and company details come from `public/brand.json`. Put your logo files in `public/` (`impi-logo.png`, `logo-2.png`, `logo-3.png`; missing files are skipped) and replace every `[PLACEHOLDER]` in `brand.json` before issuing plans.
 
