@@ -49,6 +49,9 @@ header{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(
 #selbar.on{display:flex}
 #viewSel{flex:0 0 auto;border:1px solid var(--ln);background:var(--pn2);border-radius:8px;padding:6px 6px;min-height:36px;max-width:190px;font-weight:600}
 #lineSel{display:none}#lineSel.on{display:block}
+#layBar{position:absolute;left:12px;top:12px;display:none;gap:8px;align-items:center;flex-wrap:wrap;background:var(--pn);border:2px solid #1c6bb0;border-radius:10px;padding:6px 10px;z-index:5;max-width:calc(100% - 24px)}
+#layBar.on{display:flex}
+#layBar b{color:#1c6bb0;font-size:13px}
 #evBar{position:absolute;left:12px;top:12px;display:none;gap:8px;align-items:center;flex-wrap:wrap;background:var(--pn);border:2px solid #0a8f3c;border-radius:10px;padding:6px 10px;z-index:5;max-width:calc(100% - 24px)}
 #evBar.on{display:flex}
 #evBar .evopt{font-size:12px;display:flex;gap:4px;align-items:center}
@@ -142,6 +145,7 @@ input[type=range]{width:100%}
    <canvas id="cv"></canvas>
    <div id="hint"></div>
    <button class="btn pri" id="doneBtn">Finish line</button>
+   <div id="layBar"><b id="layName"></b><button class="btn sm" data-lb="back">Back to whole plan</button><button class="btn sm pri" data-lb="png">Download PNG</button><button class="btn sm pri" data-lb="pdf">Download PDF</button></div>
    <div id="evBar"><b>Emergency evacuation plan</b><button class="btn sm pri" data-ev="evgen">Generate evacuation routes</button><button class="btn sm" data-ev="evclr">Clear routes</button><label class="evopt"><input type="checkbox" id="evAlt"> alternate route</label><label class="evopt"><input type="checkbox" id="evEntr"> entrances count as exits</label><button class="btn sm" data-ev="evac">Back to plan</button></div>
    <div id="status"></div>
    <div id="selbar"></div>
@@ -595,14 +599,43 @@ function genEvac(){
  toast((routes.length-legs-altN)+' primary'+(altN?' + '+altN+' alternate':'')+' evacuation routes using '+Object.keys(used).length+' exit(s)'+(legs?', '+legs+' on to assembly':(as.length?'':'. Add an Assembly point sign to extend routes to it'))+'. Longest run '+Math.round(longest)+' m.'+(skipped?' '+skipped+' area(s) had no clear path (blocked or fully enclosed).':'')+(capped?' First 150 areas used.':''),9000);
 }
 function setEvac(on){S.meta.evac=on;syncEvac();S.sel=null;S.ms=[];saveLocal();renderPanel();renderSelbar();draw();toast(on?'Emergency evacuation plan':'Operational plan',2000)}
-function syncEvac(){var ea=$('#evAlt'),ee=$('#evEntr');if(ea){ea.checked=S.meta.evAlt!==false;ea.onchange=function(){S.meta.evAlt=ea.checked;saveLocal()}}if(ee){ee.checked=S.meta.evEntr!==false;ee.onchange=function(){S.meta.evEntr=ee.checked;saveLocal()}}var b=$('#evBar');if(b)b.classList.toggle('on',!!S.meta.evac);$$('#tools [data-act=evac]').forEach(function(x){x.classList.toggle('on',!!S.meta.evac)})}
+function syncEvac(){syncLay();var ea=$('#evAlt'),ee=$('#evEntr');if(ea){ea.checked=S.meta.evAlt!==false;ea.onchange=function(){S.meta.evAlt=ea.checked;saveLocal()}}if(ee){ee.checked=S.meta.evEntr!==false;ee.onchange=function(){S.meta.evEntr=ee.checked;saveLocal()}}var b=$('#evBar');if(b)b.classList.toggle('on',!!S.meta.evac);$$('#tools [data-act=evac]').forEach(function(x){x.classList.toggle('on',!!S.meta.evac)})}
 function setView(id){
  S.meta.only=id||null;S.sel=null;S.ms=[];renderViewSel();renderSelbar();if(S.meta.only)fitAll();saveLocal();renderPanel();draw();
  toast(id?'Showing internals of '+layoutOf(id).name+' only':'Showing the whole plan')}
 function renderViewSel(){
  var el=$('#viewSel');if(!el)return;var L=S.meta.layouts||[];
  el.innerHTML='<option value="">Whole plan</option>'+L.map(function(l){return '<option value="'+l.id+'">Internals: '+esc(l.name)+'</option>'}).join('')+'<option value="__new">+ New internal layout…</option>';
- el.value=S.meta.only||'';el.classList.toggle('on',true)}
+ el.value=S.meta.only||'';el.classList.toggle('on',true);syncLay()}
+function canHost(o){return !!o&&(o.t==='rect'||o.t==='area'||o.t==='poly'||(o.t==='line'&&o.closed))}
+function layoutForObj(o){
+ if(!canHost(o)){toast('Select a tent, zone, shape or closed outline first');return}
+ var ex=(S.meta.layouts||[]).filter(function(l){return l.src===o.id})[0];if(ex){setView(ex.id);return}
+ var nm=((o.label||'')+'').trim()||objName(o);
+ ask('Internal layout of this structure',[{l:'Layout name (e.g. VIP tent, Main marquee)',v:nm}],function(v){
+  var name=(v[0]||'').trim();if(!name)return;var b=boundsOf(o),id='L'+Date.now().toString(36);
+  snapH();S.meta.layouts=S.meta.layouts||[];S.meta.layouts.push({id:id,name:name,src:o.id,gx:b.x0,gy:b.y0});o.lay=id;
+  S.meta.only=id;S.sel=null;S.ms=[];renderViewSel();fitAll();saveLocal();renderPanel();renderSelbar();draw();changed(true);
+  toast('Internal layout of '+name+'. Everything you add now belongs to it; the grid starts at its corner.',6000)},'Create');
+}
+async function exportAllLayouts(kind){
+ var L=S.meta.layouts||[];if(!L.length){toast('No internal layouts yet');return}
+ var keep=S.meta.only;toast('Rendering '+L.length+' layout sheets…',30000);
+ var safe=function(x){return String(x||'').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_')};
+ var base=safe(S.meta.event||'plan')+'_'+S.meta.ref+'_Rev'+S.meta.rev;
+ try{
+  if(kind==='pdf'){var jsPDF=window.jspdf&&window.jspdf.jsPDF;if(!jsPDF)throw new Error('PDF library did not load. Try PNG export.');var pdf=null;
+   for(var i=0;i<L.length;i++){S.meta.only=L[i].id;var r=await renderSheet(),ori=r.P.w>=r.P.h?'landscape':'portrait';
+    if(!pdf)pdf=new jsPDF({orientation:ori,unit:'mm',format:[r.P.w,r.P.h]});else pdf.addPage([r.P.w,r.P.h],ori);
+    pdf.addImage(r.canvas.toDataURL('image/jpeg',.93),'JPEG',0,0,r.P.w,r.P.h,undefined,'FAST')}
+   pdf.setProperties({title:(S.meta.event||'')+' – internal layouts',author:S.meta.company,subject:'Ref '+S.meta.ref});
+   await download(base+'_internal_layouts.pdf',pdf.output('blob'))}
+  else{for(var k=0;k<L.length;k++){S.meta.only=L[k].id;var r2=await renderSheet();var bl=await new Promise(function(res){r2.canvas.toBlob(res,'image/png')});await download(base+'_'+safe(L[k].name)+'.png',bl)}}
+  toast(L.length+' internal layout sheet(s) saved')
+ }catch(err){toast(err.message||'Export failed',5000)}
+ finally{S.meta.only=keep;renderViewSel();draw()}
+}
+function syncLay(){var b=$('#layBar');if(!b)return;var lo=S.meta.only?layoutOf(S.meta.only):null;b.classList.toggle('on',!!lo);if(lo)$('#layName').textContent='Internal layout: '+lo.name;var ev=$('#evBar');b.style.top=(ev&&ev.classList.contains('on'))?'64px':'12px'}
 function newLayout(){
  var sel=selObjs();
  ask('New internal layout',[{l:'Name (e.g. VIP tent, Main marquee)',v:'Layout '+(((S.meta.layouts||[]).length)+1)}],function(v){
@@ -628,7 +661,7 @@ function evArrows(c,pts,col){
 function colName(i){var t='';i=Math.floor(i);do{t=String.fromCharCode(65+i%26)+t;i=Math.floor(i/26)-1}while(i>=0);return t}
 function drawModuleGrid(c,vb,m,pass){
  var g=+m.gridMod||0,mn=m.gridMinor===undefined?1:+m.gridMinor,show=m.gridShow!==false;
- var ppu=R.z/R.u,gx=+m.gx||0,gy=+m.gy||0,i,j;
+ var lo=m.only?layoutOf(m.only):null,ppu=R.z/R.u,gx=lo&&lo.gx!==undefined?lo.gx:(+m.gx||0),gy=lo&&lo.gy!==undefined?lo.gy:(+m.gy||0),i,j;
  function lines(step,stroke,lw,skipMult){
   if(!(step>0)||step*ppu<(R.u===1?6:7))return;
   var i0=Math.ceil((vb.x0-gx)/step),i1=Math.floor((vb.x1-gx)/step),j0=Math.ceil((vb.y0-gy)/step),j1=Math.floor((vb.y1-gy)/step);
@@ -1079,7 +1112,8 @@ function buildTools(){
   else if(b.dataset.act==='undo')undo();else if(b.dataset.act==='redo')redo();else if(b.dataset.act==='fit')fitAll();
   else if(b.dataset.act==='lib'){S.tab='lib';openPanel()}else if(b.dataset.act==='evac')setEvac(!S.meta.evac)
  };
- renderViewSel();syncEvac();$('#evBar').onclick=function(e){var t=e.target.closest('button');if(t)act(t.dataset.ev)};
+ renderViewSel();syncEvac();$('#layBar').onclick=function(e){var t=e.target.closest('button');if(!t)return;var k=t.dataset.lb;if(k==='back')setView(null);else exportSheet(k)};
+ $('#evBar').onclick=function(e){var t=e.target.closest('button');if(t)act(t.dataset.ev)};
  $('#viewSel').onchange=function(){var v=this.value;if(v==='__new'){this.value=S.meta.only||'';newLayout();return}setView(v)};
  $('#lineSel').onchange=function(){S.lineStyle=this.value;if(S.tmp&&S.tmp.t==='line')S.tmp.style=this.value;draw()};
  $('#snapSel').onchange=function(){var sel=this,v=sel.value;
@@ -1155,6 +1189,7 @@ function selHTML(o){
  h+='<div class="row2">'+pchk('lk','Lock position',o.lk)+pchk('hd','Hide',o.hd)+'</div>'+zbtns();
  h+='<div class="btns"><button class="btn sm" data-act="dup">Duplicate</button><button class="btn sm" data-act="copy">Copy</button><button class="btn sm" data-act="paste">Paste</button>';
  if(o.t==='rect'||o.t==='area'||o.t==='door'||o.t==='sign')h+='<button class="btn sm" data-act="arr">Array / repeat</button>';
+ if(canHost(o))h+='<button class="btn sm pri" data-act="inlay">'+((S.meta.layouts||[]).some(function(l){return l.src===o.id})?'Open internal layout':'Internal layout of this structure')+'</button>';
  h+='<button class="btn sm dng" data-act="del">Delete</button></div>';
  return h;
 }
@@ -1203,10 +1238,10 @@ function sheetHTML(){
  h+='<div class="row2"><label class="fld">Plot area<select id="m_extent"><option value="content"'+(m.extent==='content'?' selected':'')+'>All drawn items</option><option value="view"'+(m.extent==='view'?' selected':'')+'>Current screen view</option></select></label>'+fld('m_north','North arrow (° clockwise)',m.north,'number','step="1"')+'</div>';
  h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_bg"'+(m.bg?' checked':'')+'> Include aerial / client plan underlay</label>';
  h+='<h4>Emergency evacuation</h4><p class="note">Place your exits (Doors), assembly point and zones/tents/stands, then press Generate. Green routes run from each area to the nearest exit, around structures and fences, and on to the assembly point. It is a separate plan: toggle it with the Evacuation button, and it exports as its own sheet.</p><div class="btns"><button class="btn sm pri" data-act="evgen">Generate evacuation routes</button><button class="btn sm" data-act="evac">'+(m.evac?'Back to operational plan':'Show evacuation plan')+'</button></div>';
- h+='<h4>Internal layouts (tent, VIP area…)</h4><p class="note">Draw the outline of a tent or area, select it, then use the View box in the toolbar → New internal layout. Switch to that layout to see and draw its internals only, with its own legend, scale and sheet. Switch back to Whole plan to see everything together.</p>';
+ h+='<h4>Internal layouts (tent, VIP area…)</h4><p class="note">Click a tent, zone or closed outline on the plan and press <b>Internal layout</b> in the bar that appears. Each structure gets its own layout (its own view, grid from its corner, legend, scale and sheet). Switch to that layout to see and draw its internals only, with its own legend, scale and sheet. Switch back to Whole plan to see everything together.</p>';
  var LY=m.layouts||[];
  if(LY.length){h+='<label class="fld">Current view<select id="m_view"><option value="">Whole plan</option>'+LY.map(function(l){return '<option value="'+l.id+'"'+(m.only===l.id?' selected':'')+'>'+esc(l.name)+'</option>'}).join('')+'</select></label>'}
- h+='<div class="btns"><button class="btn sm pri" data-act="newlay">New layout</button>'+(m.only?'<button class="btn sm" data-act="laysel">Add selected to this layout</button><button class="btn sm" data-act="layout">Remove selected from layout</button><button class="btn sm" data-act="layren">Rename</button><button class="btn sm dng" data-act="laydel">Delete layout</button>':'')+'</div>';
+ h+=(LY.length?'<div class="btns"><button class="btn sm pri" data-act="lxpdf">Download all layouts (one PDF)</button><button class="btn sm" data-act="lxpng">Download each as PNG</button></div>':'')+'<div class="btns"><button class="btn sm" data-act="newlay">New empty layout</button>'+(m.only?'<button class="btn sm" data-act="laysel">Add selected to this layout</button><button class="btn sm" data-act="layout">Remove selected from layout</button><button class="btn sm" data-act="layren">Rename</button><button class="btn sm dng" data-act="laydel">Delete layout</button>':'')+'</div>';
  h+='<h4>Plan type &amp; grid</h4><label class="fld">Plan type<select id="m_mode"><option value="outdoor"'+(m.mode!=='indoor'?' selected':'')+'>Outdoor event</option><option value="indoor"'+(m.mode==='indoor'?' selected':'')+'>Indoor / exhibition</option></select></label>';
  h+='<div class="row3">'+fld('m_gmod','Stand module (m, 0 = off)',m.gridMod||0,'number','min="0" step="any"')+fld('m_gmin','Fine grid every (m, 0 = off)',m.gridMinor===undefined?1:m.gridMinor,'number','min="0" step="any"')+fld('m_gx','Grid starts X (m)',m.gx||0,'number','step="any"')+fld('m_gy','Grid starts Y (m)',m.gy||0,'number','step="any"')+'</div>';
  h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_gshow"'+(m.gridShow!==false?' checked':'')+'> Show the fine grid on the plan (over the aerial)</label><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_gprint"'+(m.gridPrint!==false?' checked':'')+'> Print the grid on the sheet</label><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_glab"'+(m.gridLabels!==false?' checked':'')+'> Letter the columns (A, B, C…) and number the rows (1, 2, 3…)</label><p class="note">Fine grid = every metre by default, so counting blocks gives the gap (3 open blocks = 3 m aisle). The module lines are bolder and carry the A/B/C and 1/2/3 labels. Exhibition tip: set the module to your stand size (for example 3 m). Stands from the Library then lock to the grid corners and snap follows the module. The Measure tool still works anywhere.</p><div class="btns"><button class="btn sm" data-act="autonum">Number the stands</button></div>';
@@ -1292,6 +1327,8 @@ function act(a){
  else if(a==='autonum')autoNumber();
  else if(a==='newlay')newLayout();
  else if(a==='evac')setEvac(!S.meta.evac);
+ else if(a==='inlay')layoutForObj(getSel());
+ else if(a==='lxpdf')exportAllLayouts('pdf');else if(a==='lxpng')exportAllLayouts('png');
  else if(a==='evgen')genEvac();
  else if(a==='evclr'){snapH();var nn=evClear();changed(true);toast(nn?nn+' routes cleared':'No routes to clear')}
  else if(a==='laysel'){var ss=selObjs();if(!ss.length){toast('Select items first');return}snapH();ss.forEach(function(o){o.lay=S.meta.only});changed(true);toast(ss.length+' added to this layout')}
@@ -1308,9 +1345,9 @@ function act(a){
 function renderSelbar(){
  var el=$('#selbar'),a=selObjs();if(!a.length){el.classList.remove('on');return}
  var o=getSel(),arr=o&&(o.t==='rect'||o.t==='area'||o.t==='door'||o.t==='sign');
- el.innerHTML='<button class="btn sm" data-a="edit">'+(a.length>1?a.length+' selected · Edit':'Edit')+'</button><button class="btn sm" data-a="dup">Duplicate</button>'+(arr?'<button class="btn sm" data-a="arr">Repeat</button>':'')+'<button class="btn sm dng" data-a="del">Delete</button>';
+ el.innerHTML='<button class="btn sm" data-a="edit">'+(a.length>1?a.length+' selected · Edit':'Edit')+'</button><button class="btn sm" data-a="dup">Duplicate</button>'+(a.length===1&&canHost(o)?'<button class="btn sm pri" data-a="inlay">'+((S.meta.layouts||[]).some(function(l){return l.src===o.id})?'Open internal layout':'Internal layout')+'</button>':'')+(arr?'<button class="btn sm" data-a="arr">Repeat</button>':'')+'<button class="btn sm dng" data-a="del">Delete</button>';
  el.classList.add('on');
- el.onclick=function(e){var b=e.target.closest('button');if(!b)return;var a2=b.dataset.a;if(a2==='edit'){S.tab='sel';openPanel()}else if(a2==='dup')dupSel();else if(a2==='arr')arraySel();else if(a2==='del')delSel()};
+ el.onclick=function(e){var b=e.target.closest('button');if(!b)return;var a2=b.dataset.a;if(a2==='edit'){S.tab='sel';openPanel()}else if(a2==='dup')dupSel();else if(a2==='arr')arraySel();else if(a2==='inlay')layoutForObj(getSel());else if(a2==='del')delSel()};
 }
 
 /* ---------- layers / import ---------- */
@@ -1353,7 +1390,7 @@ async function download(name,blob){
  try{var dl=window.claude&&await claude.use('downloads');
   if(dl){await dl.save({filename:name,data:blob});toast('Saved '+name);return true}
  }catch(e){if(e&&e.code==='declined')return false}
- return false;
+ try{var u=URL.createObjectURL(blob),an=document.createElement('a');an.href=u;an.download=name;document.body.appendChild(an);an.click();setTimeout(function(){an.remove();URL.revokeObjectURL(u)},4000);toast('Saved '+name);return true}catch(e2){return false}
 }
 
 /* ---------- export sheet ---------- */
@@ -1369,7 +1406,7 @@ async function renderSheet(){
   for(var fi=0;fi<fl.length;fi++){var fim=await loadImgCached(fl[fi]);if(fim)flogos.push(fim)}
   var flines=(brand.lines||[]).filter(Boolean),FH=(flogos.length||flines.length)?20*kk:0;
   var M=8,panW=Math.round(88*kk),A={x0:M,y0:M,x1:P.w-M-panW,y1:P.h-M-FH};
- var b=(m.extent==='view')?viewBounds():(objBounds()||layerBounds()||viewBounds());
+ var b=(m.extent==='view'&&!m.only)?viewBounds():(objBounds()||layerBounds()||viewBounds());
  var bw=Math.max(b.x1-b.x0,1),bh=Math.max(b.y1-b.y0,1),aw=(A.x1-A.x0)-4-30*kk,ah=(A.y1-A.y0)-4-30*kk,N;
  if(m.scale==='auto'){N=SCALES.filter(function(n){return bw*1000/n<=aw&&bh*1000/n<=ah})[0]||SCALES[SCALES.length-1]}else if(m.scale==='custom')N=Math.max(1,+m.scaleC||500);else N=+m.scale||500;
  var z=ppm*1000/N,ox=mm((A.x0+A.x1)/2)-((b.x0+b.x1)/2)*z,oy=mm((A.y0+A.y1)/2)-((b.y0+b.y1)/2)*z,u=ppm*0.2646*kk;
@@ -1439,7 +1476,7 @@ async function exportSheet(kind){
  if(!S.objs.length&&!S.layers.length){toast('Draw something first');return}
  toast('Rendering sheet…',8000);
  try{
-  var r=await renderSheet(),name=(S.meta.event||'plan').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_')+'_'+S.meta.ref+'_Rev'+S.meta.rev;
+  var r=await renderSheet(),name=(S.meta.event||'plan').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_')+'_'+S.meta.ref+'_Rev'+S.meta.rev+((S.meta.only&&layoutOf(S.meta.only))?'_'+layoutOf(S.meta.only).name.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_'):'');
   var blob;
   if(kind==='pdf'){var jsPDF=window.jspdf&&window.jspdf.jsPDF;if(!jsPDF)throw new Error('PDF library did not load. Try PNG export.');var pdf=new jsPDF({orientation:r.P.w>=r.P.h?'landscape':'portrait',unit:'mm',format:[r.P.w,r.P.h]});pdf.addImage(r.canvas.toDataURL('image/jpeg',.93),'JPEG',0,0,r.P.w,r.P.h,undefined,'FAST');pdf.setProperties({title:(S.meta.event||'')+' – '+S.meta.title,author:S.meta.company,subject:'Ref '+S.meta.ref});blob=pdf.output('blob');name+='.pdf'}
   else{blob=await new Promise(function(res){r.canvas.toBlob(res,'image/png')});name+='.png'}

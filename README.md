@@ -83,3 +83,10 @@ Note: branding is locked in the app's interface. It stops staff changing it by a
 
 - Routes now start at the edge of each tent/stage/stall/stand (not its centre), go to the **nearest exit and an alternate (second-nearest, dashed)**, then on to the assembly point. Big zones that just contain other structures are skipped. Options in the evacuation bar: alternate route on/off, entrances count as exits on/off.
 - Fine grid every **1 m** (Sheet tab → Plan type & grid), drawn over the aerial and printed when it is legible at the sheet scale. Stand module lines (e.g. 3 m) are bolder and carry the A/B/C, 1/2/3 labels. Default snap is now 1 m.
+
+## Internal layout per structure
+
+- Click a tent, zone, shape or closed outline and press **Internal layout** in the bar that appears (also in the Selected tab). It opens that structure on its own: its outline, a grid starting at its corner, its own legend, scale and sheet. Add everything inside it as normal.
+- A bar at the top of the plan shows **Back to whole plan**, **Download PNG** and **Download PDF** for the layout you are in. Files are named with the layout name.
+- Sheet tab → Internal layouts: **Download all layouts (one PDF, one page each)** or **each as PNG**.
+- Downloads now save directly to the computer's Downloads folder on the deployed site.
