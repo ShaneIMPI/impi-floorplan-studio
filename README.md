@@ -115,3 +115,6 @@ Note: branding is locked in the app's interface. It stops staff changing it by a
 - The imagery credit is printed automatically as a line in the sheet footer. Keep it on submissions.
 - Imagery can be months or years old; confirm it matches the site before submitting. Uploading your own aerial/drone image still works (+ Upload aerial).
 - Leaflet 1.9.4 is bundled in `public/vendor/` (BSD licence), no extra CDN needed.
+
+## Update: stand numbering by row / column
+Exhibition → **Number the stands** now offers: lettered rows (A1, A2… then B1…), lettered columns, numbered rows/columns (1-1, 1-2… 2-1…), or continuous numbering row-by-row / column-by-column. Choose which edge starts first (top/bottom row, left/right column), which end the numbers run from, a prefix (e.g. HALL-), separator, first letter, start number and digit padding. A live preview shows the result. Select a block of stands first to number just that block (own prefix/letters); otherwise all stands on the plan are numbered. Rows/columns are detected by stand edge, so mixed stand sizes that line up on the module grid stay in the same row.
