@@ -101,3 +101,9 @@ Note: branding is locked in the app's interface. It stops staff changing it by a
 - The sheet footer is **fixed in the app** (not editable by staff): IMPI RMS, 10 Kosmos Crescent, Rynoue AH, Roodeplaat, Tel 012 543 0640, info@impi-secure.co.za, www.impi-secure.co.za, "Event Safety & Security". No PSIRA or registration number. To change it, edit `BRAND_FOOT` near the top of `private/app.html`. `public/brand.json` is no longer used.
 - The footer shows the logo file `public/impi-logo.png`.
 - The diagonal watermark is **off by default**. Sheet tab → "Add a diagonal draft watermark" turns it on for drafts.
+
+## Update: footer logo, any-file logos, shade netting, evacuation v3
+- `public/impi-logo.png` is the IMPI tri-circle logo, used in the sheet footer and on the login page. Replace the file to change it.
+- Event logo and admin company logo accept any image (PNG, JPG, SVG, WebP, GIF, BMP, TIFF, HEIC where the browser supports it) or a PDF (first page). Files are downscaled automatically.
+- New library item **Stage & AV → Shade netting (open underneath)**: drawn as light hatched netting, never blocks evacuation routes and is never an evacuation start. Use it instead of a Zone.
+- Evacuation generator: routes follow aisle centres (clearance-weighted, orthogonal), touching stands are grouped into blocks (one route per block), branches merge into shared trunks, and with "use every exit" ticked the blocks are shared out so every exit/entrance is used. Alternate routes were removed.

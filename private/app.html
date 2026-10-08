@@ -146,7 +146,7 @@ input[type=range]{width:100%}
    <div id="hint"></div>
    <button class="btn pri" id="doneBtn">Finish line</button>
    <div id="layBar"><b id="layName"></b><button class="btn sm" data-lb="back">Back to whole plan</button><button class="btn sm pri" data-lb="png">Download PNG</button><button class="btn sm pri" data-lb="pdf">Download PDF</button></div>
-   <div id="evBar"><b>Emergency evacuation plan</b><button class="btn sm pri" data-ev="evgen">Generate evacuation routes</button><button class="btn sm" data-ev="evclr">Clear routes</button><label class="evopt"><input type="checkbox" id="evAlt"> alternate route</label><label class="evopt"><input type="checkbox" id="evEntr"> entrances count as exits</label><button class="btn sm" data-ev="evac">Back to plan</button></div>
+   <div id="evBar"><b>Emergency evacuation plan</b><button class="btn sm pri" data-ev="evgen">Generate evacuation routes</button><button class="btn sm" data-ev="evclr">Clear routes</button><label class="evopt"><input type="checkbox" id="evAll"> use every exit</label><label class="evopt"><input type="checkbox" id="evEntr"> entrances count as exits</label><button class="btn sm" data-ev="evac">Back to plan</button></div>
    <div id="status"></div>
    <div id="selbar"></div>
    <div id="welcome">
@@ -191,7 +191,7 @@ function loadImgCached(src){if(!src)return Promise.resolve(null);if(IMGC[src]!==
 
 /* ---------- state ---------- */
 var S={view:{x:0,y:0,z:10},layers:[],objs:[],sel:null,tool:'select',arm:null,grid:1,issues:[],tmp:null,tab:'lib',nid:1,nl:1,custom:[],calib:null,mv:null,hover:null,snapPt:null,
- meta:{title:'SITE & FLOOR PLAN',event:'[EVENT NAME]',venue:'[VENUE]',client:'[CLIENT]',date:today(),rev:'A',drawn:'[DRAWN BY]',ref:'FP-'+today().replace(/-/g,'')+'-001',company:'IMPI RMS',paper:'A3',scale:'auto',extent:'content',north:0,minAisle:2,bg:true,logo:null,eventLogo:null,showFront:true,watermark:false,only:null,evac:false,gridMinor:1,gridShow:true,evAlt:true,evEntr:true,layouts:[],mode:'outdoor',gridMod:0,gridPrint:true,gridLabels:true,gx:0,gy:0}};
+ meta:{title:'SITE & FLOOR PLAN',event:'[EVENT NAME]',venue:'[VENUE]',client:'[CLIENT]',date:today(),rev:'A',drawn:'[DRAWN BY]',ref:'FP-'+today().replace(/-/g,'')+'-001',company:'IMPI RMS',paper:'A3',scale:'auto',extent:'content',north:0,minAisle:2,bg:true,logo:null,eventLogo:null,showFront:true,watermark:false,only:null,evac:false,gridMinor:1,gridShow:true,evAll:true,evEntr:true,layouts:[],mode:'outdoor',gridMod:0,gridPrint:true,gridLabels:true,gx:0,gy:0}};
 var hist=[],redoS=[];
 var R={z:1,u:1};
 function px(v){return v*R.u/R.z}
@@ -212,6 +212,7 @@ var LIB=[
  {k:'snow',n:'Snow Peak tent',w:5,h:5,c:'Tents',s:'snow',lab:'Snow Peak'},
  {k:'stall',n:'Stall / stand 3 × 3',w:3,h:3,c:'Tents',s:'stall',lab:'Stall'},
  {k:'stage',n:'Stage',w:8,h:6,c:'Stage & AV',s:'stage',lab:'STAGE'},
+ {k:'netting',n:'Shade netting (open underneath)',w:10,h:3,c:'Stage & AV',s:'netting',lab:'Shade netting'},
  {k:'screen',n:'LED / video screen',w:6,h:0.4,c:'Stage & AV',s:'screen',lab:''},
  {k:'foh',n:'FOH / sound desk',w:4,h:3,c:'Stage & AV',s:'plain',f:'#dfe6ee',lab:'FOH'},
  {k:'bar',n:'Bar counter',w:6,h:1.2,c:'Services',s:'plain',f:'#f3dcc3',lab:'Bar'},
@@ -303,6 +304,23 @@ function ask(title,fields,ok,okLabel){
  m.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();$('#mo')&&$('#mo').click()}if(e.key==='Escape')close()};
 }
 function box(html){var m=$('#modal');m.innerHTML='<div class="mbox">'+html+'<div class="mrow"><button class="btn pri" id="mc">Close</button></div></div>';m.classList.add('on');$('#mc').onclick=function(){m.classList.remove('on');m.innerHTML=''}}
+var ANYIMG='image/*,.pdf,.svg,.png,.jpg,.jpeg,.jfif,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,.avif,.ico';
+async function fileToLogo(file,cb){
+ try{
+  var img,isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
+  if(isPdf){
+   if(!window.pdfjsLib)throw new Error('PDF reader did not load. Save the logo as a PNG and upload that.');
+   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+   var pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,pg=await pdf.getPage(1),v0=pg.getViewport({scale:1}),sc=Math.min(4,1400/Math.max(v0.width,v0.height)),vp=pg.getViewport({scale:sc}),cn=document.createElement('canvas');
+   cn.width=Math.round(vp.width);cn.height=Math.round(vp.height);await pg.render({canvasContext:cn.getContext('2d'),viewport:vp}).promise;img=cn}
+  else{try{img=await loadImgFile(file)}catch(e){throw new Error('This browser cannot read that file type ('+(file.name.split('.').pop()||'?')+'). Open it and save/export it as PNG or JPG, or upload it as a PDF.')}}
+  var iw=img.naturalWidth||img.width||600,ih=img.naturalHeight||img.height||300,k=Math.min(1,1200/Math.max(iw,ih)),cv=document.createElement('canvas');
+  cv.width=Math.max(1,Math.round(iw*k));cv.height=Math.max(1,Math.round(ih*k));cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+  var out=cv.toDataURL('image/png');
+  if(out.length>700000){var c2=document.createElement('canvas');c2.width=cv.width;c2.height=cv.height;var x2=c2.getContext('2d');x2.fillStyle='#fff';x2.fillRect(0,0,c2.width,c2.height);x2.drawImage(cv,0,0);out=c2.toDataURL('image/jpeg',.9)}
+  cb(out)
+ }catch(err){toast(err.message||'Could not read that file',6000)}
+}
 function pickFile(accept,cb){var f=$('#fileIn');f.accept=accept;f.multiple=false;f.value='';f.onchange=function(){if(f.files&&f.files[0])cb(f.files[0])};f.click()}
 function loadImgFile(file){return new Promise(function(res,rej){var u=URL.createObjectURL(file),im=new Image();im.onload=function(){res(im)};im.onerror=function(){rej(new Error('Could not read image'))};im.src=u})}
 function loadImgSrc(src){return new Promise(function(res,rej){var im=new Image();im.onload=function(){res(im)};im.onerror=function(){rej(new Error('img'))};im.src=src})}
@@ -438,6 +456,7 @@ function drawItem(c,o,ic){
  else if(s==='bedouin'){bx('#f0e2c4');var q2=m*.1;c.lineWidth=lw*.7;c.setLineDash([px(6),px(4)]);c.strokeRect(-w/2+q2,-h/2+q2,w-2*q2,h-2*q2);c.setLineDash([]);c.fillStyle=INK;[[-1,-1],[1,-1],[1,1],[-1,1],[0,0]].forEach(function(p){c.beginPath();c.arc(p[0]*(w/2-q2),p[1]*(h/2-q2),Math.max(m*.022,px(1.6)),0,TAU);c.fill()})}
  else if(s==='snow'){bx('#e8f0e0');c.strokeStyle='#8a97a1';c.lineWidth=lw*.6;c.beginPath();c.moveTo(-w/2,-h/2);c.lineTo(w/2,h/2);c.moveTo(w/2,-h/2);c.lineTo(-w/2,h/2);c.stroke();c.strokeStyle=INK;c.lineWidth=lw;c.beginPath();c.arc(0,0,m*.12,0,TAU);c.fillStyle='#fff';c.fill();c.stroke()}
  else if(s==='stage'){bx('#34424e');c.save();c.beginPath();c.rect(-w/2,-h/2,w,h);c.clip();c.strokeStyle='rgba(255,255,255,.14)';c.lineWidth=lw*.8;var st=px(9);c.beginPath();for(var x=-w/2-h;x<w/2+h;x+=st){c.moveTo(x,h/2);c.lineTo(x+h,-h/2)}c.stroke();c.restore()}
+ else if(s==='netting'){c.fillStyle=o.fc||'rgba(120,170,120,.18)';c.beginPath();c.rect(-w/2,-h/2,w,h);c.fill();c.save();c.beginPath();c.rect(-w/2,-h/2,w,h);c.clip();c.strokeStyle='rgba(60,120,70,.55)';c.lineWidth=lw*.5;var ns=px(6);c.beginPath();for(var nxx=-w/2-h;nxx<w/2+h;nxx+=ns){c.moveTo(nxx,h/2);c.lineTo(nxx+h,-h/2);c.moveTo(nxx,-h/2);c.lineTo(nxx+h,h/2)}c.stroke();c.restore();c.strokeStyle='#4f7f58';c.lineWidth=lw*.9;c.setLineDash([px(7),px(3)]);c.strokeRect(-w/2,-h/2,w,h);c.setLineDash([])}
  else if(s==='screen'){c.fillStyle='#111';c.beginPath();c.rect(-w/2,-h/2,w,h);c.fill();c.stroke()}
  else if(s==='stall'){bx('#fde8d2');c.lineWidth=lw*.7;c.beginPath();c.moveTo(-w/2,h*.22);c.lineTo(w/2,h*.22);c.stroke()}
  else if(s==='wc'){bx('#d6e6f4');if(!ic&&!o.label&&m*R.z/R.u>16)txt(c,'WC',0,0,Math.min(11,m*R.z/R.u*.5),{halo:false,col:'#12202b',rot:-o.rot*D2R})}
@@ -557,7 +576,7 @@ function genEvac(){
  function cy(y){return Math.min(ny-1,Math.max(0,Math.floor((y-Y0)/cs)))}
  function wx(ix){return X0+(ix+.5)*cs}function wy(iy){return Y0+(iy+.5)*cs}
  vis.forEach(function(o){
-  if(o.t==='rect'){var d=dimsOf(o),cr=corners(o),xa=Infinity,xb=-Infinity,ya=Infinity,yb=-Infinity;cr.forEach(function(p){xa=Math.min(xa,p.x);xb=Math.max(xb,p.x);ya=Math.min(ya,p.y);yb=Math.max(yb,p.y)});
+  if(o.t==='rect'&&o.k!=='netting'){var d=dimsOf(o),cr=corners(o),xa=Infinity,xb=-Infinity,ya=Infinity,yb=-Infinity;cr.forEach(function(p){xa=Math.min(xa,p.x);xb=Math.max(xb,p.x);ya=Math.min(ya,p.y);yb=Math.max(yb,p.y)});
    for(j=cy(ya);j<=cy(yb);j++)for(i=cx(xa);i<=cx(xb);i++){var l=toLocal(o,{x:wx(i),y:wy(j)});if(Math.abs(l.x)<=d.w/2+.15&&Math.abs(l.y)<=d.h/2+.15)blk[j*nx+i]=1}}
   else if(o.t==='line'&&['fence','wall','barrier','shade','plain'].indexOf(o.style||'fence')>=0){
    var P=o.closed?o.pts.concat([o.pts[0]]):o.pts;
@@ -565,6 +584,15 @@ function genEvac(){
  });
  vis.forEach(function(o){if(o.t!=='door')return;var r=Math.max((o.w||3)/2,1)+cs*.8;
   for(j=cy(o.y-r);j<=cy(o.y+r);j++)for(i=cx(o.x-r);i<=cx(o.x+r);i++)if(Math.hypot(wx(i)-o.x,wy(j)-o.y)<=r)blk[j*nx+i]=0});
+
+ /* clearance (distance to nearest obstacle) so routes prefer the middle of aisles */
+ var clr=new Float64Array(N),M=new Float32Array(N);
+ for(i=0;i<N;i++)clr[i]=blk[i]?0:1e9;
+ for(j=0;j<ny;j++)for(i=0;i<nx;i++){var cc=j*nx+i;if(!clr[cc])continue;var v=clr[cc];
+  v=Math.min(v,i>0?clr[cc-1]+1:1,j>0?clr[cc-nx]+1:1,(i>0&&j>0)?clr[cc-nx-1]+1.414:1.414,(i<nx-1&&j>0)?clr[cc-nx+1]+1.414:1.414);clr[cc]=v}
+ for(j=ny-1;j>=0;j--)for(i=nx-1;i>=0;i--){var cc2=j*nx+i;if(!clr[cc2])continue;var v2=clr[cc2];
+  v2=Math.min(v2,i<nx-1?clr[cc2+1]+1:1,j<ny-1?clr[cc2+nx]+1:1,(i<nx-1&&j<ny-1)?clr[cc2+nx+1]+1.414:1.414,(i>0&&j<ny-1)?clr[cc2+nx-1]+1.414:1.414);clr[cc2]=v2}
+ for(i=0;i<N;i++)M[i]=1+2.4*Math.max(0,1-clr[i]*cs/3.5);
  function heapPush(h,d,v){h.push([d,v]);var k=h.length-1;while(k>0){var p=(k-1)>>1;if(h[p][0]<=h[k][0])break;var t=h[p];h[p]=h[k];h[k]=t;k=p}}
  function heapPop(h){var top=h[0],last=h.pop();if(h.length){h[0]=last;var k=0;for(;;){var l=2*k+1,r=l+1,m=k;if(l<h.length&&h[l][0]<h[m][0])m=l;if(r<h.length&&h[r][0]<h[m][0])m=r;if(m===k)break;var t=h[m];h[m]=h[k];h[k]=t;k=m}}return top}
  var DX=[1,-1,0,0,1,1,-1,-1],DY=[0,0,1,-1,1,-1,1,-1];
@@ -574,41 +602,86 @@ function genEvac(){
   while(h.length){var e=heapPop(h),d=e[0],c=e[1];if(d>dist[c])continue;var x=c%nx,y=(c-x)/nx;
    for(var k=0;k<8;k++){var x2=x+DX[k],y2=y+DY[k];if(x2<0||y2<0||x2>=nx||y2>=ny)continue;var c2=y2*nx+x2;if(blk[c2])continue;
     if(k>=4&&(blk[y*nx+x2]||blk[y2*nx+x]))continue;
-    var nd=d+(k<4?1:1.4142);if(nd<dist[c2]){dist[c2]=nd;par[c2]=c;heapPush(h,nd,c2)}}}
+    var nd=d+(k<4?1:2.2)*(M[c]+M[c2])/2;if(nd<dist[c2]-1e-9){dist[c2]=nd;par[c2]=c;heapPush(h,nd,c2)}}}
   return {d:dist,p:par}}
  function los(a,b){var L=Math.hypot(b.x-a.x,b.y-a.y),n=Math.max(1,Math.ceil(L/(cs*.35)));for(var q=0;q<=n;q++){var t=q/n;if(blk[cy(a.y+(b.y-a.y)*t)*nx+cx(a.x+(b.x-a.x)*t)])return false}return true}
- function pull(pts){if(pts.length<3)return pts;var r=[pts[0]],a=0;while(a<pts.length-1){var b=pts.length-1;while(b>a+1&&!los(pts[a],pts[b]))b--;r.push(pts[b]);a=b}return r}
- function walk(F,c){var pts=[],g=0;while(c>=0&&g++<4000){pts.push({x:wx(c%nx),y:wy(Math.floor(c/nx))});c=F.p[c]}return pts}
+ function cp(c){return {x:wx(c%nx),y:wy(Math.floor(c/nx))}}
+ /* simplify a chain of cells to a few corner points (Douglas-Peucker, never cutting through an obstacle) */
+ function simp(cells){var P=cells.map(cp);if(P.length<3)return P;var keep=new Uint8Array(P.length);keep[0]=keep[P.length-1]=1;var tol=Math.max(cs*.6,.4);
+  (function dp(a,b){if(b<=a+1)return;var md=-1,mi=-1;for(var k=a+1;k<b;k++){var ax=P[a].x,ay=P[a].y,bx=P[b].x,by=P[b].y,dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy)||1,d=Math.abs((P[k].x-ax)*dy-(P[k].y-ay)*dx)/L;if(d>md){md=d;mi=k}}
+   if(md>tol||!los(P[a],P[b])){keep[mi]=1;dp(a,mi);dp(mi,b)}})(0,P.length-1);
+  return P.filter(function(_,k){return keep[k]})}
+ function walkC(F,c){var r=[],g=0;while(c>=0&&g++<6000){r.push(c);c=F.p[c]}return r}
  function nearestReach(F,x,y){var ix=cx(x),iy=cy(y);for(var r=0;r<70;r++){var best=-1,bd=Infinity;
    for(var yy=iy-r;yy<=iy+r;yy++)for(var xx=ix-r;xx<=ix+r;xx++){if(Math.max(Math.abs(xx-ix),Math.abs(yy-iy))!==r)continue;if(xx<0||yy<0||xx>=nx||yy>=ny)continue;var c=yy*nx+xx;if(blk[c]||!isFinite(F.d[c]))continue;var dd=Math.hypot(wx(xx)-x,wy(yy)-y);if(dd<bd){bd=dd;best=c}}
    if(best>=0)return best}return -1}
- var exCell={},exList=ex.map(function(o){var c=cy(o.y)*nx+cx(o.x);exCell[c]=o;return {o:o,c:c}});
- var Fs=exList.map(function(e){return field([e.c])}),routes=[],used={},longest=0,skipped=0,altN=0;
  function plen(pts){var L=0;for(var k=0;k<pts.length-1;k++)L+=Math.hypot(pts[k+1].x-pts[k].x,pts[k+1].y-pts[k].y);return L}
- function routeVia(ei,sc){var raw=walk(Fs[ei],sc);if(!raw.length)return null;var pts=pull(raw);pts[pts.length-1]={x:exList[ei].o.x,y:exList[ei].o.y};return pts}
- OR.forEach(function(o){var oc=o.t==='poly'?(function(){var b=boundsOf(o);return {x:(b.x0+b.x1)/2,y:(b.y0+b.y1)/2}})():{x:o.x,y:o.y};
-  var sc=-1,bd=Infinity,best=-1;
-  // nearest clear cell to the structure that can reach any exit
-  for(var r=0;r<70&&sc<0;r++){var ix=cx(oc.x),iy=cy(oc.y);
-   for(var yy=iy-r;yy<=iy+r;yy++)for(var xx=ix-r;xx<=ix+r;xx++){if(Math.max(Math.abs(xx-ix),Math.abs(yy-iy))!==r||xx<0||yy<0||xx>=nx||yy>=ny)continue;var c=yy*nx+xx;if(blk[c])continue;
-    var ok=false;for(var e=0;e<Fs.length;e++)if(isFinite(Fs[e].d[c])){ok=true;break}if(!ok)continue;var dd=Math.hypot(wx(xx)-oc.x,wy(yy)-oc.y);if(dd<bd){bd=dd;sc=c}}}
-  if(sc<0){skipped++;return}
-  var ranked=Fs.map(function(F,e){return {e:e,d:F.d[sc]}}).filter(function(q){return isFinite(q.d)}).sort(function(p,q){return p.d-q.d});
-  if(!ranked.length){skipped++;return}
-  var p1=routeVia(ranked[0].e,sc);if(!p1){skipped++;return}
-  used[exList[ranked[0].e].c]=exList[ranked[0].e].o;routes.push({pts:p1});longest=Math.max(longest,plen(p1));
-  if(S.meta.evAlt!==false&&ranked.length>1){var p2=routeVia(ranked[1].e,sc);if(p2){used[exList[ranked[1].e].c]=exList[ranked[1].e].o;routes.push({pts:p2,alt:1});altN++}}});
- var legs=0;
+ var exList=ex.map(function(o){return {o:o,c:cy(o.y)*nx+cx(o.x)}});
+ var Fs=exList.map(function(e){return field([e.c])}),m=exList.length;
+ /* where each structure can be left from: clear cells just outside its edge (or inside a zone) */
+ function candsOf(o){
+  var res=[],bnd=boundsOf(o),mg=[cs*1.6+.15,3.5,7],t,ii,jj;
+  for(t=0;t<3&&!res.length;t++){
+   var x0=cx(bnd.x0-mg[t]-1),x1=cx(bnd.x1+mg[t]+1),y0=cy(bnd.y0-mg[t]-1),y1=cy(bnd.y1+mg[t]+1);
+   for(jj=y0;jj<=y1;jj++)for(ii=x0;ii<=x1;ii++){var c=jj*nx+ii;if(blk[c])continue;var p={x:wx(ii),y:wy(jj)},ok=false;
+    if(o.t==='rect'){var d=dimsOf(o),l=toLocal(o,p);ok=Math.abs(l.x)<=d.w/2+mg[t]&&Math.abs(l.y)<=d.h/2+mg[t]}
+    else if(o.t==='poly'){ok=inPoly(p,o.pts)}
+    else{var d2=dimsOf(o),l2=toLocal(o,p);ok=Math.abs(l2.x)<=d2.w/2&&Math.abs(l2.y)<=d2.h/2}
+    if(ok){var any=false;for(var e=0;e<m;e++)if(isFinite(Fs[e].d[c])){any=true;break}if(any)res.push(c)}}
+   if(o.t!=='rect')break}
+  if(res.length>3000){var st=Math.ceil(res.length/3000);res=res.filter(function(_,k){return k%st===0})}
+  return res}
+ var org=[],skipped=0;
+ /* group touching stands/tents into blocks (max ~24 m) so a block gets one route, not one per stand */
+ var grp=OR.map(function(o){var b=boundsOf(o);return {m:[o],b:{x0:b.x0,y0:b.y0,x1:b.x1,y1:b.y1},blockable:o.t==='rect'}});
+ for(var gi=0;gi<grp.length;gi++){if(!grp[gi])continue;var chg=true;
+  while(chg){chg=false;for(var gj=gi+1;gj<grp.length;gj++){var A=grp[gi],B=grp[gj];if(!B||!A.blockable||!B.blockable)continue;
+   if(B.b.x0>A.b.x1+.8||A.b.x0>B.b.x1+.8||B.b.y0>A.b.y1+.8||A.b.y0>B.b.y1+.8)continue;
+   var nb={x0:Math.min(A.b.x0,B.b.x0),y0:Math.min(A.b.y0,B.b.y0),x1:Math.max(A.b.x1,B.b.x1),y1:Math.max(A.b.y1,B.b.y1)};
+   if(nb.x1-nb.x0>24||nb.y1-nb.y0>24)continue;A.m=A.m.concat(B.m);A.b=nb;grp[gj]=null;chg=true}}}
+ grp=grp.filter(Boolean);
+ grp.forEach(function(G){var cs0={},cands=[];G.m.forEach(function(o){candsOf(o).forEach(function(c){if(!cs0[c]){cs0[c]=1;cands.push(c)}})});var o=G.m[0];if(!cands.length){skipped++;return}
+  var de=[],ce=[];for(var e=0;e<m;e++){var bd=Infinity,bc=-1;for(var k=0;k<cands.length;k++){var dv=Fs[e].d[cands[k]];if(dv<bd){bd=dv;bc=cands[k]}}de.push(bd);ce.push(bc)}
+  var best=0;for(var e2=1;e2<m;e2++)if(de[e2]<de[best])best=e2;
+  if(!isFinite(de[best])){skipped++;return}
+  org.push({o:o,de:de,ce:ce,as:best,n:G.m.length})});
+ /* share the people out so every exit is used */
+ var useAll=S.meta.evAll!==false;
+ if(useAll&&org.length>1){
+  var load=new Array(m).fill(0),cap=Math.max(2,Math.ceil(1.4*org.length/m));
+  org.forEach(function(g){g.as=-1});
+  org.slice().sort(function(p,q){return Math.min.apply(null,p.de)-Math.min.apply(null,q.de)}).forEach(function(g){
+   var rk=g.de.map(function(d,e){return {e:e,d:d}}).filter(function(q){return isFinite(q.d)}).sort(function(p,q){return p.d-q.d});
+   var pick=rk.filter(function(q){return load[q.e]<cap})[0]||rk[0];g.as=pick.e;load[pick.e]++});
+  for(var e3=0;e3<m;e3++){if(load[e3]>0)continue;
+   var bg=null,br=Infinity;org.forEach(function(g){if(load[g.as]<2||!isFinite(g.de[e3]))return;var rg=g.de[e3]-g.de[g.as];if(rg<br){br=rg;bg=g}});
+   if(bg){load[bg.as]--;bg.as=e3;load[e3]++}}}
+ /* build one route tree per exit and draw each branch once, ending on the trunk it joins */
+ var routes=[],used={},longest=0,legs=0;
+ for(var e4=0;e4<m;e4++){var mine=org.filter(function(g){return g.as===e4});if(!mine.length)continue;
+  var F=Fs[e4],vis2={},kids={},starts={};
+  mine.forEach(function(g){var s=g.ce[e4];starts[s]=1;var c=s;while(c>=0){if(vis2[c])break;vis2[c]=1;var p=F.p[c];if(p>=0)kids[p]=(kids[p]||0)+1;c=p}});
+  var order=Object.keys(starts).map(Number).sort(function(a,b){return F.d[b]-F.d[a]}),done={};
+  order.forEach(function(s){var cells=[],c=s,g=0;while(c>=0&&g++<6000){cells.push(c);if(done[c])break;done[c]=1;c=F.p[c]}
+   var pts=[],seg=[cells[0]];
+   function flush(){if(seg.length){var sp=simp(seg);if(pts.length)sp.shift();pts=pts.concat(sp)}}
+   for(var k=1;k<cells.length;k++){seg.push(cells[k]);var cc3=cells[k];if(k<cells.length-1&&((kids[cc3]||0)>=2||starts[cc3])){flush();seg=[cc3]}}
+   flush();
+   if(cells[cells.length-1]===exList[e4].c)pts[pts.length-1]={x:exList[e4].o.x,y:exList[e4].o.y};
+   if(pts.length<2)return;
+   routes.push({pts:pts});longest=Math.max(longest,plen(pts)+0)});
+  used[exList[e4].c]=exList[e4].o}
  if(as.length){var aSrc=as.map(function(o){return cy(o.y)*nx+cx(o.x)}),F2=field(aSrc),aCell={};as.forEach(function(o,ix){aCell[aSrc[ix]]=o});
-  Object.keys(used).forEach(function(c){var eo=used[c],sc=nearestReach(F2,eo.x,eo.y);if(sc<0)return;var raw=walk(F2,sc),ec=cy(raw[raw.length-1].y)*nx+cx(raw[raw.length-1].x),ao=aCell[ec];if(!ao)return;
-   var pts=pull(raw);pts[pts.length-1]={x:ao.x,y:ao.y};pts.unshift({x:eo.x,y:eo.y});routes.push({pts:pts,leg:1});legs++})}
+  Object.keys(used).forEach(function(c){var eo=used[c],sc=nearestReach(F2,eo.x,eo.y);if(sc<0)return;var cells=walkC(F2,sc),ao=aCell[cells[cells.length-1]];if(!ao)return;
+   var pts=simp(cells);pts[pts.length-1]={x:ao.x,y:ao.y};pts.unshift({x:eo.x,y:eo.y});routes.push({pts:pts,leg:1});legs++})}
  snapH();evClear();
- routes.forEach(function(rt){var o={t:'line',style:'evac',pts:rt.pts.map(function(q){return {x:Math.round(q.x*100)/100,y:Math.round(q.y*100)/100}}),ev:1,closed:false};if(rt.alt)o.alt=1;o.id=newId();if(S.meta.only)o.lay=S.meta.only;S.objs.push(o)});
+ routes.forEach(function(rt){var o={t:'line',style:'evac',pts:rt.pts.map(function(q){return {x:Math.round(q.x*100)/100,y:Math.round(q.y*100)/100}}),ev:1,closed:false};o.id=newId();if(S.meta.only)o.lay=S.meta.only;S.objs.push(o)});
  S.meta.evac=true;syncEvac();changed(true);
- toast((routes.length-legs-altN)+' primary'+(altN?' + '+altN+' alternate':'')+' evacuation routes using '+Object.keys(used).length+' exit(s)'+(legs?', '+legs+' on to assembly':(as.length?'':'. Add an Assembly point sign to extend routes to it'))+'. Longest run '+Math.round(longest)+' m.'+(skipped?' '+skipped+' area(s) had no clear path (blocked or fully enclosed).':'')+(capped?' First 150 areas used.':''),9000);
+ var nu=Object.keys(used).length;
+ toast(org.reduce(function(a,g){return a+g.n},0)+' structure/zone(s) in '+org.length+' group(s) routed to '+nu+' of '+m+' exit(s)'+(legs?', '+legs+' run(s) on to assembly':(as.length?'':'. Add an Assembly point sign to extend routes to it'))+'. Longest run '+Math.round(longest)+' m.'+(nu<m?' '+(m-nu)+' exit(s) unused: too few areas or blocked.':'')+(skipped?' '+skipped+' area(s) had no clear path (blocked or fully enclosed).':'')+(capped?' First 150 areas used.':''),9000);
 }
 function setEvac(on){S.meta.evac=on;syncEvac();S.sel=null;S.ms=[];saveLocal();renderPanel();renderSelbar();draw();toast(on?'Emergency evacuation plan':'Operational plan',2000)}
-function syncEvac(){syncLay();var ea=$('#evAlt'),ee=$('#evEntr');if(ea){ea.checked=S.meta.evAlt!==false;ea.onchange=function(){S.meta.evAlt=ea.checked;saveLocal()}}if(ee){ee.checked=S.meta.evEntr!==false;ee.onchange=function(){S.meta.evEntr=ee.checked;saveLocal()}}var b=$('#evBar');if(b)b.classList.toggle('on',!!S.meta.evac);$$('#tools [data-act=evac]').forEach(function(x){x.classList.toggle('on',!!S.meta.evac)})}
+function syncEvac(){syncLay();var ea=$('#evAll'),ee=$('#evEntr');if(ea){ea.checked=S.meta.evAll!==false;ea.onchange=function(){S.meta.evAll=ea.checked;saveLocal()}}if(ee){ee.checked=S.meta.evEntr!==false;ee.onchange=function(){S.meta.evEntr=ee.checked;saveLocal()}}var b=$('#evBar');if(b)b.classList.toggle('on',!!S.meta.evac);$$('#tools [data-act=evac]').forEach(function(x){x.classList.toggle('on',!!S.meta.evac)})}
 function setView(id){
  S.meta.only=id||null;S.sel=null;S.ms=[];renderViewSel();renderSelbar();if(S.meta.only)fitAll();saveLocal();renderPanel();draw();
  toast(id?'Showing internals of '+layoutOf(id).name+' only':'Showing the whole plan')}
@@ -1252,7 +1325,7 @@ function sheetHTML(){
  var m=S.meta,h='<h4>Title block</h4>';
  h+=fld('m_event','Event name',m.event)+fld('m_title','Drawing title',m.title)+'<div class="row2">'+fld('m_venue','Venue',m.venue)+fld('m_client','Client',m.client)+'</div><div class="row3">'+fld('m_date','Date',m.date)+fld('m_rev','Revision',m.rev)+fld('m_drawn','Drawn by',m.drawn)+'</div>'+fld('m_ref','Reference no.',m.ref)+(isAdmin()?fld('m_company','Company name (watermark &amp; title block)',m.company):'<p class="note">Company name, logo and footer are fixed to '+esc(BRAND_NAME)+' on every sheet.</p>');
  if(isAdmin())h+='<div class="btns"><button class="btn sm" data-act="logo">'+(m.logo?'Replace logo':'Upload logo')+'</button>'+(m.logo?'<button class="btn sm dng" data-act="nologo">Remove logo</button>':'')+'</div>';
- h+='<h4>Event logo</h4><p class="note">Shown at the top of the right-hand panel on the sheet, above the event details. A PNG with a transparent background works best.</p><div class="btns"><button class="btn sm pri" data-act="elogo">'+(m.eventLogo?'Replace event logo':'Upload event logo')+'</button>'+(m.eventLogo?'<button class="btn sm dng" data-act="noelogo">Remove</button>':'')+'</div>';
+ h+='<h4>Event logo</h4><p class="note">Shown at the top of the right-hand panel on the sheet, above the event details. Any image or PDF works (PNG, JPG, SVG, WebP, GIF, PDF…); a transparent PNG looks best.</p><div class="btns"><button class="btn sm pri" data-act="elogo">'+(m.eventLogo?'Replace event logo':'Upload event logo')+'</button>'+(m.eventLogo?'<button class="btn sm dng" data-act="noelogo">Remove</button>':'')+'</div>';
  h+='<h4>Sheet</h4><div class="row2"><label class="fld">Paper<select id="m_paper">'+Object.keys(PAPER).concat(['Custom']).map(function(k){return '<option'+(m.paper===k?' selected':'')+'>'+k+'</option>'}).join('')+'</select></label><label class="fld">Scale<select id="m_scale"><option value="auto"'+(m.scale==='auto'?' selected':'')+'>Auto-fit</option>'+SCALES.map(function(s){return '<option value="'+s+'"'+(String(m.scale)===String(s)?' selected':'')+'>1 : '+s+'</option>'}).join('')+'<option value="custom"'+(m.scale==='custom'?' selected':'')+'>Custom…</option></select></label></div>';
  if(m.paper==='Custom')h+='<div class="row2">'+fld('m_pw','Sheet width (mm)',m.pw||420,'number','min="60" step="1"')+fld('m_ph','Sheet height (mm)',m.ph||297,'number','min="60" step="1"')+'</div>';
  if(m.scale==='custom')h+=fld('m_scalec','Custom scale — 1 :',m.scaleC||500,'number','min="1" step="any"');
@@ -1344,9 +1417,9 @@ function act(a){
  else if(a==='dup')dupSel();else if(a==='del')delSel();else if(a==='arr')arraySel();
  else if(a==='addsym')addSymbol();
  else if(a==='addsat')pickLayer('sat');else if(a==='addplan')pickLayer('plan');
- else if(a==='logo'){pickFile('image/*',function(f){var r=new FileReader();r.onload=function(){S.meta.logo=r.result;S.logoImg=null;saveLocal();renderPanel();toast('Logo added')};r.readAsDataURL(f)})}
+ else if(a==='logo'){pickFile(ANYIMG,function(f){fileToLogo(f,function(d){S.meta.logo=d;S.logoImg=null;saveLocal();renderPanel();draw();toast('Logo added')})})}
  else if(a==='nologo'){S.meta.logo=null;S.logoImg=null;saveLocal();renderPanel()}
- else if(a==='elogo'){pickFile('image/*',function(f){var r=new FileReader();r.onload=function(){S.meta.eventLogo=r.result;delete IMGC[r.result];saveLocal();renderPanel();toast('Event logo added')};r.readAsDataURL(f)})}
+ else if(a==='elogo'){pickFile(ANYIMG,function(f){fileToLogo(f,function(d){S.meta.eventLogo=d;saveLocal();renderPanel();draw();toast('Event logo added')})})}
  else if(a==='noelogo'){S.meta.eventLogo=null;saveLocal();renderPanel()}
  else if(a==='autonum')autoNumber();
  else if(a==='newlay')newLayout();
