@@ -56,3 +56,25 @@ The app is now served only to signed-in users.
 Upload the whole folder to GitHub (keep the `api`, `private` and `public` folders and `vercel.json`). Vercel redeploys on its own. Existing accounts, plans and images in Neon are untouched.
 
 Note: branding is locked in the app's interface. It stops staff changing it by accident or habit, not a determined technical user.
+
+## Exhibition / indoor plans, event logo and footer
+
+- **Sheet tab → Plan type & grid**: choose *Indoor / exhibition*, set a grid module (e.g. 3 m). The grid shows on screen and prints on the sheet with lettered columns (A, B, C…) and numbered rows (1, 2, 3…) so there are grid lines between stands. Turn printing/labels off there if not wanted. The Measure tool still works anywhere.
+- **Library → Exhibition**: stands (3×3, 6×3, 6×6, 9×6, island 9×9), columns, registration desk, lounge, storage. Stands lock to grid corners when placed. **Number the stands** (Sheet tab) numbers them row by row.
+- **Shade cloth** is now a plain solid black line. A line-style selector appears in the toolbar when the Fence tool is active.
+- **Event logo**: Sheet tab → Upload event logo. It prints at the top of the right-hand panel with the event details below it.
+- **Footer**: logos and company details come from `public/brand.json`. Put your logo files in `public/` (`impi-logo.png`, `logo-2.png`, `logo-3.png`; missing files are skipped) and replace every `[PLACEHOLDER]` in `brand.json` before issuing plans.
+
+## Internal layouts (tent / VIP area)
+
+1. Draw the outline with **Line / fence → Plain black line** (a thin black line, also closable).
+2. Select it, then in the toolbar View box choose **+ New internal layout…** and name it. The outline joins the layout.
+3. You are now in "Internals only": the aerial underlay and the rest of the site are hidden, new items belong to that layout, and Fit/legend/scale/export use only that layout (sheet title shows "<name> – internal layout").
+4. Switch the View box back to **Whole plan** to see everything together. Sheet tab → Internal layouts has rename, delete, and add/remove selected items.
+
+## Safety sign images and evacuation plan
+
+- Assembly point, hose reel, fire extinguisher, first aid, no smoking and emergency exit signs now use the supplied sign artwork (embedded in the app, no extra files). A mirrored exit sign is available. The Defibrillator (AED) sign was removed; it belongs to the medical tent. Older plans containing an AED sign simply no longer draw it.
+- **Evacuation** (toolbar button, or Sheet tab → Emergency evacuation) switches to the separate emergency evacuation plan: structures fade, and exits, assembly point, first aid and fire equipment stand out.
+- **Generate evacuation routes** draws green arrowed routes from every zone, tent, stage, stall and stand to its nearest exit (Exit / Emergency exit / Entrance doors; exit signs if there are no doors), routing around structures, walls and fences, then on to the Assembly point sign if one is placed. Re-run it after changing the layout; Clear routes removes them. Routes only appear in the evacuation plan and export as their own sheet ("EMERGENCY EVACUATION PLAN"). Works inside internal layouts too.
+- Routes are shortest clear walking paths, indicative only. Verify exit widths and capacity.
