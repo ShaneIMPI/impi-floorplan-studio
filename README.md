@@ -49,7 +49,7 @@ The app is now served only to signed-in users.
 - `public/index.html` is the **sign-in page** (first run: it asks you to create the administrator account).
 - `private/app.html` is the **real app**. It is never served as a static file. `api/app.js` checks the session cookie and only then returns it at `/app`. No cookie = redirect to the sign-in page.
 - `vercel.json` rewrites `/app` to `/api/app` and bundles the `private/` folder into the function.
-- **Company name, logo and watermark** are fixed to "IMPI Protection Agency" for staff accounts. Only the administrator sees the company-name and logo controls.
+- **Company name, logo and watermark** are fixed to "IMPI RMS" for staff accounts. Only the administrator sees the company-name and logo controls.
 - **Logo:** add your logo file as `public/impi-logo.png`. It appears on the sign-in page and in every exported title block. Without it the title block shows the company name as text.
 
 ### Deploy
@@ -95,3 +95,9 @@ Note: branding is locked in the app's interface. It stops staff changing it by a
 
 - Stages, screens, stalls, stands, marquees/tents, bars, FOH, registration desk, first aid, JOC and toilets now show an **orange front edge** (the stage style). Change it per item in Selected → Front side (Top/Right/Bottom/Left/None/Default). Toggle all of them in Sheet tab → "Show the orange front edge".
 - Select one or many structures, then use **Face up/right/down/left**, **Face towards a point / structure…** (tap the stage and every selected item turns to face it) or **Match the first selected**. The front edge, not the shape, is what gets aimed.
+
+## Footer, name and watermark (update)
+
+- The sheet footer is **fixed in the app** (not editable by staff): IMPI RMS, 10 Kosmos Crescent, Rynoue AH, Roodeplaat, Tel 012 543 0640, info@impi-secure.co.za, www.impi-secure.co.za, "Event Safety & Security". No PSIRA or registration number. To change it, edit `BRAND_FOOT` near the top of `private/app.html`. `public/brand.json` is no longer used.
+- The footer shows the logo file `public/impi-logo.png`.
+- The diagonal watermark is **off by default**. Sheet tab → "Add a diagonal draft watermark" turns it on for drafts.

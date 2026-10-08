@@ -134,7 +134,7 @@ input[type=range]{width:100%}
 <body>
 <div id="app">
  <header>
-  <div class="brand"><b id="brandName">IMPI Protection Agency</b><span>FloorPlan Studio</span></div>
+  <div class="brand"><b id="brandName">IMPI RMS</b><span>FloorPlan Studio</span></div>
   <div class="hs"></div>
   <button class="btn" id="bPanel">Panel</button>
   <button class="btn pri" id="bExport">Export</button>
@@ -181,17 +181,17 @@ function fm(v){return fmt(v)+' m'}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]})}
 function today(){return new Date().toISOString().slice(0,10)}
 var DIMCOL='#b42318', INK='#22313d';
-var BRAND_NAME='IMPI Protection Agency',BRAND_LOGO='/impi-logo.png';
+var BRAND_NAME='IMPI RMS',BRAND_LOGO='/impi-logo.png';
 function isAdmin(){return !!(S&&S.cloud&&S.cloud.user&&S.cloud.user.role==='admin')}
-function enforceBrand(){if(!isAdmin())S.meta.company=BRAND_NAME}
+function enforceBrand(){if(!isAdmin()||/^IMPI Protection Agency/i.test(S.meta.company||''))S.meta.company=BRAND_NAME}
 var BRAND_CFG=null,IMGC={};
-function loadBrand(){var d={name:BRAND_NAME,logos:[BRAND_LOGO],lines:[BRAND_NAME]};if(BRAND_CFG)return Promise.resolve(BRAND_CFG);if(location.protocol==='file:'){BRAND_CFG=d;return Promise.resolve(d)}
- return fetch('/brand.json',{credentials:'same-origin'}).then(function(r){return r.ok?r.json():d}).catch(function(){return d}).then(function(j){j=j||d;j.logos=Array.isArray(j.logos)?j.logos:d.logos;j.lines=Array.isArray(j.lines)?j.lines:d.lines;BRAND_CFG=j;return j})}
+var BRAND_FOOT=['IMPI RMS','10 Kosmos Crescent, Rynoue AH, Roodeplaat  ·  Tel 012 543 0640  ·  info@impi-secure.co.za  ·  www.impi-secure.co.za','Event Safety & Security'];
+function loadBrand(){BRAND_CFG={name:BRAND_NAME,logos:[BRAND_LOGO],lines:BRAND_FOOT};return Promise.resolve(BRAND_CFG)}
 function loadImgCached(src){if(!src)return Promise.resolve(null);if(IMGC[src]!==undefined)return Promise.resolve(IMGC[src]);return new Promise(function(res){var im=new Image();im.onload=function(){IMGC[src]=im;res(im)};im.onerror=function(){IMGC[src]=null;res(null)};im.src=src})}
 
 /* ---------- state ---------- */
 var S={view:{x:0,y:0,z:10},layers:[],objs:[],sel:null,tool:'select',arm:null,grid:1,issues:[],tmp:null,tab:'lib',nid:1,nl:1,custom:[],calib:null,mv:null,hover:null,snapPt:null,
- meta:{title:'SITE & FLOOR PLAN',event:'[EVENT NAME]',venue:'[VENUE]',client:'[CLIENT]',date:today(),rev:'A',drawn:'[DRAWN BY]',ref:'FP-'+today().replace(/-/g,'')+'-001',company:'IMPI Protection Agency',paper:'A3',scale:'auto',extent:'content',north:0,minAisle:2,bg:true,logo:null,eventLogo:null,showFront:true,only:null,evac:false,gridMinor:1,gridShow:true,evAlt:true,evEntr:true,layouts:[],mode:'outdoor',gridMod:0,gridPrint:true,gridLabels:true,gx:0,gy:0}};
+ meta:{title:'SITE & FLOOR PLAN',event:'[EVENT NAME]',venue:'[VENUE]',client:'[CLIENT]',date:today(),rev:'A',drawn:'[DRAWN BY]',ref:'FP-'+today().replace(/-/g,'')+'-001',company:'IMPI RMS',paper:'A3',scale:'auto',extent:'content',north:0,minAisle:2,bg:true,logo:null,eventLogo:null,showFront:true,watermark:false,only:null,evac:false,gridMinor:1,gridShow:true,evAlt:true,evEntr:true,layouts:[],mode:'outdoor',gridMod:0,gridPrint:true,gridLabels:true,gx:0,gy:0}};
 var hist=[],redoS=[];
 var R={z:1,u:1};
 function px(v){return v*R.u/R.z}
@@ -1250,14 +1250,14 @@ function layHTML(){
 }
 function sheetHTML(){
  var m=S.meta,h='<h4>Title block</h4>';
- h+=fld('m_event','Event name',m.event)+fld('m_title','Drawing title',m.title)+'<div class="row2">'+fld('m_venue','Venue',m.venue)+fld('m_client','Client',m.client)+'</div><div class="row3">'+fld('m_date','Date',m.date)+fld('m_rev','Revision',m.rev)+fld('m_drawn','Drawn by',m.drawn)+'</div>'+fld('m_ref','Reference no.',m.ref)+(isAdmin()?fld('m_company','Company name (watermark &amp; title block)',m.company):'<p class="note">Company name, logo and watermark are fixed to '+esc(BRAND_NAME)+' on every sheet.</p>');
+ h+=fld('m_event','Event name',m.event)+fld('m_title','Drawing title',m.title)+'<div class="row2">'+fld('m_venue','Venue',m.venue)+fld('m_client','Client',m.client)+'</div><div class="row3">'+fld('m_date','Date',m.date)+fld('m_rev','Revision',m.rev)+fld('m_drawn','Drawn by',m.drawn)+'</div>'+fld('m_ref','Reference no.',m.ref)+(isAdmin()?fld('m_company','Company name (watermark &amp; title block)',m.company):'<p class="note">Company name, logo and footer are fixed to '+esc(BRAND_NAME)+' on every sheet.</p>');
  if(isAdmin())h+='<div class="btns"><button class="btn sm" data-act="logo">'+(m.logo?'Replace logo':'Upload logo')+'</button>'+(m.logo?'<button class="btn sm dng" data-act="nologo">Remove logo</button>':'')+'</div>';
  h+='<h4>Event logo</h4><p class="note">Shown at the top of the right-hand panel on the sheet, above the event details. A PNG with a transparent background works best.</p><div class="btns"><button class="btn sm pri" data-act="elogo">'+(m.eventLogo?'Replace event logo':'Upload event logo')+'</button>'+(m.eventLogo?'<button class="btn sm dng" data-act="noelogo">Remove</button>':'')+'</div>';
  h+='<h4>Sheet</h4><div class="row2"><label class="fld">Paper<select id="m_paper">'+Object.keys(PAPER).concat(['Custom']).map(function(k){return '<option'+(m.paper===k?' selected':'')+'>'+k+'</option>'}).join('')+'</select></label><label class="fld">Scale<select id="m_scale"><option value="auto"'+(m.scale==='auto'?' selected':'')+'>Auto-fit</option>'+SCALES.map(function(s){return '<option value="'+s+'"'+(String(m.scale)===String(s)?' selected':'')+'>1 : '+s+'</option>'}).join('')+'<option value="custom"'+(m.scale==='custom'?' selected':'')+'>Custom…</option></select></label></div>';
  if(m.paper==='Custom')h+='<div class="row2">'+fld('m_pw','Sheet width (mm)',m.pw||420,'number','min="60" step="1"')+fld('m_ph','Sheet height (mm)',m.ph||297,'number','min="60" step="1"')+'</div>';
  if(m.scale==='custom')h+=fld('m_scalec','Custom scale — 1 :',m.scaleC||500,'number','min="1" step="any"');
  h+='<div class="row2"><label class="fld">Plot area<select id="m_extent"><option value="content"'+(m.extent==='content'?' selected':'')+'>All drawn items</option><option value="view"'+(m.extent==='view'?' selected':'')+'>Current screen view</option></select></label>'+fld('m_north','North arrow (° clockwise)',m.north,'number','step="1"')+'</div>';
- h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_bg"'+(m.bg?' checked':'')+'> Include aerial / client plan underlay</label>';
+ h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_wm"'+(m.watermark?' checked':'')+'> Add a diagonal draft watermark to the sheet (leave off for submissions)</label><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_bg"'+(m.bg?' checked':'')+'> Include aerial / client plan underlay</label>';
  h+='<h4>Emergency evacuation</h4><p class="note">Place your exits (Doors), assembly point and zones/tents/stands, then press Generate. Green routes run from each area to the nearest exit, around structures and fences, and on to the assembly point. It is a separate plan: toggle it with the Evacuation button, and it exports as its own sheet.</p><div class="btns"><button class="btn sm pri" data-act="evgen">Generate evacuation routes</button><button class="btn sm" data-act="evac">'+(m.evac?'Back to operational plan':'Show evacuation plan')+'</button></div>';
  h+='<h4>Internal layouts (tent, VIP area…)</h4><p class="note">Click a tent, zone or closed outline on the plan and press <b>Internal layout</b> in the bar that appears. Each structure gets its own layout (its own view, grid from its corner, legend, scale and sheet). Switch to that layout to see and draw its internals only, with its own legend, scale and sheet. Switch back to Whole plan to see everything together.</p>';
  var LY=m.layouts||[];
@@ -1300,6 +1300,7 @@ function wirePanel(b){
   var me=$('#m_extent',b);if(me)me.onchange=function(){S.meta.extent=me.value;saveLocal()};
   var mn=$('#m_north',b);if(mn)mn.onchange=function(){S.meta.north=parseFloat(mn.value)||0;saveLocal()};
   var ma=$('#m_aisle',b);if(ma)ma.onchange=function(){S.meta.minAisle=Math.max(.1,parseFloat(ma.value)||2);saveLocal()};
+  var mw=$('#m_wm',b);if(mw)mw.onchange=function(){S.meta.watermark=mw.checked;saveLocal()};
   var mb=$('#m_bg',b);if(mb)mb.onchange=function(){S.meta.bg=mb.checked;saveLocal()};
   var mv0=$('#m_view',b);if(mv0)mv0.onchange=function(){setView(mv0.value)};
   var mm0=$('#m_mode',b);if(mm0)mm0.onchange=function(){S.meta.mode=mm0.value;if(mm0.value==='indoor'&&!(S.meta.gridMod>0)){S.meta.gridMod=3;setSnap(3)}saveLocal();renderPanel();draw()};
@@ -1491,11 +1492,11 @@ async function renderSheet(){
    var tx=lx+(flogos.length?3:0),tw1=(P.w-M-4)-tx,nl=Math.min(4,flines.length);
    if(nl&&tw1>40){var fs=Math.min(3*kk,(FH-4)/(nl*1.35));flines.slice(0,4).forEach(function(ln,i){var sz=fs;c.font=fontStr(mm(sz),i===0);while(c.measureText(ln).width>mm(tw1)&&sz>1.4){sz-=.1;c.font=fontStr(mm(sz),i===0)}T(ln,tx,fy+FH/2-(nl-1)*fs*.675+i*fs*1.35+fs*.34,sz,{bold:i===0,col:i===0?ink:'#33444f'})})}
   }
- /* watermark */
- c.save();c.globalAlpha=.075;c.fillStyle='#0b3d6b';var wt=((m.company||'')+'  ·  '+(m.ref||'')).toUpperCase(),wsz=mm(6.5*kk);c.font=fontStr(wsz,true);c.textAlign='center';c.textBaseline='middle';
+ /* watermark (optional, off by default) */
+ if(m.watermark){ c.save();c.globalAlpha=.075;c.fillStyle='#0b3d6b';var wt=((m.company||'')+'  ·  '+(m.ref||'')).toUpperCase(),wsz=mm(6.5*kk);c.font=fontStr(wsz,true);c.textAlign='center';c.textBaseline='middle';
  var tw0=c.measureText(wt).width,stepX=tw0+mm(40*kk),stepY=mm(42*kk);c.translate(W/2,H/2);c.rotate(-28*D2R);
  for(var yy=-H;yy<H;yy+=stepY){var off=(Math.round(yy/stepY)%2)*stepX/2;for(var xx=-W-stepX;xx<W+stepX;xx+=stepX)c.fillText(wt,xx+off,yy)}
- c.restore();
+ c.restore();}
  return {canvas:cx,N:N,P:P};
 }
 async function exportSheet(kind){
