@@ -78,3 +78,8 @@ Note: branding is locked in the app's interface. It stops staff changing it by a
 - **Evacuation** (toolbar button, or Sheet tab → Emergency evacuation) switches to the separate emergency evacuation plan: structures fade, and exits, assembly point, first aid and fire equipment stand out.
 - **Generate evacuation routes** draws green arrowed routes from every zone, tent, stage, stall and stand to its nearest exit (Exit / Emergency exit / Entrance doors; exit signs if there are no doors), routing around structures, walls and fences, then on to the Assembly point sign if one is placed. Re-run it after changing the layout; Clear routes removes them. Routes only appear in the evacuation plan and export as their own sheet ("EMERGENCY EVACUATION PLAN"). Works inside internal layouts too.
 - Routes are shortest clear walking paths, indicative only. Verify exit widths and capacity.
+
+## Evacuation routing and 1 m grid (update)
+
+- Routes now start at the edge of each tent/stage/stall/stand (not its centre), go to the **nearest exit and an alternate (second-nearest, dashed)**, then on to the assembly point. Big zones that just contain other structures are skipped. Options in the evacuation bar: alternate route on/off, entrances count as exits on/off.
+- Fine grid every **1 m** (Sheet tab → Plan type & grid), drawn over the aerial and printed when it is legible at the sheet scale. Stand module lines (e.g. 3 m) are bolder and carry the A/B/C, 1/2/3 labels. Default snap is now 1 m.
