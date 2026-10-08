@@ -191,7 +191,7 @@ function loadImgCached(src){if(!src)return Promise.resolve(null);if(IMGC[src]!==
 
 /* ---------- state ---------- */
 var S={view:{x:0,y:0,z:10},layers:[],objs:[],sel:null,tool:'select',arm:null,grid:1,issues:[],tmp:null,tab:'lib',nid:1,nl:1,custom:[],calib:null,mv:null,hover:null,snapPt:null,
- meta:{title:'SITE & FLOOR PLAN',event:'[EVENT NAME]',venue:'[VENUE]',client:'[CLIENT]',date:today(),rev:'A',drawn:'[DRAWN BY]',ref:'FP-'+today().replace(/-/g,'')+'-001',company:'IMPI Protection Agency',paper:'A3',scale:'auto',extent:'content',north:0,minAisle:2,bg:true,logo:null,eventLogo:null,only:null,evac:false,gridMinor:1,gridShow:true,evAlt:true,evEntr:true,layouts:[],mode:'outdoor',gridMod:0,gridPrint:true,gridLabels:true,gx:0,gy:0}};
+ meta:{title:'SITE & FLOOR PLAN',event:'[EVENT NAME]',venue:'[VENUE]',client:'[CLIENT]',date:today(),rev:'A',drawn:'[DRAWN BY]',ref:'FP-'+today().replace(/-/g,'')+'-001',company:'IMPI Protection Agency',paper:'A3',scale:'auto',extent:'content',north:0,minAisle:2,bg:true,logo:null,eventLogo:null,showFront:true,only:null,evac:false,gridMinor:1,gridShow:true,evAlt:true,evEntr:true,layouts:[],mode:'outdoor',gridMod:0,gridPrint:true,gridLabels:true,gx:0,gy:0}};
 var hist=[],redoS=[];
 var R={z:1,u:1};
 function px(v){return v*R.u/R.z}
@@ -418,6 +418,14 @@ function drawSign(c,k,s){
 }
 
 /* ---------- items ---------- */
+var FRSH={stage:1,screen:1,stall:1,stand:1,tent:1,wc:1},FRKEY={bar:1,foh:1,regdesk:1,faid:1,joc:1,toilet:1,storage:1};
+var SIDEANG={n:-90,e:0,s:90,w:180};
+function frontSide(o){if(o.fr!==undefined)return o.fr;var L=LIBM[o.k]||{};return (FRSH[L.s]||FRKEY[o.k])?'s':'none'}
+function drawFront(c,o,L,w,h,lw){
+ if(S.meta.showFront===false)return;var f=frontSide(o);if(!f||f==='none')return;
+ c.save();c.strokeStyle='#e8590c';c.lineWidth=Math.min(lw*3.2,Math.min(w,h)*.25);c.lineCap='butt';c.beginPath();
+ if(f==='s'){c.moveTo(-w/2,h/2);c.lineTo(w/2,h/2)}else if(f==='n'){c.moveTo(-w/2,-h/2);c.lineTo(w/2,-h/2)}else if(f==='e'){c.moveTo(w/2,-h/2);c.lineTo(w/2,h/2)}else{c.moveTo(-w/2,-h/2);c.lineTo(-w/2,h/2)}
+ c.stroke();c.restore()}
 function drawItem(c,o,ic){
  var L=LIBM[o.k]||{s:'plain'},w=o.w,h=o.h,s=L.s,lw=px(1.3*(o.sw||1)),i,m=Math.min(w,h);
  c.lineWidth=lw;c.strokeStyle=INK;c.lineJoin='round';
@@ -429,7 +437,7 @@ function drawItem(c,o,ic){
  else if(s==='tent'){bx('#fbfaf5');var q=m*.05;c.lineWidth=lw*.6;c.strokeRect(-w/2+q,-h/2+q,w-2*q,h-2*q);c.strokeStyle='#8a97a1';c.beginPath();c.moveTo(-w/2,-h/2);c.lineTo(w/2,h/2);c.moveTo(w/2,-h/2);c.lineTo(-w/2,h/2);c.stroke()}
  else if(s==='bedouin'){bx('#f0e2c4');var q2=m*.1;c.lineWidth=lw*.7;c.setLineDash([px(6),px(4)]);c.strokeRect(-w/2+q2,-h/2+q2,w-2*q2,h-2*q2);c.setLineDash([]);c.fillStyle=INK;[[-1,-1],[1,-1],[1,1],[-1,1],[0,0]].forEach(function(p){c.beginPath();c.arc(p[0]*(w/2-q2),p[1]*(h/2-q2),Math.max(m*.022,px(1.6)),0,TAU);c.fill()})}
  else if(s==='snow'){bx('#e8f0e0');c.strokeStyle='#8a97a1';c.lineWidth=lw*.6;c.beginPath();c.moveTo(-w/2,-h/2);c.lineTo(w/2,h/2);c.moveTo(w/2,-h/2);c.lineTo(-w/2,h/2);c.stroke();c.strokeStyle=INK;c.lineWidth=lw;c.beginPath();c.arc(0,0,m*.12,0,TAU);c.fillStyle='#fff';c.fill();c.stroke()}
- else if(s==='stage'){bx('#34424e');c.save();c.beginPath();c.rect(-w/2,-h/2,w,h);c.clip();c.strokeStyle='rgba(255,255,255,.14)';c.lineWidth=lw*.8;var st=px(9);c.beginPath();for(var x=-w/2-h;x<w/2+h;x+=st){c.moveTo(x,h/2);c.lineTo(x+h,-h/2)}c.stroke();c.restore();c.strokeStyle='#e8590c';c.lineWidth=lw*3.2;c.beginPath();c.moveTo(-w/2,h/2);c.lineTo(w/2,h/2);c.stroke()}
+ else if(s==='stage'){bx('#34424e');c.save();c.beginPath();c.rect(-w/2,-h/2,w,h);c.clip();c.strokeStyle='rgba(255,255,255,.14)';c.lineWidth=lw*.8;var st=px(9);c.beginPath();for(var x=-w/2-h;x<w/2+h;x+=st){c.moveTo(x,h/2);c.lineTo(x+h,-h/2)}c.stroke();c.restore()}
  else if(s==='screen'){c.fillStyle='#111';c.beginPath();c.rect(-w/2,-h/2,w,h);c.fill();c.stroke()}
  else if(s==='stall'){bx('#fde8d2');c.lineWidth=lw*.7;c.beginPath();c.moveTo(-w/2,h*.22);c.lineTo(w/2,h*.22);c.stroke()}
  else if(s==='wc'){bx('#d6e6f4');if(!ic&&!o.label&&m*R.z/R.u>16)txt(c,'WC',0,0,Math.min(11,m*R.z/R.u*.5),{halo:false,col:'#12202b',rot:-o.rot*D2R})}
@@ -438,6 +446,7 @@ function drawItem(c,o,ic){
  else if(s==='column'){bx('#44525e');c.strokeStyle='#fff';c.lineWidth=lw*.8;c.beginPath();c.moveTo(-w/2,-h/2);c.lineTo(w/2,h/2);c.moveTo(w/2,-h/2);c.lineTo(-w/2,h/2);c.stroke()}
  else if(s==='img'){var im=L.im;if(im&&im.complete){c.drawImage(im,-w/2,-h/2,w,h)}else{bx('#eee')}}
  else{bx(L.f||'#e6ebef')}
+ drawFront(c,o,L,w,h,lw);
  var lab=o.label;
  if(!ic&&lab){labelBox(c,o,lab,w,h,{dark:(s==='stage'||s==='screen'),max:16}); }
 }
@@ -607,6 +616,10 @@ function renderViewSel(){
  var el=$('#viewSel');if(!el)return;var L=S.meta.layouts||[];
  el.innerHTML='<option value="">Whole plan</option>'+L.map(function(l){return '<option value="'+l.id+'">Internals: '+esc(l.name)+'</option>'}).join('')+'<option value="__new">+ New internal layout…</option>';
  el.value=S.meta.only||'';el.classList.toggle('on',true);syncLay()}
+function faceTo(angFn){
+ var T=selObjs().filter(function(o){return o.t==='rect'});if(!T.length){toast('Select structures first');return}
+ snapH();T.forEach(function(o){var a=angFn(o);if(a==null||isNaN(a))return;var sd=frontSide(o);if(sd==='none'){o.fr='s';sd='s'}o.rot=(((a-SIDEANG[sd])%360)+360)%360});
+ changed(true);toast(T.length+' structure(s) turned so the orange front edge faces that way')}
 function canHost(o){return !!o&&(o.t==='rect'||o.t==='area'||o.t==='poly'||(o.t==='line'&&o.closed))}
 function layoutForObj(o){
  if(!canHost(o)){toast('Select a tent, zone, shape or closed outline first');return}
@@ -902,7 +915,7 @@ var ptrs={},drag=null,pinch=null,spaceDown=false,lastTapT=0;
 function rectOf(e){var r=cv.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
 function setHint(t){var h=$('#hint');if(t){h.textContent=t;h.classList.add('on')}else h.classList.remove('on')}
 function toolHint(){
- var t=S.tool,m={select:'',pan:'Drag to move around the plan',dim:'Drag from one point to another to measure',area:'Drag to draw a zone or tent footprint — size shows automatically',line:'Tap points to draw a fence or barrier, then tap Finish',poly:'Tap each corner of the zone. Tap the first point again, or Finish, to close it',marq:'Drag a box around objects to select them. Left to right = fully inside, right to left = touching',text:'Tap where the note should go',calib:S.calib?(S.calib.pts.length?'Tap the second point':'Tap the first point of a known distance'):'',layermove:'Drag to slide the image. Pinch to resize and twist it. Tap Done when lined up.',place:'Tap on the plan to place it'};
+ var t=S.tool,m={select:'',facept:'Tap the stage, structure or point the selected items should face',pan:'Drag to move around the plan',dim:'Drag from one point to another to measure',area:'Drag to draw a zone or tent footprint — size shows automatically',line:'Tap points to draw a fence or barrier, then tap Finish',poly:'Tap each corner of the zone. Tap the first point again, or Finish, to close it',marq:'Drag a box around objects to select them. Left to right = fully inside, right to left = touching',text:'Tap where the note should go',calib:S.calib?(S.calib.pts.length?'Tap the second point':'Tap the first point of a known distance'):'',layermove:'Drag to slide the image. Pinch to resize and twist it. Tap Done when lined up.',place:'Tap on the plan to place it'};
  setHint(m[t]||'');
 }
 function setTool(t,arm){
@@ -982,6 +995,7 @@ function onDown(e,p){
  if(t==='area'||t==='dim'){var q=snapW(w);drag={k:'draw',t:t,a:q};S.tmp={t:t,a:q,b:q};draw();return}
  if(t==='line'||t==='poly'){drag={k:'linetap',sx:p.x,sy:p.y};return}
  if(t==='text'){drag={k:'texttap',sx:p.x,sy:p.y,w:snapW(w,null,true)};return}
+ if(t==='facept'){drag={k:'facepttap',sx:p.x,sy:p.y};return}
  if(t==='calib'){drag={k:'calibtap',sx:p.x,sy:p.y};return}
  if(t==='layermove'){var L=S.layers.filter(function(l){return l.id===S.mv})[0];if(L)drag={k:'layer',L:L,w0:w,x0:L.x,y0:L.y};return}
 }
@@ -1016,7 +1030,7 @@ function onMove(e,p){
  if(d.k==='marq'){S.tmp.b=w;draw();return}
  if(d.k==='draw'){var q2=snapW(w);S.tmp.b=q2;draw();return}
  if(d.k==='layer'){d.L.x=d.x0+(w.x-d.w0.x);d.L.y=d.y0+(w.y-d.w0.y);draw();return}
- if(d.k==='linetap'||d.k==='texttap'||d.k==='calibtap'){if(Math.hypot(p.x-d.sx,p.y-d.sy)>8){drag={k:'pan',sx:d.sx,sy:d.sy,vx:S.view.x-(p.x-d.sx)+(p.x-d.sx),vy:S.view.y,moved:true};drag.sx=p.x;drag.sy=p.y;drag.vx=S.view.x;drag.vy=S.view.y}}
+ if(d.k==='linetap'||d.k==='texttap'||d.k==='calibtap'||d.k==='facepttap'){if(Math.hypot(p.x-d.sx,p.y-d.sy)>8){drag={k:'pan',sx:d.sx,sy:d.sy,vx:S.view.x-(p.x-d.sx)+(p.x-d.sx),vy:S.view.y,moved:true};drag.sx=p.x;drag.sy=p.y;drag.vx=S.view.x;drag.vy=S.view.y}}
 }
 function onUp(e){
  var d=drag;drag=null;S.snapPt=null;
@@ -1048,6 +1062,10 @@ function onUp(e){
   S.tmp.pts.push(q);S.snapPt=null;$('#doneBtn').classList.toggle('on',S.tmp.pts.length>1);draw();return;
  }
  if(d.k==='texttap'){var wp=d.w;ask('Add note / label',[{l:'Text',v:''}],function(v){if(v[0].trim())addObj({t:'text',x:wp.x,y:wp.y,text:v[0].trim(),size:14,rot:0});setTool('select')});return}
+ if(d.k==='facepttap'){
+  var fw=s2w(p),hit=hitTest(fw),tg=fw;if(hit&&hit.t!=='line'&&hit.t!=='dim'){if(hit.t==='poly'){var pb=boundsOf(hit);tg={x:(pb.x0+pb.x1)/2,y:(pb.y0+pb.y1)/2}}else tg={x:hit.x,y:hit.y}}
+  var ids2=S.fpIds||[];S.fpIds=null;setTool('select');setSel(ids2);
+  faceTo(function(o){if(hit&&hit.id===o.id)return null;return Math.atan2(tg.y-o.y,tg.x-o.x)/D2R});renderPanel();return}
  if(d.k==='calibtap'){
   var qq=snapW(s2w(p),null,false);S.calib.pts.push({x:qq.x,y:qq.y});toolHint();
   if(S.calib.pts.length===2){var a=S.calib.pts[0],b=S.calib.pts[1],dist=Math.hypot(b.x-a.x,b.y-a.y),L2=S.layers.filter(function(l){return l.id===S.calib.id})[0];
@@ -1184,6 +1202,7 @@ function selHTML(o){
   if(o.t==='poly')h+='<p class="note">Drag a round handle to move a corner. Drag a diamond to add a corner. Double-tap a corner to remove it.</p>';
  }
  if(o.t==='rect')h+='<div class="row2">'+pf('fc','Fill colour',o.fc||'#e6ebef','color')+pf('sw','Outline weight ×',o.sw||1,'number','step="0.1" min="0.1"')+'</div><div class="btns"><button class="btn sm" data-act="rst:fc">Standard fill</button></div>';
+ if(o.t==='rect')h+='<h4>Front (orange edge)</h4>'+psel('fr','Front side',[['auto','Default for this item'],['none','No front'],['n','Top'],['e','Right'],['s','Bottom'],['w','Left']],o.fr===undefined?'auto':o.fr)+frontBtns();
  if(o.t==='line'){h+=psel('style','Style',LINES.map(function(l){return [l.k,l.n]}),o.style||'fence')+'<div class="row2">'+pf('col','Colour',o.col||'#22313d','color')+pf('wt','Weight ×',o.wt||1,'number','step="0.1" min="0.1"')+'</div><div class="btns"><button class="btn sm" data-act="rst:col">Standard colour</button></div>'+pchk('closed','Close the shape (perimeter)',o.closed)+'<div class="note">Total length: <b>'+fm(lineLen(o))+'</b></div><p class="note">Drag a round handle to move a point, a diamond to add one, double-tap a point to remove it.</p>'}
  if(o.t==='dim')h+='<div class="note">Length: <b>'+fm(Math.hypot(o.b.x-o.a.x,o.b.y-o.a.y))+'</b></div>'+pf('label','Custom label (optional)',o.label||'','text')+'<p class="note">Drag the middle handle to move the dimension line out or in.</p>';
  h+='<div class="row2">'+pchk('lk','Lock position',o.lk)+pchk('hd','Hide',o.hd)+'</div>'+zbtns();
@@ -1193,9 +1212,11 @@ function selHTML(o){
  h+='<button class="btn sm dng" data-act="del">Delete</button></div>';
  return h;
 }
+function frontBtns(){return '<div class="btns"><button class="btn sm" data-act="face:u">Face up ↑</button><button class="btn sm" data-act="face:r">Face right →</button><button class="btn sm" data-act="face:d">Face down ↓</button><button class="btn sm" data-act="face:l">Face left ←</button></div><div class="btns"><button class="btn sm pri" data-act="facept">Face towards a point / structure…</button><button class="btn sm" data-act="facematch">Match the first selected</button></div>'}
 function multiHTML(){
  var a=selObjs(),h='<h4>'+a.length+' objects selected</h4><p class="note">Drag any selected object to move them all together. Shift-click adds or removes one. Arrow keys nudge.</p>';
  h+='<h4>Align</h4><div class="btns"><button class="btn sm" data-act="aln_l">Left</button><button class="btn sm" data-act="aln_cx">Centre</button><button class="btn sm" data-act="aln_r">Right</button><button class="btn sm" data-act="aln_t">Top</button><button class="btn sm" data-act="aln_cy">Middle</button><button class="btn sm" data-act="aln_b">Bottom</button></div>';
+ h+='<h4>Front (orange edge)</h4><p class="note">Turn all selected structures so their front edge faces the same way, or towards a stage or point.</p>'+frontBtns();
  h+='<h4>Spread evenly</h4><div class="btns"><button class="btn sm" data-act="aln_dh">Across</button><button class="btn sm" data-act="aln_dv">Down</button></div>';
  h+=psel('lm','Label direction for all',[['','— leave as is —']].concat(LM_OPTS),'')+'<div class="row2">'+pchk('lk','Lock all',false)+pchk('hd','Hide all',false)+'</div>'+zbtns();
  h+='<div class="btns"><button class="btn sm" data-act="dup">Duplicate</button><button class="btn sm" data-act="copy">Copy</button><button class="btn sm" data-act="paste">Paste</button><button class="btn sm dng" data-act="del">Delete</button></div>';
@@ -1245,6 +1266,7 @@ function sheetHTML(){
  h+='<h4>Plan type &amp; grid</h4><label class="fld">Plan type<select id="m_mode"><option value="outdoor"'+(m.mode!=='indoor'?' selected':'')+'>Outdoor event</option><option value="indoor"'+(m.mode==='indoor'?' selected':'')+'>Indoor / exhibition</option></select></label>';
  h+='<div class="row3">'+fld('m_gmod','Stand module (m, 0 = off)',m.gridMod||0,'number','min="0" step="any"')+fld('m_gmin','Fine grid every (m, 0 = off)',m.gridMinor===undefined?1:m.gridMinor,'number','min="0" step="any"')+fld('m_gx','Grid starts X (m)',m.gx||0,'number','step="any"')+fld('m_gy','Grid starts Y (m)',m.gy||0,'number','step="any"')+'</div>';
  h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_gshow"'+(m.gridShow!==false?' checked':'')+'> Show the fine grid on the plan (over the aerial)</label><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_gprint"'+(m.gridPrint!==false?' checked':'')+'> Print the grid on the sheet</label><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_glab"'+(m.gridLabels!==false?' checked':'')+'> Letter the columns (A, B, C…) and number the rows (1, 2, 3…)</label><p class="note">Fine grid = every metre by default, so counting blocks gives the gap (3 open blocks = 3 m aisle). The module lines are bolder and carry the A/B/C and 1/2/3 labels. Exhibition tip: set the module to your stand size (for example 3 m). Stands from the Library then lock to the grid corners and snap follows the module. The Measure tool still works anywhere.</p><div class="btns"><button class="btn sm" data-act="autonum">Number the stands</button></div>';
+ h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_front"'+(m.showFront!==false?' checked':'')+'> Show the orange front edge on structures</label>';
  h+='<h4>Safety checks</h4>'+fld('m_aisle','Minimum aisle / gap (m) — set to your event safety plan standard',m.minAisle,'number','step="0.1" min="0.1"')+'<div class="btns"><button class="btn sm pri" data-act="aisle">Check gaps between items</button>'+(S.issues.length?'<button class="btn sm" data-act="clrissue">Clear markers</button>':'')+'</div>';
  if(S.issues.length){h+='<p class="note">Gaps narrower than the minimum, shown in red on the plan. Round tables are checked as circles.</p>';S.issues.slice(0,12).forEach(function(it,i){h+='<div class="iss" data-iss="'+i+'"><span>'+esc(it.n)+'</span><b>'+fm(it.d)+'</b></div>'})}
  h+='<h4>Legend preview</h4><div id="legBox"></div>';
@@ -1265,7 +1287,7 @@ function wirePanel(b){
    else if(ty==='number'||ty==='range'){v=parseFloat(el.value);if(isNaN(v))return;if(el.dataset.div)v/=+el.dataset.div;if(el.min!==''&&v<+el.min&&!el.dataset.div)v=+el.min}
    else{v=el.value;if(el.tagName==='SELECT'&&v==='')return}
    if(first||!isTxt){snapH();first=false}
-   T.forEach(function(q){q[k]=(k==='rot')?((v%360)+360)%360:v;if(k==='sh'&&v==='rect')delete q.sh});
+   T.forEach(function(q){q[k]=(k==='rot')?((v%360)+360)%360:v;if(k==='sh'&&v==='rect')delete q.sh;if(k==='fr'&&v==='auto')delete q.fr});
    changed();renderSelbar();if(!isTxt)renderPanel();
   }
   el.addEventListener(isTxt?'input':'change',apply);
@@ -1282,6 +1304,7 @@ function wirePanel(b){
   var mv0=$('#m_view',b);if(mv0)mv0.onchange=function(){setView(mv0.value)};
   var mm0=$('#m_mode',b);if(mm0)mm0.onchange=function(){S.meta.mode=mm0.value;if(mm0.value==='indoor'&&!(S.meta.gridMod>0)){S.meta.gridMod=3;setSnap(3)}saveLocal();renderPanel();draw()};
   [['m_gmod','gridMod'],['m_gmin','gridMinor'],['m_gx','gx'],['m_gy','gy']].forEach(function(q){var el=$('#'+q[0],b);if(el)el.onchange=function(){var v=parseFloat(el.value);if(isNaN(v)||((q[1]==='gridMod'||q[1]==='gridMinor')&&v<0))v=0;S.meta[q[1]]=v;if(q[1]==='gridMod'&&v>0)setSnap(v);saveLocal();draw()}});
+  var mf0=$('#m_front',b);if(mf0)mf0.onchange=function(){S.meta.showFront=mf0.checked;saveLocal();draw()};
   var mg0=$('#m_gshow',b);if(mg0)mg0.onchange=function(){S.meta.gridShow=mg0.checked;saveLocal();draw()};
   var mg1=$('#m_gprint',b);if(mg1)mg1.onchange=function(){S.meta.gridPrint=mg1.checked;saveLocal()};
   var mg2=$('#m_glab',b);if(mg2)mg2.onchange=function(){S.meta.gridLabels=mg2.checked;saveLocal();draw()};
@@ -1327,6 +1350,9 @@ function act(a){
  else if(a==='autonum')autoNumber();
  else if(a==='newlay')newLayout();
  else if(a==='evac')setEvac(!S.meta.evac);
+ else if(a.indexOf('face:')===0){var AN={u:-90,r:0,d:90,l:180}[a.slice(5)];faceTo(function(){return AN})}
+ else if(a==='facematch'){var ids=selIds(),first=S.objs.filter(function(q){return q.id===ids[0]})[0];if(!first||first.t!=='rect'){toast('Select several structures; the first one selected sets the direction');return}var ang=first.rot+SIDEANG[frontSide(first)==='none'?'s':frontSide(first)];faceTo(function(){return ang})}
+ else if(a==='facept'){S.fpIds=selIds().slice();if(!S.fpIds.length){toast('Select the structures first');return}setTool('facept');if(matchMedia('(max-width:820px)').matches)closePanel()}
  else if(a==='inlay')layoutForObj(getSel());
  else if(a==='lxpdf')exportAllLayouts('pdf');else if(a==='lxpng')exportAllLayouts('png');
  else if(a==='evgen')genEvac();
@@ -1455,7 +1481,7 @@ async function renderSheet(){
   T(nm,ex+ib+2,ey+rowH/2+nsz*.34,nsz);T(e.q,ex+colW-2,ey+rowH/2+nsz*.34,nsz,{align:'right',col:'#33444f'})});
  var by=P.h-M-FH-bottomH;line(px0,by,px1,by,.4);
  c.font=fontStr(mm(2.1*kk),false);var sat=S.layers.some(function(l){return l.vis&&l.kind==='sat'})&&m.bg;
- var note='All dimensions in metres. Scale applies only when printed at '+m.paper+' at 100%; otherwise use the scale bar. Indicative layout for approval purposes: verify on site before setting out.'+(m.evac?' Evacuation routes are indicative (shortest clear walking path to the nearest exit): confirm exit widths, travel distances and capacity against the approved event safety plan.':'')+(sat?' Aerial imagery © Google and/or third parties.':'');
+ var note='All dimensions in metres. Scale applies only when printed at '+m.paper+' at 100%; otherwise use the scale bar. Indicative layout for approval purposes: verify on site before setting out.'+(m.showFront!==false?' Orange edge = front of the structure.':'')+(m.evac?' Evacuation routes are indicative (shortest clear walking path to the nearest exit): confirm exit widths, travel distances and capacity against the approved event safety plan.':'')+(sat?' Aerial imagery © Google and/or third parties.':'');
  c.fillStyle='#33444f';wrapText(c,note,mm(pw-8)).slice(0,7).forEach(function(s,i){c.textAlign='left';c.textBaseline='alphabetic';c.fillText(s,mm(px0+4),mm(by+5*kk+i*3.1*kk))});
  T((m.ref||'')+'  ·  Rev '+m.rev,px0+4,P.h-M-FH-3*kk,2.2*kk,{bold:true});
   if(FH>0){

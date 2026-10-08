@@ -90,3 +90,8 @@ Note: branding is locked in the app's interface. It stops staff changing it by a
 - A bar at the top of the plan shows **Back to whole plan**, **Download PNG** and **Download PDF** for the layout you are in. Files are named with the layout name.
 - Sheet tab → Internal layouts: **Download all layouts (one PDF, one page each)** or **each as PNG**.
 - Downloads now save directly to the computer's Downloads folder on the deployed site.
+
+## Front (orange edge) and facing
+
+- Stages, screens, stalls, stands, marquees/tents, bars, FOH, registration desk, first aid, JOC and toilets now show an **orange front edge** (the stage style). Change it per item in Selected → Front side (Top/Right/Bottom/Left/None/Default). Toggle all of them in Sheet tab → "Show the orange front edge".
+- Select one or many structures, then use **Face up/right/down/left**, **Face towards a point / structure…** (tap the stage and every selected item turns to face it) or **Match the first selected**. The front edge, not the shape, is what gets aimed.
