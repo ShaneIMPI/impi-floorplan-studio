@@ -107,3 +107,11 @@ Note: branding is locked in the app's interface. It stops staff changing it by a
 - Event logo and admin company logo accept any image (PNG, JPG, SVG, WebP, GIF, BMP, TIFF, HEIC where the browser supports it) or a PDF (first page). Files are downscaled automatically.
 - New library item **Stage & AV → Shade netting (open underneath)**: drawn as light hatched netting, never blocks evacuation routes and is never an evacuation start. Use it instead of a Zone.
 - Evacuation generator: routes follow aisle centres (clearance-weighted, orthogonal), touching stands are grouped into blocks (one route per block), branches merge into shared trunks, and with "use every exit" ticked the blocks are shared out so every exit/entrance is used. Alternate routes were removed.
+
+## Update: satellite map picker
+- **Images tab → + Satellite map** (and the first button on the welcome screen). Search an address/venue, or paste coordinates or a full Google Maps link, pan/zoom so the site is inside the orange frame (it shows the real size in metres), choose Detail, then "Insert this area on the plan". The image is stitched from map tiles and inserted already calibrated (true scale), north up.
+- Sources: **Mapbox Satellite** (sharper; needs a public token) and **Esri World Imagery** (works with no token, max zoom 19).
+- **Mapbox token (recommended):** create a free account at mapbox.com, copy the *public* token (starts `pk.`). In Vercel → Project → Settings → Environment Variables add `MAPBOX_TOKEN` = that token, then redeploy. Optionally, in Mapbox restrict the token to your domain (URL restrictions). Without the variable, any user can click "Add Mapbox token" in the map picker (stored in that browser only).
+- The imagery credit is printed automatically as a line in the sheet footer. Keep it on submissions.
+- Imagery can be months or years old; confirm it matches the site before submitting. Uploading your own aerial/drone image still works (+ Upload aerial).
+- Leaflet 1.9.4 is bundled in `public/vendor/` (BSD licence), no extra CDN needed.

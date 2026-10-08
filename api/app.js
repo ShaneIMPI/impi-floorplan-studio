@@ -18,7 +18,9 @@ export default async function handler(req, res) {
     const u = JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role }).replace(/</g, '\\u003c');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-    return res.status(200).send(html.replace('window.__FPS_USER=null;', 'window.__FPS_USER=' + u + ';'));
+    const mb = (process.env.MAPBOX_TOKEN || '').trim();
+    const cfg = JSON.stringify({ mapbox: /^pk\./.test(mb) ? mb : '' }).replace(/</g, '\\u003c');
+    return res.status(200).send(html.replace('window.__FPS_USER=null;window.__FPS_CFG=null;', 'window.__FPS_USER=' + u + ';window.__FPS_CFG=' + cfg + ';'));
   } catch (e) {
     console.error(e);
     return res.status(500).send('App file missing. Check that the private folder was deployed.');
