@@ -125,6 +125,20 @@ await test('evacuation routes generate', async () => {
   ok(typeof n === 'number' && n > 0, 'no evacuation routes were generated: ' + n);
 });
 
+{ const pg2 = await fresh(); const _p = page; page = pg2; await test('dog-leg exit: square corners, festival size, door at the end', async () => {
+  const r = await page.evaluate(() => {
+    const T = __T; T.S.objs = [{ t: 'line', id: 'w1', pts: [{ x: 0, y: 0 }, { x: 30, y: 0 }, { x: 30, y: 20 }, { x: 0, y: 20 }], closed: true, style: 'fence' }]; T.S.dogId = 'w1';
+    T.dogTap({ x: 15, y: 0.05 });
+    document.getElementById('dl_p').value = 'f'; document.getElementById('dl_p').onchange(); document.getElementById('dl_c').value = 'q'; document.getElementById('mo').click();
+    const lines = T.S.objs.filter(o => o.t === 'line'), door = T.S.objs.find(o => o.t === 'door');
+    let diag = 0; lines.forEach(l => { for (let i = 0; i < l.pts.length - 1; i++) { const dx = Math.abs(l.pts[i + 1].x - l.pts[i].x), dy = Math.abs(l.pts[i + 1].y - l.pts[i].y); if (dx > 1e-6 && dy > 1e-6) diag++; } });
+    return { n: lines.length, diag, door: door && door.k, w: door && door.w };
+  });
+  ok(r.n === 3, 'expected the wall plus two passage walls, got ' + r.n);
+  ok(r.diag === 0, r.diag + ' diagonal segments (square corners expected)');
+  ok(r.door === 'eexit' && r.w === 3, 'door ' + JSON.stringify(r));
+});
+  await pg2.close2(); page = _p; }
 let dxfTxt = '';
 await test('DXF export is well formed', async () => {
   dxfTxt = await page.evaluate(() => __T.buildDxf(__T.S.objs.filter(o => !o.ev), 1000, 4).txt);

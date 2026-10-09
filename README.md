@@ -198,3 +198,6 @@ node tests/smoke-live.mjs https://impi-floorplan-studio.vercel.app   # after eve
 They check: the app builds and matches the source; server code parses; vendor files present; app loads without script errors; undo/redo; crowd maths; readiness check flags a bad plan and passes a good one; evacuation routes generate; DXF export is well formed and round-trips to the same size; DXF import is to scale; objects and backgrounds survive a reload; (optional) DWG import. `.github/workflows/test.yml` runs them on every push if the project is on GitHub.
 
 **Release routine:** change `src/app/…` → `npm test` → commit (including the rebuilt `private/app.html`) → push → `node tests/smoke-live.mjs <url>` → open the site, sign in, save and reopen one plan.
+
+## Dog-leg exits (updated)
+Line / fence → select the wall → Dog-leg, then tap the wall. Choose **Use**: *Building / hall wall* (1.5 m passage, short runs) or *Festival fence line* (3 m passage, 3 m runs and jog; edit any number). **Corners**: *Square, 90° turns* (default) or *Angled 45°*. **Door / gate at the end**: Emergency exit, Exit, Entrance or none (open passage).
