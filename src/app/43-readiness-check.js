@@ -1,6 +1,7 @@
 /* ---------- approval readiness check ---------- */
 var RDY=[
  {k:'gap',n:'Minimum gap between tents / marquees (m)',d:3},
+ {k:'gapGz',n:'Minimum gap between two gazebos (m)',d:1.5},
  {k:'minEx',n:'Minimum number of exits for the venue',d:2},
  {k:'exW',n:'Minimum clear width of one exit (m)',d:1.1},
  {k:'two',n:'A structure holding more than this many people needs 2+ exits',d:50},
@@ -90,13 +91,14 @@ function rdyRun(){
  if(exits.length&&nosign.length)add('warn','Exit signage',nosign.length+' exit'+(nosign.length>1?'s have':' has')+' no exit sign within '+rv('sgn')+' m.',nosign.map(function(e){return e.id}),'Signs → Safe → Emergency exit sign.');
  else if(exits.length)add('pass','Exit signage','Every exit has an exit sign.');
  /* 8 tent spacing */
- var tp=tents.map(function(t){return {o:t,P:selOutline(t).pts}}),gp=rv('gap'),sp=0,bs=[];
+ var tp=tents.map(function(t){return {o:t,P:selOutline(t).pts}}),gp=rv('gap'),sp=0,bs=[],isGz=function(o){return (LIBM[o.k]||{}).s==='gazebo'};
  for(var i=0;i<tp.length;i++)for(var j=i+1;j<tp.length;j++){
   var bi=boundsOf(tp[i].o),bj=boundsOf(tp[j].o);
-  if(bi.x0-gp>bj.x1||bj.x0-gp>bi.x1||bi.y0-gp>bj.y1||bj.y0-gp>bi.y1)continue;
-  var g=polyGap(tp[i].P,tp[j].P);if(g<gp-1e-6){sp++;bs.push([tp[i].o,tp[j].o,g])}}
+  var pg=(isGz(tp[i].o)&&isGz(tp[j].o))?rv('gapGz'):gp;
+  if(bi.x0-pg>bj.x1||bj.x0-pg>bi.x1||bi.y0-pg>bj.y1||bj.y0-pg>bi.y1)continue;
+  var g=polyGap(tp[i].P,tp[j].P);if(g<pg-1e-6){sp++;bs.push([tp[i].o,tp[j].o,g,pg])}}
  bs.sort(function(a,b){return a[2]-b[2]});
- bs.slice(0,12).forEach(function(b){var n1=(LIBM[b[0].k]||{}).n||'structure',n2=(LIBM[b[1].k]||{}).n||'structure';add('fail','Tent spacing',n1+' and '+n2+' are '+(b[2]<0.05?'touching or overlapping':(Math.round(b[2]*10)/10)+' m apart')+' (minimum '+gp+' m).',[b[0].id,b[1].id],'Move them apart or confirm with the fire officer that this is allowed.')});
+ bs.slice(0,12).forEach(function(b){var n1=(LIBM[b[0].k]||{}).n||'structure',n2=(LIBM[b[1].k]||{}).n||'structure';add('fail','Tent spacing',n1+' and '+n2+' are '+(b[2]<0.05?'touching or overlapping':(Math.round(b[2]*10)/10)+' m apart')+' (minimum '+b[3]+' m).',[b[0].id,b[1].id],'Move them apart or confirm with the fire officer that this is allowed.')});
  if(bs.length>12)add('fail','Tent spacing',(bs.length-12)+' more pairs are closer than '+gp+' m.');
  if(tp.length>1&&!sp)add('pass','Tent spacing','All '+tp.length+' tents / marquees are at least '+gp+' m apart.');
  /* 9 evacuation routes */

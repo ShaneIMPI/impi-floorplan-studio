@@ -201,3 +201,6 @@ They check: the app builds and matches the source; server code parses; vendor fi
 
 ## Dog-leg exits (updated)
 Line / fence → select the wall → Dog-leg, then tap the wall. Choose **Use**: *Building / hall wall* (1.5 m passage, short runs) or *Festival fence line* (3 m passage, 3 m runs and jog; edit any number). **Corners**: *Square, 90° turns* (default) or *Angled 45°*. **Door / gate at the end**: Emergency exit, Exit, Entrance or none (open passage).
+
+## Gazebos
+Library → Tents → Gazebo 3 × 3 and Gazebo 3 × 6 (two bays). Counted as structures for capacity and fire equipment. Readiness check uses a separate, smaller minimum gap between two gazebos (default 1.5 m, editable) so rows of gazebos are not flagged like marquees.

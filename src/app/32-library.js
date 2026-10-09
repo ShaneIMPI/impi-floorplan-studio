@@ -5,6 +5,8 @@ var LIB=[
  {k:'round8',n:'Round table (8 seat)',w:2.4,h:2.4,c:'Furniture',s:'round',seats:8,lab:''},
  {k:'cocktail',n:'Cocktail table',w:0.8,h:0.8,c:'Furniture',s:'cocktail',lab:''},
  {k:'umbrella',n:'Umbrella (3 m)',w:3,h:3,c:'Furniture',s:'umbrella',lab:''},
+ {k:'gaz3',n:'Gazebo 3 × 3',w:3,h:3,c:'Tents',s:'gazebo',lab:'Gazebo'},
+ {k:'gaz36',n:'Gazebo 3 × 6',w:6,h:3,c:'Tents',s:'gazebo',lab:'Gazebo'},
  {k:'marq3',n:'Marquee 3 × 3',w:3,h:3,c:'Tents',s:'tent',lab:'Marquee'},
  {k:'marq5',n:'Marquee 5 × 5',w:5,h:5,c:'Tents',s:'tent',lab:'Marquee'},
  {k:'marq510',n:'Marquee 5 × 10',w:10,h:5,c:'Tents',s:'tent',lab:'Marquee'},
