@@ -841,7 +841,7 @@ function handlesFor(o){
 function drawOverlay(){
  ctx.setTransform(DPR,0,0,DPR,0,0);
  var o=getSel(),i;
- if(S.snapPt){var sp=w2s(S.snapPt);ctx.strokeStyle='#e8590c';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sp.x,sp.y,7,0,TAU);ctx.stroke()}
+ if(S.snapPt){var sp=w2s(S.snapPt);ctx.strokeStyle='#e8590c';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sp.x,sp.y,7,0,TAU);ctx.stroke();if(S.snapJ){ctx.fillStyle='rgba(232,89,12,.4)';ctx.fill()}}
  if(S.calib){ctx.fillStyle='#e8590c';ctx.strokeStyle='#fff';ctx.lineWidth=2;S.calib.pts.forEach(function(p){var s=w2s(p);ctx.beginPath();ctx.arc(s.x,s.y,7,0,TAU);ctx.fill();ctx.stroke()});
   if(S.calib.pts.length===1&&S.hover){var a=w2s(S.calib.pts[0]),b=w2s(S.hover);ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.setLineDash([])}}
  if(S.issues&&S.issues.length){S.issues.forEach(function(it){var a=w2s(it.a),b=w2s(it.b);ctx.strokeStyle='#d32f2f';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.fillStyle='#d32f2f';ctx.beginPath();ctx.arc(a.x,a.y,3.5,0,TAU);ctx.arc(b.x,b.y,3.5,0,TAU);ctx.fill();
@@ -955,8 +955,9 @@ function autoNumber(){
  m.onkeydown=function(e){if(e.key==='Escape')close()};
 }
 function snapW(p,ex,noObj){
- S.snapPt=null;
- if(!noObj){var best=null,bd=14/S.view.z;snapPts(ex).forEach(function(q){var d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;best=q}});if(best){S.snapPt={x:best.x,y:best.y};return {x:best.x,y:best.y}}}
+ S.snapPt=null;S.snapJ=false;
+ if(!noObj){var best=null,bd=14/S.view.z;snapPts(ex).forEach(function(q){var d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;best=q}});if(best){S.snapPt={x:best.x,y:best.y};return {x:best.x,y:best.y}}
+  if(S.traceSnap!==false&&TRACE_TOOLS[S.tool]){var u=underlaySnap(p);if(u){S.snapPt={x:u.x,y:u.y};S.snapJ=u.j;return {x:u.x,y:u.y}}}}
  if(S.grid>0)return {x:Math.round(p.x/S.grid)*S.grid,y:Math.round(p.y/S.grid)*S.grid};
  return p;
 }
@@ -1055,7 +1056,7 @@ var ptrs={},drag=null,pinch=null,spaceDown=false,lastTapT=0;
 function rectOf(e){var r=cv.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
 function setHint(t){var h=$('#hint');if(t){h.textContent=t;h.classList.add('on')}else h.classList.remove('on')}
 function toolHint(){
- var t=S.tool,m={select:'',facept:'Tap the stage, structure or point the selected items should face',pan:'Drag to move around the plan',dim:'Drag from one point to another to measure',area:'Drag to draw a zone or tent footprint — size shows automatically',line:'Tap points to draw a fence or barrier, then tap Finish',poly:'Tap each corner of the zone. Tap the first point again, or Finish, to close it',marq:'Drag a box around objects to select them. Left to right = fully inside, right to left = touching',text:'Tap where the note should go',calib:S.calib?(S.calib.pts.length?'Tap the second point':'Tap the first point of a known distance'):'',layermove:'Drag to slide the image. Pinch to resize and twist it. Tap Done when lined up.',place:'Tap on the plan to place it'};
+ var t=S.tool,m={select:'',facept:'Tap the stage, structure or point the selected items should face',pan:'Drag to move around the plan',dim:'Drag from one point to another to measure',area:'Drag to draw a zone or tent footprint — size shows automatically',line:'Tap points to draw a fence or barrier, then tap Finish',poly:'Tap each corner of the zone. Tap the first point again, or Finish, to close it',marq:'Drag a box around objects to select them. Left to right = fully inside, right to left = touching',text:'Tap where the note should go',gorigin:'Tap the corner where the stand grid should start (for example the top-left corner of the hall)',calib:S.calib?(S.calib.pts.length?'Tap the second point':'Tap the first point of a known distance'):'',layermove:'Drag to slide the image. Pinch to resize and twist it. Tap Done when lined up.',place:'Tap on the plan to place it'};
  setHint(m[t]||'');
 }
 function setTool(t,arm){
@@ -1093,7 +1094,7 @@ cv.addEventListener('pointermove',function(e){
  if(drag){onMove(e,p)}
  else{
   if((S.tool==='line'||S.tool==='poly')&&S.tmp){S.tmp.cur=snapW(S.hover);draw()}
-  else if(S.tool==='calib'||S.tool==='dim'||S.tool==='area'||S.arm){snapW(S.hover);draw()}
+  else if(S.tool==='calib'||S.tool==='dim'||S.tool==='area'||S.tool==='line'||S.tool==='poly'||S.tool==='gorigin'||S.arm){snapW(S.hover);draw()}
   else draw();
  }
 });
@@ -1137,6 +1138,7 @@ function onDown(e,p){
  if(t==='text'){drag={k:'texttap',sx:p.x,sy:p.y,w:snapW(w,null,true)};return}
  if(t==='facept'){drag={k:'facepttap',sx:p.x,sy:p.y};return}
  if(t==='calib'){drag={k:'calibtap',sx:p.x,sy:p.y};return}
+ if(t==='gorigin'){drag={k:'gotap',sx:p.x,sy:p.y};return}
  if(t==='layermove'){var L=S.layers.filter(function(l){return l.id===S.mv})[0];if(L)drag={k:'layer',L:L,w0:w,x0:L.x,y0:L.y};return}
 }
 function onMove(e,p){
@@ -1170,7 +1172,7 @@ function onMove(e,p){
  if(d.k==='marq'){S.tmp.b=w;draw();return}
  if(d.k==='draw'){var q2=snapW(w);S.tmp.b=q2;draw();return}
  if(d.k==='layer'){d.L.x=d.x0+(w.x-d.w0.x);d.L.y=d.y0+(w.y-d.w0.y);draw();return}
- if(d.k==='linetap'||d.k==='texttap'||d.k==='calibtap'||d.k==='facepttap'){if(Math.hypot(p.x-d.sx,p.y-d.sy)>8){drag={k:'pan',sx:d.sx,sy:d.sy,vx:S.view.x-(p.x-d.sx)+(p.x-d.sx),vy:S.view.y,moved:true};drag.sx=p.x;drag.sy=p.y;drag.vx=S.view.x;drag.vy=S.view.y}}
+ if(d.k==='linetap'||d.k==='texttap'||d.k==='calibtap'||d.k==='gotap'||d.k==='facepttap'){if(Math.hypot(p.x-d.sx,p.y-d.sy)>8){drag={k:'pan',sx:d.sx,sy:d.sy,vx:S.view.x-(p.x-d.sx)+(p.x-d.sx),vy:S.view.y,moved:true};drag.sx=p.x;drag.sy=p.y;drag.vx=S.view.x;drag.vy=S.view.y}}
 }
 function onUp(e){
  var d=drag;drag=null;S.snapPt=null;
@@ -1206,11 +1208,12 @@ function onUp(e){
   var fw=s2w(p),hit=hitTest(fw),tg=fw;if(hit&&hit.t!=='line'&&hit.t!=='dim'){if(hit.t==='poly'){var pb=boundsOf(hit);tg={x:(pb.x0+pb.x1)/2,y:(pb.y0+pb.y1)/2}}else tg={x:hit.x,y:hit.y}}
   var ids2=S.fpIds||[];S.fpIds=null;setTool('select');setSel(ids2);
   faceTo(function(o){if(hit&&hit.id===o.id)return null;return Math.atan2(tg.y-o.y,tg.x-o.x)/D2R});renderPanel();return}
+ if(d.k==='gotap'){setGridOrigin(snapW(s2w(p),null,false));return}
  if(d.k==='calibtap'){
   var qq=snapW(s2w(p),null,false);S.calib.pts.push({x:qq.x,y:qq.y});toolHint();
   if(S.calib.pts.length===2){var a=S.calib.pts[0],b=S.calib.pts[1],dist=Math.hypot(b.x-a.x,b.y-a.y),L2=S.layers.filter(function(l){return l.id===S.calib.id})[0];
    if(dist<1e-6){S.calib.pts=[];draw();return}
-   ask('Calibrate: real distance between the two points',[{l:'Distance in metres (e.g. the Google Earth scale bar length, or a known dimension on the plan)',v:'',type:'number',step:'any'}],function(v){var real=parseFloat(v[0]);if(!(real>0)){toast('Enter a distance above 0');S.calib.pts=[];toolHint();draw();return}
+   ask('Calibrate: real distance between the two points',[{l:'Real distance between the two points. Type 107900 mm, 107.9 m or 107.9 (plain numbers are metres)',v:''}],function(v){var real=parseDist(v[0]);if(!(real>0)){toast('Enter a distance such as 107900 mm or 107.9 m');S.calib.pts=[];toolHint();draw();return}
     var f=real/dist;L2.mpp*=f;L2.x=a.x+(L2.x-a.x)*f;L2.y=a.y+(L2.y-a.y)*f;L2.cal=true;S.calib=null;setTool('select');fitAll();renderPanel();toast('Scale set — '+L2.name+' is now true to scale')});
   }
   draw();return;
@@ -1254,12 +1257,12 @@ function resize(){var W=cv.clientWidth,H=cv.clientHeight;cv.width=Math.round(W*D
 new ResizeObserver(resize).observe($('#stage'));
 
 /* ---------- tools bar ---------- */
-var IC={select:'M5 3l12 7-5 1.5L10 17z',pan:'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',dim:'M3 17L17 3l4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2',area:'M4 6h16v12H4zM4 9h2M4 15h2M18 9h2M18 15h2',line:'M3 18l6-8 5 5 7-9',evac:'M3 12h12M10 6l6 6-6 6M3 4v16M20 8v8',text:'M5 6h14M12 6v13M9 19h6',fit:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',undo:'M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-4',redo:'M15 14l5-5-5-5M20 9H10a6 6 0 000 12h4',marq:'M4 4h4M12 4h4M20 4v4M20 12v4M20 20h-4M12 20H8M4 20v-4M4 12V8',poly:'M5 18l2-11 8-3 5 9-4 6z',lib:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z'};
+var IC={select:'M5 3l12 7-5 1.5L10 17z',pan:'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',dim:'M3 17L17 3l4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2',area:'M4 6h16v12H4zM4 9h2M4 15h2M18 9h2M18 15h2',line:'M3 18l6-8 5 5 7-9',trace:'M12 3v5M12 16v5M3 12h5M16 12h5M10 12a2 2 0 104 0a2 2 0 10-4 0',evac:'M3 12h12M10 6l6 6-6 6M3 4v16M20 8v8',text:'M5 6h14M12 6v13M9 19h6',fit:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',undo:'M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-4',redo:'M15 14l5-5-5-5M20 9H10a6 6 0 000 12h4',marq:'M4 4h4M12 4h4M20 4v4M20 12v4M20 20h-4M12 20H8M4 20v-4M4 12V8',poly:'M5 18l2-11 8-3 5 9-4 6z',lib:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z'};
 function svg(n){return '<svg viewBox="0 0 24 24"><path d="'+IC[n]+'"/></svg>'}
 function buildTools(){
  var T=[['select','Select'],['marq','Box select'],['pan','Pan'],['dim','Measure'],['area','Zone'],['poly','Shape'],['line','Line / fence'],['text','Note']],h='';
  T.forEach(function(t){h+='<button class="tool" data-tool="'+t[0]+'" aria-label="'+t[1]+'">'+svg(t[0])+t[1]+'</button>'});
- h+='<div class="sep"></div><button class="tool" data-act="lib" aria-label="Library">'+svg('lib')+'Library</button><button class="tool" data-act="evac" aria-label="Evacuation plan">'+svg('evac')+'Evacuation</button><div class="sep"></div>';
+ h+='<div class="sep"></div><button class="tool" data-act="lib" aria-label="Library">'+svg('lib')+'Library</button><button class="tool" data-act="trace" aria-label="Snap to plan lines" title="When tracing over an imported plan, snap to its lines and corners">'+svg('trace')+'Snap lines</button><button class="tool" data-act="evac" aria-label="Evacuation plan">'+svg('evac')+'Evacuation</button><div class="sep"></div>';
  h+='<select id="snapSel" aria-label="Snap grid"><option value="0.01">Snap 1 cm</option><option value="0.05">Snap 5 cm</option><option value="0.1">Snap 0.1 m</option><option value="0.25">Snap 0.25 m</option><option value="0.5">Snap 0.5 m</option><option value="1" selected>Snap 1 m</option><option value="1.5">Snap 1.5 m</option><option value="2">Snap 2 m</option><option value="3">Snap 3 m</option><option value="5">Snap 5 m</option><option value="0">Snap off</option><option value="custom">Custom…</option></select>';
   h+='<select id="viewSel" aria-label="View"></select>';
  h+='<select id="lineSel" aria-label="Line style">'+LINES.filter(function(l){return l.k!=='evac'}).map(function(l){return '<option value="'+l.k+'">'+l.n+'</option>'}).join('')+'</select>';
@@ -1268,9 +1271,9 @@ function buildTools(){
  $('#tools').onclick=function(e){var b=e.target.closest('.tool');if(!b)return;
   if(b.dataset.tool){if(b.dataset.tool==='line'){S.lineStyle=S.lineStyle||'fence'}setTool(b.dataset.tool)}
   else if(b.dataset.act==='undo')undo();else if(b.dataset.act==='redo')redo();else if(b.dataset.act==='fit')fitAll();
-  else if(b.dataset.act==='lib'){S.tab='lib';openPanel()}else if(b.dataset.act==='evac')setEvac(!S.meta.evac)
+  else if(b.dataset.act==='lib'){S.tab='lib';openPanel()}else if(b.dataset.act==='trace'){S.traceSnap=S.traceSnap===false;syncTrace();toast(S.traceSnap===false?'Snap to plan lines is off':'Snap to plan lines is on: tracing locks onto the imported plan\'s lines and corners',3500)}else if(b.dataset.act==='evac')setEvac(!S.meta.evac)
  };
- renderViewSel();syncEvac();$('#layBar').onclick=function(e){var t=e.target.closest('button');if(!t)return;var k=t.dataset.lb;if(k==='back')setView(null);else exportSheet(k)};
+ renderViewSel();syncEvac();syncTrace();$('#layBar').onclick=function(e){var t=e.target.closest('button');if(!t)return;var k=t.dataset.lb;if(k==='back')setView(null);else exportSheet(k)};
  $('#evBar').onclick=function(e){var t=e.target.closest('button');if(t)act(t.dataset.ev)};
  $('#viewSel').onchange=function(){var v=this.value;if(v==='__new'){this.value=S.meta.only||'';newLayout();return}setView(v)};
  $('#lineSel').onchange=function(){S.lineStyle=this.value;if(S.tmp&&S.tmp.t==='line')S.tmp.style=this.value;draw()};
@@ -1373,7 +1376,7 @@ function objHTML(){
 }
 function layHTML(){
  var h='<p class="note">Stack an aerial image and the client plan. Calibrate each one by tapping two points a known distance apart (the Google Earth scale bar works well), then slide and rotate the plan until it lines up.</p>';
- h+='<div class="btns"><button class="btn sm pri" data-act="addmap">+ Satellite map</button><button class="btn sm" data-act="addsat">+ Upload aerial</button><button class="btn sm" data-act="addplan">+ Client plan (PDF/image)</button></div>';
+ h+='<div class="btns"><button class="btn sm pri" data-act="addmap">+ Satellite map</button><button class="btn sm" data-act="addsat">+ Upload aerial</button><button class="btn sm" data-act="addplan">+ Client plan (PDF/image)</button>'+(S._lastPdf&&S._lastPdf.pdf.numPages>1?'<button class="btn sm" data-act="pdfpage">+ Another page of '+esc(S._lastPdf.name)+'</button>':'')+'</div>';
  h+='<p class="note">Tip: take a Google Earth screenshot with its scale bar showing. Keep the imagery credit visible when sharing.</p>';
  if(!S.layers.length)h+='<p class="note">No images yet.</p>';
  S.layers.forEach(function(L,i){
@@ -1383,7 +1386,7 @@ function layHTML(){
   h+='<div class="row2"><label class="fld">Rotate (°)<input type="number" step="0.1" value="'+(+L.rot.toFixed(2))+'" data-lrot="'+L.id+'"></label>'+(L.kind==='plan'?'<label class="fld">Blend<select data-lbl="'+L.id+'"><option value="multiply"'+(L.blend==='multiply'?' selected':'')+'>See-through (best for plans)</option><option value="source-over"'+(L.blend!=='multiply'?' selected':'')+'>Normal</option></select></label>':'<div></div>')+'</div>';
   h+='<div class="row2"><label class="fld">Width on plan (m)<input type="number" step="0.1" value="'+(+(L.img.width*L.mpp).toFixed(2))+'" data-lw="'+L.id+'"></label><label class="fld">Height (m)<input type="number" value="'+(+(L.img.height*L.mpp).toFixed(2))+'" disabled></label></div>';
   h+='<div class="btns"><span class="note" style="margin:0;align-self:center">Resize:</span><button class="btn sm" data-lsc="'+L.id+':0.95">−5%</button><button class="btn sm" data-lsc="'+L.id+':0.99">−1%</button><button class="btn sm" data-lsc="'+L.id+':1.01">+1%</button><button class="btn sm" data-lsc="'+L.id+':1.05">+5%</button></div>';
-  if(L.pdfScale){h+='<div class="row2"><label class="fld">Printed scale 1 :<input type="number" min="1" placeholder="e.g. 500" data-lps="'+L.id+'"></label><div style="display:flex;align-items:flex-end;margin-bottom:9px"><button class="btn sm" data-lpsa="'+L.id+'">Apply print scale</button></div></div>'}
+  if(L.pdfScale){h+='<div class="row2"><label class="fld">Printed scale 1 :<input type="number" min="1" placeholder="e.g. 500" data-lps="'+L.id+'"></label><label class="fld">Page was reduced from<select data-lpp="'+L.id+'"><option value="0">Not reduced (printed 100%)</option><option value="420">A3 shrunk to this page</option><option value="594">A2 shrunk to this page</option><option value="841">A1 shrunk to this page</option><option value="1189">A0 shrunk to this page</option></select></label></div><div class="btns"><button class="btn sm" data-lpsa="'+L.id+'">Apply print scale</button></div><p class="note">Venue PDFs are often an A3 plan shrunk onto A4, so the printed scale (1:500) is not true on the page. The reliable way: tap Calibrate, tap both ends of a dimension line (snap lines helps), and type it, e.g. 107900 mm.</p>'}
   h+='</div>';
  });
  return h;
@@ -1404,7 +1407,7 @@ function sheetHTML(){
  if(LY.length){h+='<label class="fld">Current view<select id="m_view"><option value="">Whole plan</option>'+LY.map(function(l){return '<option value="'+l.id+'"'+(m.only===l.id?' selected':'')+'>'+esc(l.name)+'</option>'}).join('')+'</select></label>'}
  h+=(LY.length?'<div class="btns"><button class="btn sm pri" data-act="lxpdf">Download all layouts (one PDF)</button><button class="btn sm" data-act="lxpng">Download each as PNG</button></div>':'')+'<div class="btns"><button class="btn sm" data-act="newlay">New empty layout</button>'+(m.only?'<button class="btn sm" data-act="laysel">Add selected to this layout</button><button class="btn sm" data-act="layout">Remove selected from layout</button><button class="btn sm" data-act="layren">Rename</button><button class="btn sm dng" data-act="laydel">Delete layout</button>':'')+'</div>';
  h+='<h4>Plan type &amp; grid</h4><label class="fld">Plan type<select id="m_mode"><option value="outdoor"'+(m.mode!=='indoor'?' selected':'')+'>Outdoor event</option><option value="indoor"'+(m.mode==='indoor'?' selected':'')+'>Indoor / exhibition</option></select></label>';
- h+='<div class="row3">'+fld('m_gmod','Stand module (m, 0 = off)',m.gridMod||0,'number','min="0" step="any"')+fld('m_gmin','Fine grid every (m, 0 = off)',m.gridMinor===undefined?1:m.gridMinor,'number','min="0" step="any"')+fld('m_gx','Grid starts X (m)',m.gx||0,'number','step="any"')+fld('m_gy','Grid starts Y (m)',m.gy||0,'number','step="any"')+'</div>';
+ h+='<div class="row3">'+fld('m_gmod','Stand module (m, 0 = off)',m.gridMod||0,'number','min="0" step="any"')+fld('m_gmin','Fine grid every (m, 0 = off)',m.gridMinor===undefined?1:m.gridMinor,'number','min="0" step="any"')+fld('m_gx','Grid starts X (m)',m.gx||0,'number','step="any"')+fld('m_gy','Grid starts Y (m)',m.gy||0,'number','step="any"')+'</div><div class="btns"><button class="btn sm" data-act="gorigin">Set grid start by tapping the plan</button></div>';
  h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_gshow"'+(m.gridShow!==false?' checked':'')+'> Show the fine grid on the plan (over the aerial)</label><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_gprint"'+(m.gridPrint!==false?' checked':'')+'> Print the grid on the sheet</label><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_glab"'+(m.gridLabels!==false?' checked':'')+'> Letter the columns (A, B, C…) and number the rows (1, 2, 3…)</label><p class="note">Fine grid = every metre by default, so counting blocks gives the gap (3 open blocks = 3 m aisle). The module lines are bolder and carry the A/B/C and 1/2/3 labels. Exhibition tip: set the module to your stand size (for example 3 m). Stands from the Library then lock to the grid corners and snap follows the module. The Measure tool still works anywhere.</p><div class="btns"><button class="btn sm" data-act="autonum">Number the stands</button></div>';
  h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_front"'+(m.showFront!==false?' checked':'')+'> Show the orange front edge on structures</label>';
  h+='<h4>Safety checks</h4>'+fld('m_aisle','Minimum aisle / gap (m) — set to your event safety plan standard',m.minAisle,'number','step="0.1" min="0.1"')+'<div class="btns"><button class="btn sm pri" data-act="aisle">Check gaps between items</button>'+(S.issues.length?'<button class="btn sm" data-act="clrissue">Clear markers</button>':'')+'</div>';
@@ -1462,7 +1465,7 @@ function wirePanel(b){
   if(d.lvis){var L2=layer(+d.lvis);L2.vis=!L2.vis;renderPanel();draw();return}
   if(d.lup||d.ldn){var id=+(d.lup||d.ldn),i=S.layers.findIndex(function(l){return l.id===id}),j=d.lup?i+1:i-1;if(j>=0&&j<S.layers.length){var tmp=S.layers[i];S.layers[i]=S.layers[j];S.layers[j]=tmp}renderPanel();draw();return}
   if(d.ldel){S.layers=S.layers.filter(function(l){return l.id!==+d.ldel});renderPanel();draw();updateWelcome();return}
-  if(d.lpsa){var L3=layer(+d.lpsa),inp=$('[data-lps="'+L3.id+'"]',b),N=parseFloat(inp.value);if(!(N>0)){toast('Enter the scale printed on the drawing, e.g. 500');return}var f=(25.4/72/L3.pdfScale)*N/1000/L3.mpp;L3.mpp*=f;L3.cal=true;renderPanel();draw();toast('Print scale applied. Check it with a measurement.');return}
+  if(d.lpsa){var L3=layer(+d.lpsa),inp=$('[data-lps="'+L3.id+'"]',b),N=parseFloat(inp.value);if(!(N>0)){toast('Enter the scale printed on the drawing, e.g. 500');return}var pp=$('[data-lpp="'+L3.id+'"]',b),orig=pp?parseFloat(pp.value):0,red=(orig>0&&L3.pdfLong>0)?orig/L3.pdfLong:1,f=(25.4/72/L3.pdfScale)*N*red/1000/L3.mpp;L3.mpp*=f;L3.cal=true;renderPanel();draw();toast('Print scale applied. Check it with a measurement.');return}
   if(d.iss!=null){var it=S.issues[+d.iss];if(it){var cx=(it.a.x+it.b.x)/2,cy=(it.a.y+it.b.y)/2;S.view.x=cv.clientWidth/2-cx*S.view.z;S.view.y=cv.clientHeight/2-cy*S.view.z;draw()}return}
  };
  $$('[data-lop]',b).forEach(function(r){r.oninput=function(){layer(+r.dataset.lop).op=r.value/100;draw();r.parentNode.firstChild.nodeValue='Opacity '+r.value+'%'}});
@@ -1483,12 +1486,12 @@ function act(a){
  if(a==='flip'){var o=getSel();if(o){snapH();o.rot=(o.rot+180)%360;changed(true)}}
  else if(a==='dup')dupSel();else if(a==='del')delSel();else if(a==='arr')arraySel();
  else if(a==='addsym')addSymbol();
- else if(a==='addmap')openMap();else if(a==='addsat')pickLayer('sat');else if(a==='addplan')pickLayer('plan');
+ else if(a==='addmap')openMap();else if(a==='addsat')pickLayer('sat');else if(a==='addplan')pickLayer('plan');else if(a==='pdfpage'&&S._lastPdf)addLayer({name:S._lastPdf.name,type:'application/pdf'},'plan',undefined,S._lastPdf.pdf);
  else if(a==='logo'){pickFile(ANYIMG,function(f){fileToLogo(f,function(d){S.meta.logo=d;S.logoImg=null;saveLocal();renderPanel();draw();toast('Logo added')})})}
  else if(a==='nologo'){S.meta.logo=null;S.logoImg=null;saveLocal();renderPanel()}
  else if(a==='elogo'){pickFile(ANYIMG,function(f){fileToLogo(f,function(d){S.meta.eventLogo=d;saveLocal();renderPanel();draw();toast('Event logo added')})})}
  else if(a==='noelogo'){S.meta.eventLogo=null;saveLocal();renderPanel()}
- else if(a==='autonum')autoNumber();
+ else if(a==='autonum')autoNumber();else if(a==='gorigin'){closePanel();setTool('gorigin')}
  else if(a==='newlay')newLayout();
  else if(a==='evac')setEvac(!S.meta.evac);
  else if(a.indexOf('face:')===0){var AN={u:-90,r:0,d:90,l:180}[a.slice(5)];faceTo(function(){return AN})}
@@ -1519,20 +1522,21 @@ function renderSelbar(){
 
 /* ---------- layers / import ---------- */
 function pickLayer(kind){pickFile('image/*,application/pdf,.pdf',function(f){addLayer(f,kind)})}
-async function addLayer(file,kind,pageNo){
+async function addLayer(file,kind,pageNo,pdfObj){
  toast('Loading '+file.name+'…',6000);
  try{
-  var img,pdfScale=null,isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
+  var img,pdfScale=null,pgSel=0,pdfLong=0,isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
   if(isPdf){
    if(!window.pdfjsLib)throw new Error('PDF reader did not load. Export the plan as a PNG/JPG and import that instead.');
    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-   var buf=await file.arrayBuffer(),pdf=await pdfjsLib.getDocument({data:buf}).promise,pg=await pdf.getPage(Math.min(pageNo||1,pdf.numPages)),v0=pg.getViewport({scale:1});
-   pdfScale=Math.min(4,4200/Math.max(v0.width,v0.height));var vp=pg.getViewport({scale:pdfScale}),cn=document.createElement('canvas');cn.width=Math.round(vp.width);cn.height=Math.round(vp.height);var cx=cn.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cn.width,cn.height);await pg.render({canvasContext:cx,viewport:vp}).promise;img=cn;kind='plan';
-   if(pdf.numPages>1)toast('Imported page 1 of '+pdf.numPages,3500);
+   var pdf=pdfObj||await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;S._lastPdf={pdf:pdf,name:file.name};
+   if(pdf.numPages>1&&!pageNo){pageNo=await choosePdfPage(pdf,file.name);if(!pageNo){toast('Import cancelled');return}}
+   pgSel=pdf.numPages>1?pageNo:0;var pg=await pdf.getPage(Math.min(pageNo||1,pdf.numPages)),v0=pg.getViewport({scale:1});pdfLong=Math.max(v0.width,v0.height)*25.4/72;
+   pdfScale=Math.min(5,5200/Math.max(v0.width,v0.height));var vp=pg.getViewport({scale:pdfScale}),cn=document.createElement('canvas');cn.width=Math.round(vp.width);cn.height=Math.round(vp.height);var cx=cn.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cn.width,cn.height);await pg.render({canvasContext:cx,viewport:vp}).promise;img=cn;kind='plan';
   }else{img=await loadImgFile(file)}
   var vb=viewBounds(),mpp=Math.max(.01,(Math.max(vb.x1-vb.x0,40)*.8)/img.width),cxw=(vb.x0+vb.x1)/2,cyw=(vb.y0+vb.y1)/2;
   if(!S.layers.length&&!S.objs.length){mpp=100/img.width;cxw=0;cyw=0}
-  var L={id:S.nl++,name:file.name.replace(/\.[^.]+$/,''),kind:kind,img:img,mpp:mpp,x:cxw-img.width*mpp/2,y:cyw-img.height*mpp/2,rot:0,op:kind==='plan'?.65:1,blend:kind==='plan'?'multiply':'source-over',cal:false,vis:true,pdfScale:pdfScale};
+  var L={id:S.nl++,name:file.name.replace(/\.[^.]+$/,'')+(pgSel?' (page '+pgSel+')':''),kind:kind,img:img,mpp:mpp,pdfLong:pdfLong,x:cxw-img.width*mpp/2,y:cyw-img.height*mpp/2,rot:0,op:kind==='plan'?.65:1,blend:kind==='plan'?'multiply':'source-over',cal:false,vis:true,pdfScale:pdfScale};
   S.layers.push(L);fitTo(layerBounds(),.1);S.tab='lay';updateWelcome();renderPanel();draw();
   toast('Now tap Calibrate and pick two points a known distance apart',4500);
   if(matchMedia('(max-width:820px)').matches)openPanel();
@@ -1750,6 +1754,46 @@ function addMapLayer(cn,mpp,geo){
  toast('Satellite image added to true scale ('+Math.round(cn.width*mpp)+' × '+Math.round(cn.height*mpp)+' m). Start placing structures; use Measure to spot-check a known distance.',7000);
  if(matchMedia('(max-width:820px)').matches)openPanel();
 }
+
+
+/* ---------- trace assist: snap to the lines of an imported plan ---------- */
+var TRACE_TOOLS={line:1,poly:1,dim:1,area:1,calib:1,gorigin:1};
+function layerMask(L){
+ if(L._m&&L._m.src===L.img)return L._m;
+ var w=L.img.width,h=L.img.height,cn=document.createElement('canvas');cn.width=w;cn.height=h;var c=cn.getContext('2d',{willReadFrequently:true});c.fillStyle='#fff';c.fillRect(0,0,w,h);c.drawImage(L.img,0,0);
+ var d;try{d=c.getImageData(0,0,w,h).data}catch(e){L._m={src:L.img,bad:true};return L._m}
+ var m=new Uint8Array(w*h);for(var i=0,j=0;i<m.length;i++,j+=4){m[i]=(.299*d[j]+.587*d[j+1]+.114*d[j+2])<135?1:0}
+ L._m={src:L.img,w:w,h:h,m:m};return L._m}
+function underlaySnap(p){
+ var best=null,bs=1e18;
+ S.layers.forEach(function(L){
+  if(!L.vis||L.kind!=='plan'||L.op<.04)return;var M=layerMask(L);if(M.bad)return;
+  var rr=rotv(p.x-L.x,p.y-L.y,-L.rot*D2R),ix=rr.x/L.mpp-.5,iy=rr.y/L.mpp-.5,r=Math.max(2,Math.min(36,Math.round(14/S.view.z/L.mpp))),W=M.w,H=M.h,D=M.m;
+  var Lr=Math.max(5,Math.min(14,Math.round(.6/L.mpp))),DIRS=[[1,0],[0,1],[1,1],[1,-1]];
+  function dk(x,y){return x>=0&&y>=0&&x<W&&y<H&&D[y*W+x]===1}
+  function run(x,y,dx,dy){var n=1,k,cx=x,cy=y,gap=0;for(k=0;k<Lr;k++){cx+=dx;cy+=dy;if(dk(cx,cy)){n++;gap=0}else if(++gap>1)break}cx=x;cy=y;gap=0;for(k=0;k<Lr;k++){cx-=dx;cy-=dy;if(dk(cx,cy)){n++;gap=0}else if(++gap>1)break}return n}
+  function junction(x,y){var c=0;for(var q=0;q<4;q++)if(run(x,y,DIRS[q][0],DIRS[q][1])>=Lr)c++;return c>=2}
+  var x0=Math.round(ix),y0=Math.round(iy),found=null,fs=1e18,xx,yy;
+  for(yy=y0-r;yy<=y0+r;yy++)for(xx=x0-r;xx<=x0+r;xx++){if(!dk(xx,yy))continue;var dd=Math.hypot(xx-ix,yy-iy);if(dd>r)continue;if(dd*.45>=fs)continue;var j=junction(xx,yy),sc=j?dd*.45:dd;if(sc<fs){fs=sc;found={x:xx,y:yy,j:j}}}
+  if(!found)return;
+  var kk=found.j?3:2,sx=0,sy=0,n=0;for(yy=found.y-kk;yy<=found.y+kk;yy++)for(xx=found.x-kk;xx<=found.x+kk;xx++)if(dk(xx,yy)){sx+=xx;sy+=yy;n++}
+  var cx2=sx/n+.5,cy2=sy/n+.5,wv=rotv(cx2*L.mpp,cy2*L.mpp,L.rot*D2R),wp={x:L.x+wv.x,y:L.y+wv.y},dist=Math.hypot(wp.x-p.x,wp.y-p.y)*S.view.z*(found.j?.45:1);
+  if(dist<bs){bs=dist;best={x:wp.x,y:wp.y,j:found.j}}});
+ return best}
+function parseDist(s){s=String(s||'').trim().toLowerCase().replace(/,/g,'.').replace(/\\s+/g,'');var m=s.match(/^([\\d.]+)(mm|cm|m|km)?$/);if(!m)return NaN;var n=parseFloat(m[1]),u=m[2]||'m';return u==='mm'?n/1000:u==='cm'?n/100:u==='km'?n*1000:n}
+function syncTrace(){$$('#tools [data-act=trace]').forEach(function(x){x.classList.toggle('on',S.traceSnap!==false)})}
+function setGridOrigin(q){var lo=S.meta.only?layoutOf(S.meta.only):null;if(lo){lo.gx=q.x;lo.gy=q.y}else{S.meta.gx=Math.round(q.x*1000)/1000;S.meta.gy=Math.round(q.y*1000)/1000}
+ setTool('select');saveLocal();renderPanel();draw();toast('Stand grid now starts at that corner. Stands snap to the module from there.',5000)}
+async function choosePdfPage(pdf,name){
+ return new Promise(function(res){
+  var m=$('#modal'),n=pdf.numPages;
+  m.innerHTML='<div class="mbox" style="width:min(900px,100%)" role="dialog" aria-label="Choose a page"><h3>Which page do you want to use?</h3><p class="note" style="margin:0 0 8px">'+esc(name)+' has '+n+' pages. Pick one; you can add other pages afterwards from the Images tab.</p><div id="pgGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px"></div><div class="mrow"><button class="btn" id="mc">Cancel</button></div></div>';
+  m.classList.add('on');var g=$('#pgGrid'),closed=false;
+  function close(v){closed=true;m.classList.remove('on');m.innerHTML='';res(v)}
+  $('#mc').onclick=function(){close(null)};
+  for(var i=1;i<=n;i++){(function(i){var b=document.createElement('button');b.className='btn';b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;height:auto';b.innerHTML='<canvas width="190" height="134" style="width:100%;background:#fff;border:1px solid var(--ln);border-radius:4px"></canvas><span>Page '+i+'</span>';b.onclick=function(){close(i)};g.appendChild(b)})(i)}
+  (async function(){var cs=g.querySelectorAll('canvas');for(var i=1;i<=n&&!closed;i++){try{var pg=await pdf.getPage(i),v0=pg.getViewport({scale:1}),sc=380/Math.max(v0.width,v0.height),vp=pg.getViewport({scale:sc}),cn=cs[i-1];cn.width=Math.round(vp.width);cn.height=Math.round(vp.height);var cx=cn.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cn.width,cn.height);await pg.render({canvasContext:cx,viewport:vp}).promise}catch(e){}}})();
+  m.onkeydown=function(e){if(e.key==='Escape')close(null)}})}
 
 /* ---------- welcome ---------- */
 function updateWelcome(){var w=$('#welcome');var show=!S.layers.length&&!S.objs.length&&!S.dismissed;w.classList.toggle('on',show)}

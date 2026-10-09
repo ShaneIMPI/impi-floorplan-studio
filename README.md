@@ -118,3 +118,11 @@ Note: branding is locked in the app's interface. It stops staff changing it by a
 
 ## Update: stand numbering by row / column
 Exhibition → **Number the stands** now offers: lettered rows (A1, A2… then B1…), lettered columns, numbered rows/columns (1-1, 1-2… 2-1…), or continuous numbering row-by-row / column-by-column. Choose which edge starts first (top/bottom row, left/right column), which end the numbers run from, a prefix (e.g. HALL-), separator, first letter, start number and digit padding. A live preview shows the result. Select a block of stands first to number just that block (own prefix/letters); otherwise all stands on the plan are numbered. Rows/columns are detected by stand edge, so mixed stand sizes that line up on the module grid stay in the same row.
+
+## Update: tracing over a venue PDF
+- Multi-page PDFs: importing a PDF now shows a page picker with thumbnails. Add other pages later with "+ Another page of …" in the Images tab. Pages render at up to ~5200 px for crisp linework.
+- **Snap lines** (toolbar): while drawing lines, shapes, zones or measuring, the cursor snaps to the lines and corners of an imported plan (corners take priority). Toggle it off if you want plain grid snapping.
+- Calibrate accepts units: type `107900 mm`, `107.9 m` or `107.9`.
+- Printed scale now has "Page was reduced from A3/A2/A1/A0". Venue PDFs are often shrunk onto A4, so the printed 1:500 is not true on the page; calibrating on a dimension line is the reliable method.
+- **Set grid start by tapping the plan** (Sheet tab → exhibition module grid): tap the hall corner and the stand grid, snapping and A/B/C labels start from it.
+- Typical workflow: import page → Calibrate on a dimension → trace the hall with Plain black line (wall) → add pillars (Library → Column) and doors → set grid start at the hall corner → place and number stands → hide the plan (Images → Hide) or keep it faint for export.
