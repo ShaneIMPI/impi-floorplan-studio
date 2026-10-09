@@ -43,11 +43,18 @@ small{display:block;margin-top:14px;text-align:center;color:var(--mut);font-size
 <script>
 (function(){
 var setup=false,$=function(i){return document.getElementById(i)};
+function showIn(u){var nm=(u&&(u.name||u.email))||'';$('sub').textContent='You are already signed in'+(nm?' as '+nm:'');
+ ['email','pw'].forEach(function(i){$(i).closest('label').hidden=true});$('email').required=false;$('pw').required=false;$('go').textContent='Open FloorPlan Studio';
+ $('f').onsubmit=function(e){e.preventDefault();location.href='/app'};
+ var so=document.createElement('button');so.type='button';so.textContent='Sign out';so.style.cssText='background:transparent;color:var(--mut);border:1px solid var(--ln)';
+ so.onclick=function(){fetch('/api/auth',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({action:'logout'})}).then(function(){location.reload()})};
+ $('go').after(so);window.__signedIn=1}
 fetch('/api/auth',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
- if(j.user){location.replace('/app');return}
+ if(j.user){showIn(j.user);return}
  if(j.needsSetup){setup=true;$('sub').textContent='First run: create the administrator account';$('nameRow').hidden=false;$('go').textContent='Create admin account';$('pw').autocomplete='new-password';$('pw').placeholder='At least 10 characters'}
 }).catch(function(){$('err').textContent='Cannot reach the server. Check your connection.'});
 $('f').onsubmit=function(e){
+ if(window.__signedIn){e.preventDefault();location.href='/app';return}
  e.preventDefault();$('err').textContent='';$('go').disabled=true;
  var b=setup?{action:'setup',name:$('name').value,email:$('email').value,password:$('pw').value}:{action:'login',email:$('email').value,password:$('pw').value};
  fetch('/api/auth',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(b)})
