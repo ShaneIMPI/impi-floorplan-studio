@@ -49,3 +49,31 @@ create table if not exists plan_images (
 
 create index if not exists plans_updated_idx on plans (updated_at desc) where not archived;
 create index if not exists rev_plan_idx on plan_revisions (plan_id, rev_no desc);
+
+-- Venue library (added Oct 2026). api/venues.js also creates these on first use, so running this is optional.
+create table if not exists venues (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  area       text,
+  lat        double precision,
+  lon        double precision,
+  archived   boolean not null default false,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists venue_maps (
+  id          uuid primary key default gen_random_uuid(),
+  venue_id    uuid not null references venues(id) on delete cascade,
+  name        text not null,
+  kind        text not null check (kind in ('sat','plan')),
+  image_id    uuid not null references plan_images(id),
+  mpp         double precision not null check (mpp > 0),
+  rot         double precision not null default 0,
+  geo         jsonb,
+  captured_on date,
+  note        text,
+  created_by  uuid references users(id),
+  created_at  timestamptz not null default now()
+);
+create index if not exists venue_maps_venue_idx on venue_maps (venue_id, created_at desc);
