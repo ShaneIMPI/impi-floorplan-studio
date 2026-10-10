@@ -204,3 +204,6 @@ Line / fence → select the wall → Dog-leg, then tap the wall. Choose **Use**:
 
 ## Gazebos
 Library → Tents → Gazebo 3 × 3 and Gazebo 3 × 6 (two bays). Counted as structures for capacity and fire equipment. Readiness check uses a separate, smaller minimum gap between two gazebos (default 1.5 m, editable) so rows of gazebos are not flagged like marquees.
+
+## Trussing
+Library → Stage & AV: Truss frame 3×3, 4×4, 6×4, 6×6 and Truss run 3 m / 6 m (sizes editable under Selected). Or Line / fence → style **Truss** to draw any run or frame (width 0.3 m, set per line). Drawn to scale as double rails with bracing and corner towers; open underneath, so it does not count as floor space for capacity and does not block evacuation routes. Exports to DXF on layer FPS-TRUSS (library frames on FPS-STAGE-AV).

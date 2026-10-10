@@ -139,6 +139,15 @@ await test('evacuation routes generate', async () => {
   ok(r.door === 'eexit' && r.w === 3, 'door ' + JSON.stringify(r));
 });
   await pg2.close2(); page = _p; }
+{ const pg3 = await fresh(); const _q = page; page = pg3; await test('truss: draws, is not counted as floor space, exports on its own layer', async () => {
+  const r = await page.evaluate(() => { const T = __T, add = (a, x, y) => T.addObj(T.makeAt(a, { x, y }));
+    add('item:marq10', 0, 0); const before = T.crowdAll().total;
+    add('item:truss66', 0, 0); T.addObj({ t: 'line', style: 'truss', pts: [{ x: 20, y: 0 }, { x: 26, y: 0 }], closed: false });
+    return { before, after: T.crowdAll().total, dxf: T.buildDxf(T.S.objs, 1000, 4).txt.includes('FPS-TRUSS'), errs: 0 }; });
+  ok(r.before === r.after, 'truss changed the capacity: ' + JSON.stringify(r)); ok(r.dxf, 'FPS-TRUSS layer missing from the DXF');
+  ok(page.errs.length === 0, page.errs.join(' | '));
+});
+  await pg3.close2(); page = _q; }
 let dxfTxt = '';
 await test('DXF export is well formed', async () => {
   dxfTxt = await page.evaluate(() => __T.buildDxf(__T.S.objs.filter(o => !o.ev), 1000, 4).txt);

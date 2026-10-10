@@ -247,6 +247,12 @@ var LIB=[
  {k:'stage',n:'Stage',w:8,h:6,c:'Stage & AV',s:'stage',lab:'STAGE'},
  {k:'netting',n:'Shade netting, green (open underneath)',w:10,h:3,c:'Stage & AV',s:'netting',lab:'Shade netting'},
  {k:'nettingb',n:'Shade netting, black (open underneath)',w:10,h:3,c:'Stage & AV',s:'netting',dk:1,lab:'Shade netting'},
+ {k:'truss33',n:'Truss frame 3 × 3',w:3,h:3,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss44',n:'Truss frame 4 × 4',w:4,h:4,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss64',n:'Truss frame 6 × 4',w:6,h:4,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss66',n:'Truss frame 6 × 6',w:6,h:6,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss3',n:'Truss run 3 m',w:3,h:.3,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss6',n:'Truss run 6 m',w:6,h:.3,c:'Stage & AV',s:'truss',lab:''},
  {k:'deck3',n:'Decking 3 × 3',w:3,h:3,c:'Stage & AV',s:'deck',lab:'Deck'},
  {k:'deck63',n:'Decking 6 × 3',w:6,h:3,c:'Stage & AV',s:'deck',lab:'Deck'},
  {k:'deck66',n:'Decking 6 × 6',w:6,h:6,c:'Stage & AV',s:'deck',lab:'Deck'},
@@ -294,7 +300,7 @@ var DOORS=[
  {k:'gate',n:'Vehicle / service gate',col:'#7a4b2a',w:5,lab:'GATE'}
 ];
 var DOORM={}; DOORS.forEach(function(d){DOORM[d.k]=d});
-var LINES=[{k:'fence',n:'Perimeter fence'},{k:'barrier',n:'Crowd barrier'},{k:'wall',n:'Wall / solid structure'},{k:'tape',n:'Tape / rope line'},{k:'shade',n:'Shade cloth fencing (green)'},{k:'shadeb',n:'Shade cloth fencing (black)'},{k:'drape',n:'Black draping'},{k:'plain',n:'Plain black line'},{k:'thin',n:'Thin line (hairline)'},{k:'brick',n:'Brick wall (hatched)'},{k:'shell',n:'Shell scheme wall'},{k:'evac',n:'Evacuation route'}];
+var LINES=[{k:'fence',n:'Perimeter fence'},{k:'barrier',n:'Crowd barrier'},{k:'wall',n:'Wall / solid structure'},{k:'tape',n:'Tape / rope line'},{k:'shade',n:'Shade cloth fencing (green)'},{k:'shadeb',n:'Shade cloth fencing (black)'},{k:'drape',n:'Black draping'},{k:'truss',n:'Truss (draw any run or frame)'},{k:'plain',n:'Plain black line'},{k:'thin',n:'Thin line (hairline)'},{k:'brick',n:'Brick wall (hatched)'},{k:'shell',n:'Shell scheme wall'},{k:'evac',n:'Evacuation route'}];
 var LINEM={}; LINES.forEach(function(l){LINEM[l.k]=l});
 var ZCOL=[{c:'#5b6770',n:'Tent / structure'},{c:'#1c6bb0',n:'Hospitality'},{c:'#b7791f',n:'VIP'},{c:'#c62828',n:'Restricted'},{c:'#12804a',n:'General admission'},{c:'#7c3aed',n:'Backstage'}];
 var PAPER={A5:{w:210,h:148},A4:{w:297,h:210},A3:{w:420,h:297},A2:{w:594,h:420},A1:{w:841,h:594},A0:{w:1189,h:841}};
@@ -543,6 +549,21 @@ function drawFront(c,o,L,w,h,lw){
  c.save();c.strokeStyle='#e8590c';c.lineWidth=Math.min(lw*3.2,Math.min(w,h)*.25);c.lineCap='butt';c.beginPath();
  if(f==='s'){c.moveTo(-w/2,h/2);c.lineTo(w/2,h/2)}else if(f==='n'){c.moveTo(-w/2,-h/2);c.lineTo(w/2,-h/2)}else if(f==='e'){c.moveTo(w/2,-h/2);c.lineTo(w/2,h/2)}else{c.moveTo(-w/2,-h/2);c.lineTo(-w/2,h/2)}
  c.stroke();c.restore()}
+/* box truss: drawn to scale (tw = truss width in metres), double rails + zig-zag bracing + corner/joint towers */
+function trussDraw(c,pts,tw,ink,legs){
+ var W0=Math.max(tw,px(4)),ed=px(1.1),Wi=Math.max(W0-2*ed,px(.5)),hw=(W0-2*ed)/2,i,n=pts.length;
+ c.save();c.setLineDash([]);c.lineJoin='miter';c.lineCap='butt';
+ c.strokeStyle=ink;c.lineWidth=W0;c.beginPath();c.moveTo(pts[0].x,pts[0].y);for(i=1;i<n;i++)c.lineTo(pts[i].x,pts[i].y);c.stroke();
+ c.strokeStyle='#fff';c.lineWidth=Wi;c.stroke();
+ c.strokeStyle=ink;c.lineWidth=px(.7);c.beginPath();
+ for(i=0;i<n-1;i++){var a=pts[i],b=pts[i+1],l=Math.hypot(b.x-a.x,b.y-a.y);if(l<1e-6)continue;var ux=(b.x-a.x)/l,uy=(b.y-a.y)/l,nx=-uy,ny=ux,sp=Math.max(W0,px(5)),cnt=Math.min(3000,Math.max(1,Math.round(l/sp))),st=l/cnt;
+  for(var j=0;j<cnt;j++){var d0=j*st,d1=(j+1)*st,sg=j%2?1:-1;c.moveTo(a.x+ux*d0+nx*hw*sg,a.y+uy*d0+ny*hw*sg);c.lineTo(a.x+ux*d1-nx*hw*sg,a.y+uy*d1-ny*hw*sg)}}
+ c.stroke();
+ if(legs!==false){var S2=Math.max(tw*1.7,px(7)),h2=S2/2,seen={};
+  for(i=0;i<n;i++){var k=Math.round(pts[i].x*1000)+','+Math.round(pts[i].y*1000);if(seen[k])continue;seen[k]=1;var q=pts[i];
+   c.fillStyle='#d7dde2';c.strokeStyle=ink;c.lineWidth=px(1.2);c.fillRect(q.x-h2,q.y-h2,S2,S2);c.strokeRect(q.x-h2,q.y-h2,S2,S2);
+   c.lineWidth=px(.7);c.beginPath();c.moveTo(q.x-h2,q.y-h2);c.lineTo(q.x+h2,q.y+h2);c.moveTo(q.x+h2,q.y-h2);c.lineTo(q.x-h2,q.y+h2);c.stroke()}}
+ c.restore()}
 function drawItem(c,o,ic){
  var L=LIBM[o.k]||{s:'plain'},w=o.w,h=o.h,s=L.s,lw=px(1.3*(o.sw||1)),i,m=Math.min(w,h);
  c.lineWidth=lw;c.strokeStyle=INK;c.lineJoin='round';
@@ -551,6 +572,7 @@ function drawItem(c,o,ic){
  else if(s==='round'){var r=m/2,n=L.seats||10,ring=r*.82,cr=r*.14;c.fillStyle='#b99d7a';for(i=0;i<n;i++){var a=i/n*TAU;c.beginPath();c.arc(Math.cos(a)*ring,Math.sin(a)*ring,cr,0,TAU);c.fill();c.stroke()}c.fillStyle='#e0cfb4';c.beginPath();c.arc(0,0,r*.62,0,TAU);c.fill();c.stroke()}
  else if(s==='cocktail'){var r2=m/2;c.fillStyle='#e0cfb4';c.beginPath();c.arc(0,0,r2,0,TAU);c.fill();c.stroke();c.lineWidth=lw*.6;c.beginPath();c.moveTo(-r2*.5,0);c.lineTo(r2*.5,0);c.moveTo(0,-r2*.5);c.lineTo(0,r2*.5);c.stroke()}
  else if(s==='umbrella'){var r3=m/2;c.fillStyle='rgba(247,226,170,.88)';c.beginPath();c.arc(0,0,r3,0,TAU);c.fill();c.stroke();c.lineWidth=lw*.6;c.beginPath();for(i=0;i<8;i++){var a2=i/8*TAU;c.moveTo(0,0);c.lineTo(Math.cos(a2)*r3,Math.sin(a2)*r3)}c.stroke();c.fillStyle='#fff';c.beginPath();c.arc(0,0,Math.max(r3*.08,px(1.5)),0,TAU);c.fill();c.stroke()}
+ else if(s==='truss'){var tw=Math.min(.3,m/2),lp;if(m<=.5){lp=[{x:-w/2+tw/2,y:0},{x:w/2-tw/2,y:0}]}else{var ix=w/2-tw/2,iy=h/2-tw/2;lp=[{x:-ix,y:-iy},{x:ix,y:-iy},{x:ix,y:iy},{x:-ix,y:iy},{x:-ix,y:-iy}]}trussDraw(c,lp,tw,o.fc?o.fc:INK,o.legs!==false)}
  else if(s==='tent'){bx('#fbfaf5');var q=m*.05;c.lineWidth=lw*.6;c.strokeRect(-w/2+q,-h/2+q,w-2*q,h-2*q);c.strokeStyle='#8a97a1';c.beginPath();c.moveTo(-w/2,-h/2);c.lineTo(w/2,h/2);c.moveTo(w/2,-h/2);c.lineTo(-w/2,h/2);c.stroke()}
  else if(s==='gazebo'){bx('#f6f3ea');var gb=Math.max(1,Math.round(Math.max(w,h)/m)),bw=w>=h?w/gb:w,bh2=w>=h?h:h/gb,gq=m*.05;c.lineWidth=lw*.6;c.strokeStyle='#8a97a1';c.beginPath();for(i=0;i<gb;i++){var bx0=w>=h?-w/2+i*bw:-w/2,by0=w>=h?-h/2:-h/2+i*bh2;c.moveTo(bx0,by0);c.lineTo(bx0+bw,by0+bh2);c.moveTo(bx0+bw,by0);c.lineTo(bx0,by0+bh2)}c.stroke();c.strokeStyle=INK;c.lineWidth=lw*.8;c.strokeRect(-w/2+gq,-h/2+gq,w-2*gq,h-2*gq);c.fillStyle=INK;var gr=Math.max(m*.04,px(1.8));for(i=0;i<=gb;i++)for(var j=0;j<2;j++){var gx=w>=h?-w/2+i*bw:-w/2+j*w,gy=w>=h?-h/2+j*h:-h/2+i*bh2;c.fillRect(gx-gr,gy-gr,2*gr,2*gr)}}
  else if(s==='bedouin'){bx('#f0e2c4');var q2=m*.1;c.lineWidth=lw*.7;c.setLineDash([px(6),px(4)]);c.strokeRect(-w/2+q2,-h/2+q2,w-2*q2,h-2*q2);c.setLineDash([]);c.fillStyle=INK;[[-1,-1],[1,-1],[1,1],[-1,1],[0,0]].forEach(function(p){c.beginPath();c.arc(p[0]*(w/2-q2),p[1]*(h/2-q2),Math.max(m*.022,px(1.6)),0,TAU);c.fill()})}
@@ -636,6 +658,7 @@ function drawDoor(c,o,ic){
 }
 function drawLineObj(c,o,ic){
  var P=o.pts;if(!P||P.length<2)return;var st=o.style||'fence',sdef='#2e7d32';if(st==='shadeb'){st='shade';sdef='#1b1b1b'}
+ if(st==='truss'){trussDraw(c,o.closed?P.concat([P[0]]):P,o.tw>0?+o.tw:.3,o.col||INK,o.legs!==false);return}
  c.save();c.lineJoin='round';c.lineCap='butt';
  var pts=o.closed?P.concat([P[0]]):P,wt=o.wt||1;
  if(st==='barrier'){c.strokeStyle=o.col||'#e8590c';c.lineWidth=px(3.6*wt);c.setLineDash([px(9),px(4)])}
@@ -752,7 +775,7 @@ function unitGross(o){return o.t==='poly'?Math.abs(polyArea(o.pts)):(o.t==='area
 function exitDoors(){var en=S.meta.evEntr!==false;return S.objs.filter(function(d){return d.t==='door'&&!d.hd&&!d.ev&&(d.k==='exit'||d.k==='eexit'||(d.k==='entrance'&&en))})}
 function crowdUnit(o){
  var ly=(S.meta.layouts||[]).filter(function(l){return l.src===o.id})[0],
-  items=ly?S.objs.filter(function(q){return q.lay===ly.id&&q.id!==o.id&&q.t==='rect'&&q.k!=='cover'&&!q.hd}):[];
+  items=ly?S.objs.filter(function(q){return q.lay===ly.id&&q.id!==o.id&&q.t==='rect'&&q.k!=='cover'&&(LIBM[q.k]||{}).s!=='truss'&&!q.hd}):[];
  var gross=unitGross(o),fp=0,seats=0;items.forEach(function(q){fp+=q.w*q.h;var l=LIBM[q.k];if(l&&l.seats)seats+=l.seats});
  var net=Math.max(0,gross-fp),use=o.use||'sgen',d=o.dens>0?+o.dens:dOf(use),cap,how;
  if(o.pax>0){cap=Math.round(o.pax);how='fixed'}
@@ -768,7 +791,7 @@ function crowdAll(){
  var per=null,pa=0;S.objs.forEach(function(o){if(o.t==='line'&&o.closed&&o.pts&&o.pts.length>2&&o.style!=='evac'&&!o.hd&&!o.ev&&!o.lay){var a=Math.abs(polyArea(o.pts));if(a>pa){pa=a;per=o}}});
  var open=null,warn=[];
  if(per){var occ=0;us.forEach(function(u){occ+=u.gross});
-  S.objs.forEach(function(q){if(q.t!=='rect'||q.hd||q.lay||q.k==='cover'||/^netting/.test(q.k||'')||(q.k||'').indexOf('deck')===0||isUnit(q))return;
+  S.objs.forEach(function(q){if(q.t!=='rect'||q.hd||q.lay||q.k==='cover'||/^netting/.test(q.k||'')||(q.k||'').indexOf('deck')===0||(LIBM[q.k]||{}).s==='truss'||isUnit(q))return;
    if(us.some(function(u){var b=boundsOf(u.o);return q.x>=b.x0&&q.x<=b.x1&&q.y>=b.y0&&q.y<=b.y1}))return;occ+=q.w*q.h});
   var dd=dOf('open'),oa=Math.max(0,pa-occ);open={area:pa,free:oa,d:dd,cap:Math.floor(oa/dd)}}
  us.forEach(function(u){var b=boundsOf(u.o),cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;us.forEach(function(v){if(v===u||u.gross>=v.gross)return;var c=boundsOf(v.o);if(cx>=c.x0&&cx<=c.x1&&cy>=c.y0&&cy<=c.y1)warn.push('"'+u.name+'" sits inside "'+v.name+'": both are counted. Tick "Leave out of the crowd calculation" on one of them if that is double counting.')})});
@@ -981,7 +1004,7 @@ function genEvac(){
  function cy(y){return Math.min(ny-1,Math.max(0,Math.floor((y-Y0)/cs)))}
  function wx(ix){return X0+(ix+.5)*cs}function wy(iy){return Y0+(iy+.5)*cs}
  vis.forEach(function(o){
-  if(o.t==='rect'&&!/^netting/.test(o.k)&&o.k.indexOf('deck')!==0){var d=dimsOf(o),cr=corners(o),xa=Infinity,xb=-Infinity,ya=Infinity,yb=-Infinity;cr.forEach(function(p){xa=Math.min(xa,p.x);xb=Math.max(xb,p.x);ya=Math.min(ya,p.y);yb=Math.max(yb,p.y)});
+  if(o.t==='rect'&&!/^netting/.test(o.k)&&o.k.indexOf('deck')!==0&&(LIBM[o.k]||{}).s!=='truss'){var d=dimsOf(o),cr=corners(o),xa=Infinity,xb=-Infinity,ya=Infinity,yb=-Infinity;cr.forEach(function(p){xa=Math.min(xa,p.x);xb=Math.max(xb,p.x);ya=Math.min(ya,p.y);yb=Math.max(yb,p.y)});
    for(j=cy(ya);j<=cy(yb);j++)for(i=cx(xa);i<=cx(xb);i++){var l=toLocal(o,{x:wx(i),y:wy(j)});if(Math.abs(l.x)<=d.w/2+.15&&Math.abs(l.y)<=d.h/2+.15)blk[j*nx+i]=1}}
   else if(o.t==='line'&&['fence','wall','barrier','shade','shadeb','drape','plain','thin','brick','shell'].indexOf(o.style||'fence')>=0){
    var P=o.closed?o.pts.concat([o.pts[0]]):o.pts;
@@ -2339,8 +2362,8 @@ function doImportDxf(f,fl,sel,u,mode){
  toast('Imported to scale: '+Wm.toFixed(1)+' × '+Hm.toFixed(1)+' m'+(mode==='u'?'. Trace over it, or tick "Edit this plan" in the Images tab.':'.'),6000);
  if(matchMedia('(max-width:820px)').matches)openPanel()}
 
-var DXFCOL={fence:8,barrier:30,wall:7,tape:1,shade:3,shadeb:250,drape:250,plain:7,thin:7,brick:7,shell:7,evac:3};
-var DXFW={wall:.2,brick:.23,shell:.04};
+var DXFCOL={fence:8,barrier:30,wall:7,tape:1,shade:3,shadeb:250,drape:250,plain:7,thin:7,brick:7,shell:7,evac:3,truss:9};
+var DXFW={truss:.3,wall:.2,brick:.23,shell:.04};
 function exportDxf(){
  var objs=S.objs.filter(vo);if(!objs.length){toast('Draw something first');return}
  ask('Export for AutoCAD (DXF)',[{l:'Units in the drawing: type mm (AutoCAD default) or m',v:'mm'}],function(v){

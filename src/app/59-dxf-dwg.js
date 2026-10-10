@@ -107,8 +107,8 @@ function doImportDxf(f,fl,sel,u,mode){
  toast('Imported to scale: '+Wm.toFixed(1)+' × '+Hm.toFixed(1)+' m'+(mode==='u'?'. Trace over it, or tick "Edit this plan" in the Images tab.':'.'),6000);
  if(matchMedia('(max-width:820px)').matches)openPanel()}
 
-var DXFCOL={fence:8,barrier:30,wall:7,tape:1,shade:3,shadeb:250,drape:250,plain:7,thin:7,brick:7,shell:7,evac:3};
-var DXFW={wall:.2,brick:.23,shell:.04};
+var DXFCOL={fence:8,barrier:30,wall:7,tape:1,shade:3,shadeb:250,drape:250,plain:7,thin:7,brick:7,shell:7,evac:3,truss:9};
+var DXFW={truss:.3,wall:.2,brick:.23,shell:.04};
 function exportDxf(){
  var objs=S.objs.filter(vo);if(!objs.length){toast('Draw something first');return}
  ask('Export for AutoCAD (DXF)',[{l:'Units in the drawing: type mm (AutoCAD default) or m',v:'mm'}],function(v){

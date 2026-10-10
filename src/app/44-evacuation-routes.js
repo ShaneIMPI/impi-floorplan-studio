@@ -22,7 +22,7 @@ function genEvac(){
  function cy(y){return Math.min(ny-1,Math.max(0,Math.floor((y-Y0)/cs)))}
  function wx(ix){return X0+(ix+.5)*cs}function wy(iy){return Y0+(iy+.5)*cs}
  vis.forEach(function(o){
-  if(o.t==='rect'&&!/^netting/.test(o.k)&&o.k.indexOf('deck')!==0){var d=dimsOf(o),cr=corners(o),xa=Infinity,xb=-Infinity,ya=Infinity,yb=-Infinity;cr.forEach(function(p){xa=Math.min(xa,p.x);xb=Math.max(xb,p.x);ya=Math.min(ya,p.y);yb=Math.max(yb,p.y)});
+  if(o.t==='rect'&&!/^netting/.test(o.k)&&o.k.indexOf('deck')!==0&&(LIBM[o.k]||{}).s!=='truss'){var d=dimsOf(o),cr=corners(o),xa=Infinity,xb=-Infinity,ya=Infinity,yb=-Infinity;cr.forEach(function(p){xa=Math.min(xa,p.x);xb=Math.max(xb,p.x);ya=Math.min(ya,p.y);yb=Math.max(yb,p.y)});
    for(j=cy(ya);j<=cy(yb);j++)for(i=cx(xa);i<=cx(xb);i++){var l=toLocal(o,{x:wx(i),y:wy(j)});if(Math.abs(l.x)<=d.w/2+.15&&Math.abs(l.y)<=d.h/2+.15)blk[j*nx+i]=1}}
   else if(o.t==='line'&&['fence','wall','barrier','shade','shadeb','drape','plain','thin','brick','shell'].indexOf(o.style||'fence')>=0){
    var P=o.closed?o.pts.concat([o.pts[0]]):o.pts;

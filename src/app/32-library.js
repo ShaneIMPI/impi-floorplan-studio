@@ -20,6 +20,12 @@ var LIB=[
  {k:'stage',n:'Stage',w:8,h:6,c:'Stage & AV',s:'stage',lab:'STAGE'},
  {k:'netting',n:'Shade netting, green (open underneath)',w:10,h:3,c:'Stage & AV',s:'netting',lab:'Shade netting'},
  {k:'nettingb',n:'Shade netting, black (open underneath)',w:10,h:3,c:'Stage & AV',s:'netting',dk:1,lab:'Shade netting'},
+ {k:'truss33',n:'Truss frame 3 × 3',w:3,h:3,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss44',n:'Truss frame 4 × 4',w:4,h:4,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss64',n:'Truss frame 6 × 4',w:6,h:4,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss66',n:'Truss frame 6 × 6',w:6,h:6,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss3',n:'Truss run 3 m',w:3,h:.3,c:'Stage & AV',s:'truss',lab:''},
+ {k:'truss6',n:'Truss run 6 m',w:6,h:.3,c:'Stage & AV',s:'truss',lab:''},
  {k:'deck3',n:'Decking 3 × 3',w:3,h:3,c:'Stage & AV',s:'deck',lab:'Deck'},
  {k:'deck63',n:'Decking 6 × 3',w:6,h:3,c:'Stage & AV',s:'deck',lab:'Deck'},
  {k:'deck66',n:'Decking 6 × 6',w:6,h:6,c:'Stage & AV',s:'deck',lab:'Deck'},
@@ -67,7 +73,7 @@ var DOORS=[
  {k:'gate',n:'Vehicle / service gate',col:'#7a4b2a',w:5,lab:'GATE'}
 ];
 var DOORM={}; DOORS.forEach(function(d){DOORM[d.k]=d});
-var LINES=[{k:'fence',n:'Perimeter fence'},{k:'barrier',n:'Crowd barrier'},{k:'wall',n:'Wall / solid structure'},{k:'tape',n:'Tape / rope line'},{k:'shade',n:'Shade cloth fencing (green)'},{k:'shadeb',n:'Shade cloth fencing (black)'},{k:'drape',n:'Black draping'},{k:'plain',n:'Plain black line'},{k:'thin',n:'Thin line (hairline)'},{k:'brick',n:'Brick wall (hatched)'},{k:'shell',n:'Shell scheme wall'},{k:'evac',n:'Evacuation route'}];
+var LINES=[{k:'fence',n:'Perimeter fence'},{k:'barrier',n:'Crowd barrier'},{k:'wall',n:'Wall / solid structure'},{k:'tape',n:'Tape / rope line'},{k:'shade',n:'Shade cloth fencing (green)'},{k:'shadeb',n:'Shade cloth fencing (black)'},{k:'drape',n:'Black draping'},{k:'truss',n:'Truss (draw any run or frame)'},{k:'plain',n:'Plain black line'},{k:'thin',n:'Thin line (hairline)'},{k:'brick',n:'Brick wall (hatched)'},{k:'shell',n:'Shell scheme wall'},{k:'evac',n:'Evacuation route'}];
 var LINEM={}; LINES.forEach(function(l){LINEM[l.k]=l});
 var ZCOL=[{c:'#5b6770',n:'Tent / structure'},{c:'#1c6bb0',n:'Hospitality'},{c:'#b7791f',n:'VIP'},{c:'#c62828',n:'Restricted'},{c:'#12804a',n:'General admission'},{c:'#7c3aed',n:'Backstage'}];
 var PAPER={A5:{w:210,h:148},A4:{w:297,h:210},A3:{w:420,h:297},A2:{w:594,h:420},A1:{w:841,h:594},A0:{w:1189,h:841}};

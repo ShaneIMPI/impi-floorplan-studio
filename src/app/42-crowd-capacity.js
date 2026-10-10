@@ -18,7 +18,7 @@ function unitGross(o){return o.t==='poly'?Math.abs(polyArea(o.pts)):(o.t==='area
 function exitDoors(){var en=S.meta.evEntr!==false;return S.objs.filter(function(d){return d.t==='door'&&!d.hd&&!d.ev&&(d.k==='exit'||d.k==='eexit'||(d.k==='entrance'&&en))})}
 function crowdUnit(o){
  var ly=(S.meta.layouts||[]).filter(function(l){return l.src===o.id})[0],
-  items=ly?S.objs.filter(function(q){return q.lay===ly.id&&q.id!==o.id&&q.t==='rect'&&q.k!=='cover'&&!q.hd}):[];
+  items=ly?S.objs.filter(function(q){return q.lay===ly.id&&q.id!==o.id&&q.t==='rect'&&q.k!=='cover'&&(LIBM[q.k]||{}).s!=='truss'&&!q.hd}):[];
  var gross=unitGross(o),fp=0,seats=0;items.forEach(function(q){fp+=q.w*q.h;var l=LIBM[q.k];if(l&&l.seats)seats+=l.seats});
  var net=Math.max(0,gross-fp),use=o.use||'sgen',d=o.dens>0?+o.dens:dOf(use),cap,how;
  if(o.pax>0){cap=Math.round(o.pax);how='fixed'}
@@ -34,7 +34,7 @@ function crowdAll(){
  var per=null,pa=0;S.objs.forEach(function(o){if(o.t==='line'&&o.closed&&o.pts&&o.pts.length>2&&o.style!=='evac'&&!o.hd&&!o.ev&&!o.lay){var a=Math.abs(polyArea(o.pts));if(a>pa){pa=a;per=o}}});
  var open=null,warn=[];
  if(per){var occ=0;us.forEach(function(u){occ+=u.gross});
-  S.objs.forEach(function(q){if(q.t!=='rect'||q.hd||q.lay||q.k==='cover'||/^netting/.test(q.k||'')||(q.k||'').indexOf('deck')===0||isUnit(q))return;
+  S.objs.forEach(function(q){if(q.t!=='rect'||q.hd||q.lay||q.k==='cover'||/^netting/.test(q.k||'')||(q.k||'').indexOf('deck')===0||(LIBM[q.k]||{}).s==='truss'||isUnit(q))return;
    if(us.some(function(u){var b=boundsOf(u.o);return q.x>=b.x0&&q.x<=b.x1&&q.y>=b.y0&&q.y<=b.y1}))return;occ+=q.w*q.h});
   var dd=dOf('open'),oa=Math.max(0,pa-occ);open={area:pa,free:oa,d:dd,cap:Math.floor(oa/dd)}}
  us.forEach(function(u){var b=boundsOf(u.o),cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;us.forEach(function(v){if(v===u||u.gross>=v.gross)return;var c=boundsOf(v.o);if(cx>=c.x0&&cx<=c.x1&&cy>=c.y0&&cy<=c.y1)warn.push('"'+u.name+'" sits inside "'+v.name+'": both are counted. Tick "Leave out of the crowd calculation" on one of them if that is double counting.')})});
