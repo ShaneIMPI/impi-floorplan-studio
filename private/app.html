@@ -232,8 +232,8 @@ var LIB=[
  {k:'round8',n:'Round table (8 seat)',w:2.4,h:2.4,c:'Furniture',s:'round',seats:8,lab:''},
  {k:'cocktail',n:'Cocktail table',w:0.8,h:0.8,c:'Furniture',s:'cocktail',lab:''},
  {k:'umbrella',n:'Umbrella (3 m)',w:3,h:3,c:'Furniture',s:'umbrella',lab:''},
- {k:'gaz3',n:'Gazebo 3 × 3',w:3,h:3,c:'Tents',s:'gazebo',lab:'Gazebo'},
- {k:'gaz36',n:'Gazebo 3 × 6',w:6,h:3,c:'Tents',s:'gazebo',lab:'Gazebo'},
+ {k:'gaz3',n:'Gazebo 3 × 3',w:3,h:3,c:'Tents',s:'gazebo',lab:'Gazebo',opn:1},
+ {k:'gaz36',n:'Gazebo 3 × 6',w:6,h:3,c:'Tents',s:'gazebo',lab:'Gazebo',opn:1},
  {k:'marq3',n:'Marquee 3 × 3',w:3,h:3,c:'Tents',s:'tent',lab:'Marquee'},
  {k:'marq5',n:'Marquee 5 × 5',w:5,h:5,c:'Tents',s:'tent',lab:'Marquee'},
  {k:'marq510',n:'Marquee 5 × 10',w:10,h:5,c:'Tents',s:'tent',lab:'Marquee'},
@@ -241,7 +241,7 @@ var LIB=[
  {k:'marq1020',n:'Marquee 10 × 20',w:20,h:10,c:'Tents',s:'tent',lab:'Marquee'},
  {k:'dome83',n:'Dome tent 8.3 × 8.3 (Crossover L, 68 m²)',w:8.29,h:8.29,c:'Tents',s:'dome',lab:'Dome'},
  {k:'dome5',n:'Small dome tent 5 × 5',w:5,h:5,c:'Tents',s:'dome',lab:'Dome'},
- {k:'bedouin',n:'Bedouin tent',w:8,h:8,c:'Tents',s:'bedouin',lab:'Bedouin'},
+ {k:'bedouin',n:'Bedouin tent',w:8,h:8,c:'Tents',s:'bedouin',lab:'Bedouin',opn:1},
  {k:'snow',n:'Snow Peak tent',w:5,h:5,c:'Tents',s:'snow',lab:'Snow Peak'},
  {k:'stall',n:'Stall / stand 3 × 3',w:3,h:3,c:'Tents',s:'stall',lab:'Stall'},
  {k:'stage',n:'Stage',w:8,h:6,c:'Stage & AV',s:'stage',lab:'STAGE'},
@@ -766,12 +766,20 @@ var DENS=[
 ];
 function dOf(k){var v=(S.meta.dens||{})[k];if(v>0)return v;for(var i=0;i<DENS.length;i++)if(DENS[i].k===k)return DENS[i].d;return 1}
 function isUnit(o){
- if(!o||o.hd||o.ev)return false;
+ if(!o||o.hd||o.ev||o.site)return false;
  if(o.lay){var ly=layoutOf(o.lay);if(!ly||ly.src!==o.id)return false}
  if(o.t==='area'||o.t==='poly')return true;
  if(o.t==='rect'){var l=LIBM[o.k];return !!l&&l.c==='Tents'&&l.s!=='stall'}
  return false}
 function unitGross(o){return o.t==='poly'?Math.abs(polyArea(o.pts)):(o.t==='area'?areaSqm(o):o.w*o.h)}
+function isOpenStruct(o){if(!o)return false;if(o.opn===true||o.opn===false)return o.opn;var l=LIBM[o.k];return !!(l&&l.opn)}
+function siteBoundary(){
+ var best=null,o,P;
+ S.objs.forEach(function(q){if(q.site&&!q.hd&&!q.ev&&(q.t==='poly'||q.t==='area'||(q.t==='line'&&q.closed))&&!best)best=q});
+ if(best){o=best;P=selOutline(o).pts;var ar=o.t==='area'?areaSqm(o):Math.abs(polyArea(o.pts));return {o:o,P:P,area:ar,src:'site',name:o.label||'Event site'}}
+ var pa=0,per=null;S.objs.forEach(function(q){if(q.t==='line'&&q.closed&&q.pts&&q.pts.length>2&&q.style!=='evac'&&!q.hd&&!q.ev&&!q.lay){var a=Math.abs(polyArea(q.pts));if(a>pa){pa=a;per=q}}});
+ if(per)return {o:per,P:per.pts,area:pa,src:'line',name:'Closed perimeter line'};
+ return null}
 function exitDoors(){var en=S.meta.evEntr!==false;return S.objs.filter(function(d){return d.t==='door'&&!d.hd&&!d.ev&&(d.k==='exit'||d.k==='eexit'||(d.k==='entrance'&&en))})}
 function crowdUnit(o){
  var ly=(S.meta.layouts||[]).filter(function(l){return l.src===o.id})[0],
@@ -783,20 +791,30 @@ function crowdUnit(o){
  else{cap=Math.floor(net/d);how='area'}
  var b=boundsOf(o),ex=exitDoors().filter(function(e){return e.x>=b.x0-1.5&&e.x<=b.x1+1.5&&e.y>=b.y0-1.5&&e.y<=b.y1+1.5}),ew=0;ex.forEach(function(e){ew+=e.w||0});
  var nm=o.label||(LIBM[o.k]&&LIBM[o.k].n)||(o.t==='poly'?'Zone':'Area');
- return {o:o,name:nm,gross:gross,net:net,seats:seats,hasLay:!!ly,use:use,d:d,cap:cap,how:how,ew:ew,nex:ex.length}
+ return {o:o,name:nm,gross:gross,net:net,seats:seats,hasLay:!!ly,use:use,d:d,cap:cap,how:how,ew:ew,nex:ex.length,opn:isOpenStruct(o)}
 }
 function crowdAll(){
  var m=S.meta,us=S.objs.filter(function(o){return isUnit(o)&&!o.nc}).map(crowdUnit),att=+m.attend||0,flow=+m.flow||82,T=+m.evT||8,ex=exitDoors(),exW=0;
  ex.forEach(function(e){exW+=e.w||0});
- var per=null,pa=0;S.objs.forEach(function(o){if(o.t==='line'&&o.closed&&o.pts&&o.pts.length>2&&o.style!=='evac'&&!o.hd&&!o.ev&&!o.lay){var a=Math.abs(polyArea(o.pts));if(a>pa){pa=a;per=o}}});
- var open=null,warn=[];
- if(per){var occ=0;us.forEach(function(u){occ+=u.gross});
+ var site=siteBoundary(),open=null,warn=[];
+ if(site){
+  var SP=site.P,pa=site.area,occ=0,cin=function(b){var cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;return inPoly({x:cx,y:cy},SP)};
+  var us2=us.filter(function(u){return cin(boundsOf(u.o))});
+  /* structures inside the site take floor space; one nested inside a larger one is not subtracted twice */
+  us2.forEach(function(u){var b=boundsOf(u.o),cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;if(us2.some(function(v){if(v===u||v.gross<=u.gross)return false;var c=boundsOf(v.o);return cx>=c.x0&&cx<=c.x1&&cy>=c.y0&&cy<=c.y1}))return;occ+=u.gross});
   S.objs.forEach(function(q){if(q.t!=='rect'||q.hd||q.lay||q.k==='cover'||/^netting/.test(q.k||'')||(q.k||'').indexOf('deck')===0||(LIBM[q.k]||{}).s==='truss'||isUnit(q))return;
+   if(!inPoly({x:q.x,y:q.y},SP))return;
    if(us.some(function(u){var b=boundsOf(u.o);return q.x>=b.x0&&q.x<=b.x1&&q.y>=b.y0&&q.y<=b.y1}))return;occ+=q.w*q.h});
-  var dd=dOf('open'),oa=Math.max(0,pa-occ);open={area:pa,free:oa,d:dd,cap:Math.floor(oa/dd)}}
+  var dd=dOf('open'),oa=Math.max(0,pa-occ);open={area:pa,free:oa,d:dd,cap:Math.floor(oa/dd),src:site.src,name:site.name}}
+ else if(+m.siteArea>0){
+  /* no drawn boundary (venue has its own fencing): use the typed-in site area, less every structure's floor space */
+  var occ2=0;us.forEach(function(u){var b=boundsOf(u.o),cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;if(us.some(function(v){if(v===u||v.gross<=u.gross)return false;var c=boundsOf(v.o);return cx>=c.x0&&cx<=c.x1&&cy>=c.y0&&cy<=c.y1}))return;occ2+=u.gross});
+  var d2=dOf('open'),pa2=+m.siteArea,oa2=Math.max(0,pa2-occ2);open={area:pa2,free:oa2,d:d2,cap:Math.floor(oa2/d2),src:'typed',name:'Event site (area entered)'}}
+ else if(att>0||us.length)warn.push('Open ground is NOT counted: no event site area is set. Type the venue\'s total event area (m²) in Crowd & capacity or the Sheet tab, or draw a boundary. You do not have to draw existing fencing.');
  us.forEach(function(u){var b=boundsOf(u.o),cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;us.forEach(function(v){if(v===u||u.gross>=v.gross)return;var c=boundsOf(v.o);if(cx>=c.x0&&cx<=c.x1&&cy>=c.y0&&cy<=c.y1)warn.push('"'+u.name+'" sits inside "'+v.name+'": both are counted. Tick "Leave out of the crowd calculation" on one of them if that is double counting.')})});
- var tot=us.reduce(function(a,u){return a+u.cap},0)+(open?open.cap:0);
- return {units:us,open:open,total:tot,att:att,flow:flow,T:T,exW:exW,nEx:ex.length,evTime:(att>0&&exW>0)?att/(exW*flow):null,reqW:att>0?att/(flow*T):0,over:att>0&&tot>0&&att>tot,warn:warn}
+ var tot=us.reduce(function(a,u){return a+u.cap},0)+(open?open.cap:0),calc=tot,cert=+m.certCap||0;
+ if(cert>0&&tot>cert)tot=cert;
+ return {calc:calc,cert:cert,capped:cert>0&&calc>cert,units:us,open:open,total:tot,att:att,flow:flow,T:T,exW:exW,nEx:ex.length,evTime:(att>0&&exW>0)?att/(exW*flow):null,reqW:att>0?att/(flow*T):0,over:att>0&&tot>0&&att>tot,warn:warn}
 }
 function cfmt(n){return Math.round(n).toLocaleString('en-ZA')}
 function crowdLines(){
@@ -811,6 +829,8 @@ function crowdLines(){
  C.units.slice(0,6).forEach(function(u){L.push(['   '+u.name,cfmt(u.cap)])});
  if(C.units.length>6)L.push(['   + '+(C.units.length-6)+' more structures','']);
  if(C.open)L.push(['   Open ground (est.)',cfmt(C.open.cap)]);
+ else if(C.att>0)L.push(['   Open ground','not counted: no site area set','#c62828']);
+ if(C.capped)L.push(['   Calculated '+cfmt(C.calc)+', limited to venue certificate','']);
  if(C.exW>0){L.push(['Exits ('+C.nEx+')',(Math.round(C.exW*10)/10)+' m wide']);
   if(C.att>0){var ok=C.evTime<=C.T;L.push(['Clearance time',(C.evTime<10?C.evTime.toFixed(1):Math.round(C.evTime))+' min (target '+C.T+')',ok?null:RED])}}
  else if(C.att>0)L.push(['Exits','none placed',RED]);
@@ -818,13 +838,14 @@ function crowdLines(){
 function crowdModal(){
  var m=S.meta,C=crowdAll(),h='<h3>Crowd &amp; capacity</h3><p class="note"><b>'+esc(m.event||'')+'</b><br>'+esc(m.venue||'')+' · '+esc(m.date||'')+((m.tstart||m.tend)?' · '+esc(m.tstart||'')+(m.tend?' – '+esc(m.tend):''):'')+'</p>';
  h+='<table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="text-align:left;color:#5b6b78"><th>Structure</th><th>Area m²</th><th>Usable m²</th><th>Basis</th><th>Capacity</th><th>Exit m</th></tr>';
- C.units.forEach(function(u){var need=u.cap/(C.flow*C.T),lowExit=u.ew+1e-6<need;
-  h+='<tr style="border-top:1px solid #d6dde2"><td>'+esc(u.name)+(u.hasLay?' <small>(internal layout)</small>':'')+'</td><td>'+cfmt(u.gross)+'</td><td>'+cfmt(u.net)+'</td><td>'+(u.how==='seats'?cfmt(u.seats)+' seats':u.how==='fixed'?'fixed':u.d+' m²/p')+'</td><td><b>'+cfmt(u.cap)+'</b></td><td style="color:'+(lowExit?'#c62828':'inherit')+'">'+(Math.round(u.ew*10)/10)+' <small>(need '+(Math.round(need*10)/10)+')</small></td></tr>'});
- if(C.open)h+='<tr style="border-top:1px solid #d6dde2"><td>Open ground inside the perimeter <small>(estimate)</small></td><td>'+cfmt(C.open.area)+'</td><td>'+cfmt(C.open.free)+'</td><td>'+C.open.d+' m²/p</td><td><b>'+cfmt(C.open.cap)+'</b></td><td></td></tr>';
- h+='<tr style="border-top:2px solid #12202b"><td><b>Whole venue</b></td><td></td><td></td><td></td><td><b>'+cfmt(C.total)+'</b></td><td></td></tr></table>';
+ C.units.forEach(function(u){var need=u.cap/(C.flow*C.T),lowExit=!u.opn&&u.ew+1e-6<need;
+  h+='<tr style="border-top:1px solid #d6dde2"><td>'+esc(u.name)+(u.hasLay?' <small>(internal layout)</small>':'')+'</td><td>'+cfmt(u.gross)+'</td><td>'+cfmt(u.net)+'</td><td>'+(u.how==='seats'?cfmt(u.seats)+' seats':u.how==='fixed'?'fixed':u.d+' m²/p')+'</td><td><b>'+cfmt(u.cap)+'</b></td><td style="color:'+(lowExit?'#c62828':'inherit')+'">'+(u.opn?'open sides <small>(no exits needed)</small>':(Math.round(u.ew*10)/10)+' <small>(need '+(Math.round(need*10)/10)+')</small>')+'</td></tr>'});
+ if(C.open)h+='<tr style="border-top:1px solid #d6dde2"><td>Open ground '+(C.open.src==='typed'?'<small>(site area entered, less structures)</small>':'inside the perimeter <small>(estimate)</small>')+'</td><td>'+cfmt(C.open.area)+'</td><td>'+cfmt(C.open.free)+'</td><td>'+C.open.d+' m²/p</td><td><b>'+cfmt(C.open.cap)+'</b></td><td></td></tr>';
+ h+='<tr style="border-top:2px solid #12202b"><td><b>Whole venue</b>'+(C.capped?' <small>(calculated '+cfmt(C.calc)+', limited to the venue\'s certified '+cfmt(C.cert)+')</small>':'')+'</td><td></td><td></td><td></td><td><b>'+cfmt(C.total)+'</b></td><td></td></tr></table>';
  h+='<p style="margin:10px 0 4px"><b>Expected attendance:</b> '+(C.att>0?cfmt(C.att):'<i>not entered (Sheet tab)</i>')+(C.att>0&&C.total>0?' — <b style="color:'+(C.over?'#c62828':'#12804a')+'">'+(C.over?'more than the planned capacity':'within the planned capacity')+'</b>':'')+'</p>';
  h+='<p style="margin:4px 0"><b>Exits:</b> '+C.nEx+' placed, '+(Math.round(C.exW*10)/10)+' m clear width in total. At '+C.flow+' people per minute per metre, '+(C.att>0&&C.exW>0?'the expected crowd clears in about <b style="color:'+(C.evTime>C.T?'#c62828':'#12804a')+'">'+(C.evTime<10?C.evTime.toFixed(1):Math.round(C.evTime))+' min</b> (target '+C.T+' min). ':'')+(C.att>0?'Width needed for the target time: <b>'+(Math.round(C.reqW*10)/10)+' m</b>.':'')+'</p>';
  C.warn.forEach(function(w){h+='<p class="note" style="color:#b45309">⚠ '+esc(w)+'</p>'});
+ h+='<p style="margin:10px 0 4px"><b>Venue certified capacity</b> (from its fitness certificate; the plan never counts above this): <input id="cm_cert" type="number" min="0" step="1" value="'+(+m.certCap>0?m.certCap:'')+'" style="width:110px;padding:6px"> <button class="btn sm pri" data-act="sitearea">Set</button></p><p style="margin:10px 0 4px"><b>Venue with existing fencing?</b> Type the total event area instead of drawing it'+(siteBoundary()?' (used only when no boundary is drawn)':'')+':</p><div class="btns" style="align-items:center"><input id="cm_sitearea" type="number" min="0" step="1" placeholder="total area, m²" value="'+(+m.siteArea>0?m.siteArea:'')+'" style="width:140px;padding:6px"> m² <button class="btn sm pri" data-act="sitearea">Set</button>'+(siteBoundary()?'':' <button class="btn sm" data-act="drawsite">Or draw it</button>')+'</div>';
  h+='<p class="note">Densities and the exit flow rate are editable planning figures (Sheet tab). They are not legal limits: confirm against SANS 10400, the approved risk category and the ESSPC / fire department. Capacity reacts to each structure\'s internal layout: furniture is taken off the usable floor, and table seats are counted when a structure is set to "seated at tables".</p>';
  box(h);var mb=$('#modal .mbox');if(mb){mb.style.maxWidth='760px';mb.style.maxHeight='86vh';mb.style.overflow='auto'}
 }
@@ -867,6 +888,7 @@ function rdyRun(){
  if(!(att>0))add('fail','Plan basics','Expected attendance has not been entered. Capacity and exit checks cannot be judged without it.',[],'Sheet tab → Expected attendance.');
  if(!m.tstart||!m.tend)add('warn','Plan basics','Event start and end times are not entered.',[],'Sheet tab → Event times.');
  if(!objs.length){add('fail','Plan basics','The plan is empty.');return F}
+ if(att>0&&!siteBoundary()&&!(+S.meta.siteArea>0))add('warn','Capacity','No event site area is set, so open ground is not counted in the capacity. Type the venue\'s total event area (m²) in Crowd & capacity (no need to draw existing fencing), or draw a boundary.',[],'Crowd & capacity → type the event area → Set.');
  /* 2 capacity */
  if(att>0&&C.total>0){if(C.over)add('fail','Capacity','Expected attendance ('+cfmt(att)+') is more than the planned capacity ('+cfmt(C.total)+').',[],'Add space, reduce the crowd, or change how each structure is used.');
   else add('pass','Capacity','Planned capacity '+cfmt(C.total)+' covers the expected '+cfmt(att)+'.')}
@@ -889,7 +911,7 @@ function rdyRun(){
  units.forEach(function(u){
   var o=u.o,P=selOutline(o).pts,id=[o.id],nm=u.name+' ('+cfmt(u.gross)+' m²)';
   var near=function(arr,d){return arr.filter(function(q){return ptPolyD({x:q.x,y:q.y},P)<=d})};
-  if(u.cap>0){
+  if(u.cap>0&&!u.opn){
    if(u.nex===0)add('fail','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.cap)+' people but has no exit at it.',id,'Place exit doors on its edge.');
    else{
     if(u.cap>rv('two')&&u.nex<2)add('fail','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.cap)+' people but has only one exit (more than '+rv('two')+' people needs two or more).',id,'Add a second exit, ideally on the opposite side.');
@@ -901,6 +923,7 @@ function rdyRun(){
    if(nf<rq)add('fail','Structure: '+nm,'"'+nm+'" has '+nf+' fire extinguisher'+(nf===1?'':'s')+' at it; '+rq+' needed ('+cfmt(u.gross)+' m² at 1 per '+rv('fireA')+' m²).',id,'Signs → Fire → extinguisher.')}
   if(u.cap>=rv('aidCap')&&!near(aid,rv('aidD')).length)add('warn','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.cap)+' people but there is no first aid point within '+rv('aidD')+' m.',id,'Place a first aid post or sign near it.');
  });
+ var nopn=units.filter(function(u){return u.opn}).length;if(nopn)add('info','Open structures',nopn+' open-sided structure'+(nopn>1?'s are':' is')+' not checked for exits (people can leave in any direction).');
  if(units.length&&units.every(function(u){return u.gross<rv('fireMin')}))add('info','Fire equipment','All structures are under '+rv('fireMin')+' m², so none needs its own fire equipment under these settings.');
  if(!fire.length&&objs.length>3&&!F.some(function(f){return f.cat.indexOf('Structure')===0&&/fire extinguisher/.test(f.msg)}))add('fail','Fire equipment','No fire extinguishers or hose reels are placed anywhere on the plan.',[],'Signs → Fire.');
  /* 5 first aid, venue */
@@ -956,10 +979,11 @@ function rdyModal(){
  $('#rdy_dl').onclick=function(){var s='<!doctype html><meta charset="utf-8"><title>Approval readiness</title><body style="font-family:Arial,sans-serif;max-width:800px;margin:20px auto"><h2>Approval readiness check</h2><p>'+esc(S.meta.event||'')+' · '+esc(S.meta.venue||'')+' · '+esc(S.meta.date||'')+' · '+esc(S.meta.ref||'')+' Rev '+esc(S.meta.rev||'')+'</p><p><b>'+nf+' to fix · '+nw+' to review · '+np+' passed</b></p><table border="1" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:13px">'+F.slice().sort(function(a,b){return order[a.sev]-order[b.sev]}).map(function(f){return '<tr><td>'+lab[f.sev]+'</td><td>'+esc(f.cat)+'</td><td>'+esc(f.msg)+'</td></tr>'}).join('')+'</table><p style="font-size:11px;color:#555">Planning check, not a legal opinion. Settings: '+RDY.map(function(x){return esc(x.n)+' = '+rv(x.k)}).join('; ')+'</p></body>';
   download('Readiness_'+(S.meta.ref||'plan')+'.html',new Blob([s],{type:'text/html'}))}
 }
+function sitePanel(o){return '<h4>Event site</h4>'+pchk('site','Event site boundary (the whole event area: open ground inside it is counted in the crowd capacity)',o.site)+'<p class="note">Draw one Shape around the whole event, tick this, and the space not taken up by structures counts as standing room.</p>'}
 function crowdPanel(o){
  var u=crowdUnit(o),C=crowdAll(),h='<h4>Crowd capacity</h4>'+pchk('nc','Leave out of the crowd calculation',o.nc);
  if(!o.nc){h+=psel('use','Used as',DENS.map(function(x){return [x.k,x.n+' · '+dOf(x.k)+' m² each']}),o.use||'sgen')+'<div class="row2">'+pf('dens','Own density (m² each, 0 = preset)',o.dens||0,'number','step="any" min="0"')+pf('pax','Fixed headcount (0 = calculate)',o.pax||0,'number','step="1" min="0"')+'</div>';
-  h+='<div class="note">Area <b>'+cfmt(u.gross)+' m²</b>'+(u.hasLay?' · usable after its internal layout <b>'+cfmt(u.net)+' m²</b>':'')+(u.seats?' · table seats <b>'+u.seats+'</b>':'')+'<br>Capacity: <b>'+cfmt(u.cap)+' people</b>'+(u.how==='seats'?' (table seats)':u.how==='fixed'?' (fixed)':' ('+u.d+' m² each)')+'<br>Exits at this structure: <b>'+(Math.round(u.ew*10)/10)+' m</b>'+(u.cap>0?' (needs '+(Math.round(u.cap/(C.flow*C.T)*10)/10)+' m)':'')+'</div>'}
+  h+='<div class="note">Area <b>'+cfmt(u.gross)+' m²</b>'+(u.hasLay?' · usable after its internal layout <b>'+cfmt(u.net)+' m²</b>':'')+(u.seats?' · table seats <b>'+u.seats+'</b>':'')+'<br>Capacity: <b>'+cfmt(u.cap)+' people</b>'+(u.how==='seats'?' (table seats)':u.how==='fixed'?' (fixed)':' ('+u.d+' m² each)')+''+(u.opn?'<br>Open-sided: no exits required here':'<br>Exits at this structure: <b>'+(Math.round(u.ew*10)/10)+' m</b>'+(u.cap>0?' (needs '+(Math.round(u.cap/(C.flow*C.T)*10)/10)+' m)':''))+'</div>'+pchk('opn','Open-sided structure (no exits needed, people can leave in any direction)',u.opn)}
  return h}
 function lineLen(o){var s=0,P=o.pts,pp=o.closed?P.concat([P[0]]):P;for(var i=0;i<pp.length-1;i++)s+=Math.hypot(pp[i+1].x-pp[i].x,pp[i+1].y-pp[i].y);return s}
 function drawText(c,o){var sz=o.size||14,ls=String(o.text||'').split('\n'),n=ls.length;c.save();c.translate(o.x,o.y);c.rotate((o.rot||0)*D2R);ls.forEach(function(t,i){txt(c,t,0,px((i-(n-1)/2)*sz*1.2),sz,{bold:o.b!==false,halo:o.hl!==false,col:o.col})});c.restore()}
@@ -989,7 +1013,7 @@ function genEvac(){
  if(!ex.length){toast('Place Exit, Emergency exit or Entrance doors first (Library → Doors), then generate',6000);return}
  var as=vis.filter(function(o){return o.t==='sign'&&o.k==='assembly'});
  var OR=vis.filter(function(o){
-  if(o.t==='area'||o.t==='poly')return 'zone';
+  if(o.t==='area'||o.t==='poly')return o.site?false:'zone';
   if(o.t==='rect'){var L=LIBM[o.k];if(!L)return false;if(L.c==='Exhibition')return L.s==='stand'||o.k==='lounge';return ['tent','bedouin','snow','stage','stall'].indexOf(L.s)>=0}
   return false});
  var structs=OR.filter(function(o){return o.t==='rect'});
@@ -1079,7 +1103,7 @@ function genEvac(){
   org.push({o:o,de:de,ce:ce,as:best,n:G.m.length})});
  /* imported plan: people are anywhere on the floor, so run routes along its aisles, far ends first */
  if(planMode){
-  var bnds=vis.filter(function(o){return (o.t==='line'&&o.closed&&o.pts&&o.pts.length>2)||o.t==='poly'||o.t==='area'}),inB=new Uint8Array(N);
+  var bnds=vis.filter(function(o){return (o.t==='line'&&o.closed&&o.pts&&o.pts.length>2)||(o.t==='poly'&&!o.site)||o.t==='area'}),inB=new Uint8Array(N);
   if(!bnds.length){toast('Trace the hall outline first (Line / fence → Plain black line, closed, or a Zone) so the generator knows where the floor is',8000);if(!org.length)return}
   else{
    bnds.forEach(function(o){var P=o.t==='area'?corners(o):o.pts,b=boundsOf(o);if(!b)return;for(j=cy(b.y0);j<=cy(b.y1);j++)for(i=cx(b.x0);i<=cx(b.x1);i++){if(inPoly({x:wx(i),y:wy(j)},P))inB[j*nx+i]=1}});
@@ -1505,7 +1529,7 @@ function finishLine(){
  var t=S.tmp;if(!t||t.t!=='line'||t.pts.length<2){cancelLine();return}
  var pts=t.pts.map(function(p){return {x:p.x,y:p.y}});
  if(t.poly){if(pts.length<3){toast('A shape needs at least 3 corners');cancelLine();draw();return}
-  var n=S.objs.filter(function(o){return o.t==='area'||o.t==='poly'}).length+1;S.tmp=null;addObj({t:'poly',pts:pts,col:ZCOL[0].c,label:'Zone '+n});$('#doneBtn').classList.remove('on');setTool('select');return}
+  var n=S.objs.filter(function(o){return o.t==='area'||o.t==='poly'}).length+1;S.tmp=null;var sn=S.siteNext;S.siteNext=false;addObj(sn?{t:'poly',pts:pts,col:'#12804a',fo:.05,site:1,label:'Event site'}:{t:'poly',pts:pts,col:ZCOL[0].c,label:'Zone '+n});$('#doneBtn').classList.remove('on');setTool('select');return}
  var o={t:'line',style:t.style,pts:pts,closed:false};if(t.style==='evac'){o.ev=1;o.man=1;o.keep=1;if(S.meta.only)o.lay=S.meta.only}S.tmp=null;addObj(o);$('#doneBtn').classList.remove('on');setTool('select');
 }
 cv.addEventListener('pointerdown',function(e){
@@ -1782,6 +1806,7 @@ function selHTML(o){
  if(o.t==='rect')h+='<h4>Front (orange edge)</h4>'+psel('fr','Front side',[['auto','Default for this item'],['none','No front'],['n','Top'],['e','Right'],['s','Bottom'],['w','Left']],o.fr===undefined?'auto':o.fr)+frontBtns();
  if(o.t==='line'){h+=psel('style','Style',LINES.map(function(l){return [l.k,l.n]}),o.style||'fence')+'<div class="row2">'+pf('col','Colour',o.col||'#22313d','color')+pf('wt','Weight ×',o.wt||1,'number','step="0.1" min="0.1"')+'</div><div class="btns"><button class="btn sm" data-act="rst:col">Standard colour</button></div>'+pchk('closed','Close the shape (perimeter)',o.closed)+'<div class="note">Total length: <b>'+fm(lineLen(o))+'</b></div><p class="note">Drag a round handle to move a point, a diamond to add one, double-tap a point to remove it.</p><div class="btns"><button class="btn sm pri" data-act="dogleg">Add dog-leg exit in this wall…</button></div>'+(o.ev?'<div class="btns"><button class="btn sm" data-act="evrev">Reverse direction</button></div>'+pchk('keep','Keep this route when I press Generate again',o.keep)+'<p class="note">Edit a route like any line: drag a round handle to move a point, a diamond to add one, double-tap a point to remove it.</p>':'')}
  if(o.t==='dim')h+='<div class="note">Length: <b>'+fm(Math.hypot(o.b.x-o.a.x,o.b.y-o.a.y))+'</b></div>'+pf('label','Custom label (optional)',o.label||'','text')+'<p class="note">Drag the middle handle to move the dimension line out or in.</p>';
+ if((o.t==='poly'||o.t==='area'||(o.t==='line'&&o.closed))&&!o.ev)h+=sitePanel(o);
  if(isUnit(o)&&!o.ev)h+=crowdPanel(o);
  h+='<div class="row2">'+pchk('lk','Lock position',o.lk)+pchk('hd','Hide',o.hd)+'</div>'+zbtns();
  h+='<div class="btns"><button class="btn sm" data-act="dup">Duplicate</button><button class="btn sm" data-act="copy">Copy</button><button class="btn sm" data-act="paste">Paste</button>';
@@ -1831,7 +1856,7 @@ function sheetHTML(){
  h+=fld('m_event','Event name',m.event)+fld('m_title','Drawing title',m.title)+'<div class="row2">'+fld('m_venue','Venue',m.venue)+fld('m_client','Client',m.client)+'</div><div class="row3">'+fld('m_date','Date',m.date)+fld('m_rev','Revision',m.rev)+fld('m_drawn','Drawn by',m.drawn)+'</div>'+fld('m_ref','Reference no.',m.ref)+(isAdmin()?fld('m_company','Company name (watermark &amp; title block)',m.company):'<p class="note">Company name, logo and footer are fixed to '+esc(BRAND_NAME)+' on every sheet.</p>');
  if(isAdmin())h+='<div class="btns"><button class="btn sm" data-act="logo">'+(m.logo?'Replace logo':'Upload logo')+'</button>'+(m.logo?'<button class="btn sm dng" data-act="nologo">Remove logo</button>':'')+'</div>';
  h+='<h4>Event logo</h4><p class="note">Shown at the top of the right-hand panel on the sheet, above the event details. Any image or PDF works (PNG, JPG, SVG, WebP, GIF, PDF…); a transparent PNG looks best.</p><div class="btns"><button class="btn sm pri" data-act="elogo">'+(m.eventLogo?'Replace event logo':'Upload event logo')+'</button>'+(m.eventLogo?'<button class="btn sm dng" data-act="noelogo">Remove</button>':'')+'</div>';
- h+='<h4>Event times &amp; crowd</h4><div class="row3">'+fld('m_tstart','Start time',m.tstart||'','time')+fld('m_tend','End time',m.tend||'','time')+fld('m_attend','Expected attendance',m.attend||'','number','min="0" step="1"')+'</div><div class="row2">'+fld('m_flow','Exit flow (people / min / m)',m.flow||82,'number','min="10" step="1"')+fld('m_evt','Target clearance time (min)',m.evT||8,'number','min="1" step="0.5"')+'</div><p class="note">Space per person (m² each). Typical planning figures: confirm against SANS 10400, the approved risk category and your ESSPC / fire department.</p><div class="row2">'+DENS.map(function(x){return fld('m_d_'+x.k,x.n,dOf(x.k),'number','min="0.1" step="0.05"')}).join('')+'</div><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_crowd"'+(m.crowd!==false?' checked':'')+'> Show the crowd &amp; capacity summary on the sheet</label><div class="btns"><button class="btn sm pri" data-act="crowd">Crowd &amp; capacity calculation…</button> <button class="btn sm pri" data-act="ready">Approval readiness check…</button></div>';
+ h+='<h4>Event times &amp; crowd</h4><div class="row3">'+fld('m_tstart','Start time',m.tstart||'','time')+fld('m_tend','End time',m.tend||'','time')+fld('m_attend','Expected attendance',m.attend||'','number','min="0" step="1"')+'</div><div class="row2">'+fld('m_flow','Exit flow (people / min / m)',m.flow||82,'number','min="10" step="1"')+fld('m_evt','Target clearance time (min)',m.evT||8,'number','min="1" step="0.5"')+'</div><div class="row2">'+fld('m_sitearea','Event site area, m² (if the venue has fencing you have not drawn)',m.siteArea||'','number','min="0" step="1"')+fld('m_cert','Venue certified capacity (fitness certificate)',m.certCap||'','number','min="0" step="1"')+'</div><p class="note">Space per person (m² each). Typical planning figures: confirm against SANS 10400, the approved risk category and your ESSPC / fire department.</p><div class="row2">'+DENS.map(function(x){return fld('m_d_'+x.k,x.n,dOf(x.k),'number','min="0.1" step="0.05"')}).join('')+'</div><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_crowd"'+(m.crowd!==false?' checked':'')+'> Show the crowd &amp; capacity summary on the sheet</label><div class="btns"><button class="btn sm pri" data-act="crowd">Crowd &amp; capacity calculation…</button> <button class="btn sm pri" data-act="ready">Approval readiness check…</button></div>';
  h+='<h4>Sheet</h4><div class="row2"><label class="fld">Paper<select id="m_paper">'+Object.keys(PAPER).concat(['Custom']).map(function(k){return '<option'+(m.paper===k?' selected':'')+'>'+k+'</option>'}).join('')+'</select></label><label class="fld">Scale<select id="m_scale"><option value="auto"'+(m.scale==='auto'?' selected':'')+'>Auto-fit</option>'+SCALES.map(function(s){return '<option value="'+s+'"'+(String(m.scale)===String(s)?' selected':'')+'>1 : '+s+'</option>'}).join('')+'<option value="custom"'+(m.scale==='custom'?' selected':'')+'>Custom…</option></select></label></div>';
  if(m.paper==='Custom')h+='<div class="row2">'+fld('m_pw','Sheet width (mm)',m.pw||420,'number','min="60" step="1"')+fld('m_ph','Sheet height (mm)',m.ph||297,'number','min="60" step="1"')+'</div>';
  if(m.scale==='custom')h+=fld('m_scalec','Custom scale — 1 :',m.scaleC||500,'number','min="1" step="any"');
@@ -1873,7 +1898,7 @@ function wirePanel(b){
  });
  if(S.tab==='sheet'){
   ['event','title','venue','client','date','rev','drawn','ref','company','tstart','tend'].forEach(function(k){str('m_'+k,function(v){S.meta[k]=v})});
-  [['m_attend','attend',0],['m_flow','flow',82],['m_evt','evT',8]].forEach(function(q){var el=$('#'+q[0],b);if(el)el.onchange=function(){var v=parseFloat(el.value);S.meta[q[1]]=(v>0)?v:q[2];saveLocal();draw()}});
+  [['m_attend','attend',0],['m_flow','flow',82],['m_evt','evT',8],['m_sitearea','siteArea',0],['m_cert','certCap',0]].forEach(function(q){var el=$('#'+q[0],b);if(el)el.onchange=function(){var v=parseFloat(el.value);S.meta[q[1]]=(v>0)?v:q[2];saveLocal();draw()}});
   DENS.forEach(function(x){var el=$('#m_d_'+x.k,b);if(el)el.onchange=function(){var v=parseFloat(el.value);S.meta.dens=S.meta.dens||{};if(v>0)S.meta.dens[x.k]=v;else delete S.meta.dens[x.k];saveLocal();renderPanel()}});
   var mcw=$('#m_crowd',b);if(mcw)mcw.onchange=function(){S.meta.crowd=mcw.checked;saveLocal()};
   var mp=$('#m_paper',b);if(mp)mp.onchange=function(){S.meta.paper=mp.value;saveLocal();renderPanel()};
@@ -1933,6 +1958,8 @@ function act(a){
  else if(a==='noelogo'){S.meta.eventLogo=null;saveLocal();renderPanel()}
  else if(a==='dogleg'){var dl=S.objs.filter(function(x){return x.id===S.sel})[0];if(dl&&dl.t==='line'){S.dogId=dl.id;closePanel();setTool('dogtap')}}
  else if(a==='crowd'||a==='crowdev')crowdModal();
+ else if(a==='drawsite'){var mm=$('#modal');mm.classList.remove('on');mm.innerHTML='';S.siteNext=true;setTool('poly');toast('Tap around the whole event area, then tap Finish. It becomes the event site boundary.',7000)}
+ else if(a==='sitearea'){var sa=$('#cm_sitearea'),v=sa?parseFloat(sa.value):0;S.meta.siteArea=v>0?v:0;var ce=$('#cm_cert'),cv=ce?parseFloat(ce.value):0;S.meta.certCap=cv>0?cv:0;saveLocal();draw();crowdModal();toast(v>0?'Event area set to '+Math.round(v)+' m²':'Event area cleared')}
  else if(a==='ready')rdyModal();
  else if(a==='evdraw'){S.lineStyle='evac';setTool('line');toast('Tap along the route from the area to the exit, then tap Finish. It is kept when you press Generate again.',6000)}
  else if(a==='evlock'){var evs=S.objs.filter(function(o){return o.ev&&(!S.meta.only||o.lay===S.meta.only)});if(!evs.length){toast('No routes yet');return}var lk=!evs.every(function(o){return o.keep});snapH();evs.forEach(function(o){if(lk)o.keep=1;else delete o.keep});changed(true);toast(lk?evs.length+' routes locked: Generate will leave them alone':'Routes unlocked')}

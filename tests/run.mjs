@@ -78,6 +78,7 @@ const GOOD = `()=>{${ADD}const T=__T;add('item:marq10',0,0);add('item:marq10',14
  [[-5,0,-90],[5,0,90],[9,0,-90],[19,0,90]].forEach(a=>add('door:exit',a[0],a[1],{rot:a[2]}));
  [[0,0],[14,0]].forEach(a=>{add('sign:fire_ext',a[0]+3,a[1]+3);add('sign:exit_box',a[0]+5,a[1]);add('sign:exit_box',a[0]-5,a[1])});
  add('sign:first_aid',7,8);add('sign:assembly',7,60);
+ T.addObj({t:'poly',pts:[{x:-15,y:-15},{x:35,y:-15},{x:35,y:70},{x:-15,y:70}],site:1,label:'Event site'});
  const m=T.S.meta;m.attend=150;m.tstart='10:00';m.tend='18:00';}`;
 /* a plan with deliberate problems */
 const BAD = `()=>{${ADD}const T=__T;add('item:marq10',0,0);add('item:marq10',11,0);add('item:marq1020',40,0);
@@ -148,6 +149,33 @@ await test('evacuation routes generate', async () => {
   ok(page.errs.length === 0, page.errs.join(' | '));
 });
   await pg3.close2(); page = _q; }
+{ const pg4 = await fresh(); const _r = page; page = pg4;
+await test('crowd: open ground counts inside an event site boundary, with a warning until one is set', async () => {
+  const r = await page.evaluate(() => { const T = __T, add = (a, x, y) => T.addObj(T.makeAt(a, { x, y }));
+    add('item:marq10', 10, 10); T.S.meta.attend = 3500; const a = T.crowdAll();
+    T.addObj({ t: 'poly', pts: [{ x: -10, y: -10 }, { x: 80, y: -10 }, { x: 80, y: 70 }, { x: -10, y: 70 }], site: 1, label: 'Event site' }); const b = T.crowdAll();
+    return { warn: a.warn.length, before: a.total, after: b.total, open: b.open && b.open.free, units: b.units.length }; });
+  ok(r.warn === 1 && r.before === 100, 'no-boundary case: ' + JSON.stringify(r));
+  ok(r.after > 7000 && r.units === 1, 'site boundary not counted: ' + JSON.stringify(r));
+});
+await test('crowd: typed event area counts open ground with no boundary drawn (existing fencing)', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.addObj(T.makeAt('item:marq10', { x: 10, y: 10 })); T.S.meta.attend = 3500; T.S.meta.siteArea = 0;
+    const a = T.crowdAll(); T.S.meta.siteArea = 5000; const b = T.crowdAll(); const f = T.rdyRun().filter(x => /No event site area/.test(x.msg)).length;
+    return { aw: a.warn.length, ao: !!a.open, bo: b.open && b.open.cap, bsrc: b.open && b.open.src, bw: b.warn.length, f }; });
+  ok(r.aw === 1 && !r.ao, 'no area: ' + JSON.stringify(r));
+  ok(r.bo > 4000 && r.bsrc === 'typed' && r.bw === 0 && r.f === 0, 'typed area: ' + JSON.stringify(r));
+});
+await test('crowd: total never exceeds the venue certified capacity', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.siteArea = 9000; T.S.meta.attend = 7000; T.S.meta.certCap = 0; const a = T.crowdAll(); T.S.meta.certCap = 6000; const b = T.crowdAll(); T.S.meta.certCap = 0; T.S.meta.siteArea = 0; return { a: a.total, b: b.total, c: b.capped, o: b.over }; });
+  ok(r.a === 9000 && r.b === 6000 && r.c && r.o, JSON.stringify(r));
+});
+await test('open-sided structures (Bedouin, gazebo) are not failed for exits; closed marquees are', async () => {
+  const r = await page.evaluate(() => { const T = __T, add = (a, x, y) => T.addObj(T.makeAt(a, { x, y }));
+    T.S.objs = []; add('item:bedouin', 0, 0); add('item:marq10', 30, 0); T.S.meta.attend = 100;
+    return T.rdyRun().filter(f => f.sev === 'fail' && /has no exit at it|only one exit/.test(f.msg)).map(f => f.msg); });
+  ok(r.length >= 1 && r.every(m => m.includes('Marquee')), JSON.stringify(r));
+});
+await pg4.close2(); page = _r; }
 let dxfTxt = '';
 await test('DXF export is well formed', async () => {
   dxfTxt = await page.evaluate(() => __T.buildDxf(__T.S.objs.filter(o => !o.ev), 1000, 4).txt);
@@ -165,7 +193,7 @@ await test('DXF export re-imports to the same size (round trip)', async () => {
     const fl = T.dxfFlatten(dxf), sel = {}; Object.keys(fl.layers).forEach(k => sel[k] = true);
     const e = T.dxfExtents(fl, sel); return { w: (e.x1 - e.x0) * 0.001, h: (e.y1 - e.y0) * 0.001 };
   }, dxfTxt);
-  ok(w.w > 20 && w.w < 30, 'width ' + w.w + ' m (the two marquees plus exits span about 24 m)');
+  ok(w.w > 48 && w.w < 52, 'width ' + w.w + ' m (the event site boundary spans 50 m)');
 });
 await page.close2();
 

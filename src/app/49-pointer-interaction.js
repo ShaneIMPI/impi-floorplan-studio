@@ -21,7 +21,7 @@ function finishLine(){
  var t=S.tmp;if(!t||t.t!=='line'||t.pts.length<2){cancelLine();return}
  var pts=t.pts.map(function(p){return {x:p.x,y:p.y}});
  if(t.poly){if(pts.length<3){toast('A shape needs at least 3 corners');cancelLine();draw();return}
-  var n=S.objs.filter(function(o){return o.t==='area'||o.t==='poly'}).length+1;S.tmp=null;addObj({t:'poly',pts:pts,col:ZCOL[0].c,label:'Zone '+n});$('#doneBtn').classList.remove('on');setTool('select');return}
+  var n=S.objs.filter(function(o){return o.t==='area'||o.t==='poly'}).length+1;S.tmp=null;var sn=S.siteNext;S.siteNext=false;addObj(sn?{t:'poly',pts:pts,col:'#12804a',fo:.05,site:1,label:'Event site'}:{t:'poly',pts:pts,col:ZCOL[0].c,label:'Zone '+n});$('#doneBtn').classList.remove('on');setTool('select');return}
  var o={t:'line',style:t.style,pts:pts,closed:false};if(t.style==='evac'){o.ev=1;o.man=1;o.keep=1;if(S.meta.only)o.lay=S.meta.only}S.tmp=null;addObj(o);$('#doneBtn').classList.remove('on');setTool('select');
 }
 cv.addEventListener('pointerdown',function(e){

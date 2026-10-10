@@ -7,7 +7,7 @@ function genEvac(){
  if(!ex.length){toast('Place Exit, Emergency exit or Entrance doors first (Library → Doors), then generate',6000);return}
  var as=vis.filter(function(o){return o.t==='sign'&&o.k==='assembly'});
  var OR=vis.filter(function(o){
-  if(o.t==='area'||o.t==='poly')return 'zone';
+  if(o.t==='area'||o.t==='poly')return o.site?false:'zone';
   if(o.t==='rect'){var L=LIBM[o.k];if(!L)return false;if(L.c==='Exhibition')return L.s==='stand'||o.k==='lounge';return ['tent','bedouin','snow','stage','stall'].indexOf(L.s)>=0}
   return false});
  var structs=OR.filter(function(o){return o.t==='rect'});
@@ -97,7 +97,7 @@ function genEvac(){
   org.push({o:o,de:de,ce:ce,as:best,n:G.m.length})});
  /* imported plan: people are anywhere on the floor, so run routes along its aisles, far ends first */
  if(planMode){
-  var bnds=vis.filter(function(o){return (o.t==='line'&&o.closed&&o.pts&&o.pts.length>2)||o.t==='poly'||o.t==='area'}),inB=new Uint8Array(N);
+  var bnds=vis.filter(function(o){return (o.t==='line'&&o.closed&&o.pts&&o.pts.length>2)||(o.t==='poly'&&!o.site)||o.t==='area'}),inB=new Uint8Array(N);
   if(!bnds.length){toast('Trace the hall outline first (Line / fence → Plain black line, closed, or a Zone) so the generator knows where the floor is',8000);if(!org.length)return}
   else{
    bnds.forEach(function(o){var P=o.t==='area'?corners(o):o.pts,b=boundsOf(o);if(!b)return;for(j=cy(b.y0);j<=cy(b.y1);j++)for(i=cx(b.x0);i<=cx(b.x1);i++){if(inPoly({x:wx(i),y:wy(j)},P))inB[j*nx+i]=1}});

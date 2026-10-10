@@ -37,6 +37,7 @@ function rdyRun(){
  if(!(att>0))add('fail','Plan basics','Expected attendance has not been entered. Capacity and exit checks cannot be judged without it.',[],'Sheet tab → Expected attendance.');
  if(!m.tstart||!m.tend)add('warn','Plan basics','Event start and end times are not entered.',[],'Sheet tab → Event times.');
  if(!objs.length){add('fail','Plan basics','The plan is empty.');return F}
+ if(att>0&&!siteBoundary()&&!(+S.meta.siteArea>0))add('warn','Capacity','No event site area is set, so open ground is not counted in the capacity. Type the venue\'s total event area (m²) in Crowd & capacity (no need to draw existing fencing), or draw a boundary.',[],'Crowd & capacity → type the event area → Set.');
  /* 2 capacity */
  if(att>0&&C.total>0){if(C.over)add('fail','Capacity','Expected attendance ('+cfmt(att)+') is more than the planned capacity ('+cfmt(C.total)+').',[],'Add space, reduce the crowd, or change how each structure is used.');
   else add('pass','Capacity','Planned capacity '+cfmt(C.total)+' covers the expected '+cfmt(att)+'.')}
@@ -59,7 +60,7 @@ function rdyRun(){
  units.forEach(function(u){
   var o=u.o,P=selOutline(o).pts,id=[o.id],nm=u.name+' ('+cfmt(u.gross)+' m²)';
   var near=function(arr,d){return arr.filter(function(q){return ptPolyD({x:q.x,y:q.y},P)<=d})};
-  if(u.cap>0){
+  if(u.cap>0&&!u.opn){
    if(u.nex===0)add('fail','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.cap)+' people but has no exit at it.',id,'Place exit doors on its edge.');
    else{
     if(u.cap>rv('two')&&u.nex<2)add('fail','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.cap)+' people but has only one exit (more than '+rv('two')+' people needs two or more).',id,'Add a second exit, ideally on the opposite side.');
@@ -71,6 +72,7 @@ function rdyRun(){
    if(nf<rq)add('fail','Structure: '+nm,'"'+nm+'" has '+nf+' fire extinguisher'+(nf===1?'':'s')+' at it; '+rq+' needed ('+cfmt(u.gross)+' m² at 1 per '+rv('fireA')+' m²).',id,'Signs → Fire → extinguisher.')}
   if(u.cap>=rv('aidCap')&&!near(aid,rv('aidD')).length)add('warn','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.cap)+' people but there is no first aid point within '+rv('aidD')+' m.',id,'Place a first aid post or sign near it.');
  });
+ var nopn=units.filter(function(u){return u.opn}).length;if(nopn)add('info','Open structures',nopn+' open-sided structure'+(nopn>1?'s are':' is')+' not checked for exits (people can leave in any direction).');
  if(units.length&&units.every(function(u){return u.gross<rv('fireMin')}))add('info','Fire equipment','All structures are under '+rv('fireMin')+' m², so none needs its own fire equipment under these settings.');
  if(!fire.length&&objs.length>3&&!F.some(function(f){return f.cat.indexOf('Structure')===0&&/fire extinguisher/.test(f.msg)}))add('fail','Fire equipment','No fire extinguishers or hose reels are placed anywhere on the plan.',[],'Signs → Fire.');
  /* 5 first aid, venue */
@@ -126,10 +128,11 @@ function rdyModal(){
  $('#rdy_dl').onclick=function(){var s='<!doctype html><meta charset="utf-8"><title>Approval readiness</title><body style="font-family:Arial,sans-serif;max-width:800px;margin:20px auto"><h2>Approval readiness check</h2><p>'+esc(S.meta.event||'')+' · '+esc(S.meta.venue||'')+' · '+esc(S.meta.date||'')+' · '+esc(S.meta.ref||'')+' Rev '+esc(S.meta.rev||'')+'</p><p><b>'+nf+' to fix · '+nw+' to review · '+np+' passed</b></p><table border="1" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:13px">'+F.slice().sort(function(a,b){return order[a.sev]-order[b.sev]}).map(function(f){return '<tr><td>'+lab[f.sev]+'</td><td>'+esc(f.cat)+'</td><td>'+esc(f.msg)+'</td></tr>'}).join('')+'</table><p style="font-size:11px;color:#555">Planning check, not a legal opinion. Settings: '+RDY.map(function(x){return esc(x.n)+' = '+rv(x.k)}).join('; ')+'</p></body>';
   download('Readiness_'+(S.meta.ref||'plan')+'.html',new Blob([s],{type:'text/html'}))}
 }
+function sitePanel(o){return '<h4>Event site</h4>'+pchk('site','Event site boundary (the whole event area: open ground inside it is counted in the crowd capacity)',o.site)+'<p class="note">Draw one Shape around the whole event, tick this, and the space not taken up by structures counts as standing room.</p>'}
 function crowdPanel(o){
  var u=crowdUnit(o),C=crowdAll(),h='<h4>Crowd capacity</h4>'+pchk('nc','Leave out of the crowd calculation',o.nc);
  if(!o.nc){h+=psel('use','Used as',DENS.map(function(x){return [x.k,x.n+' · '+dOf(x.k)+' m² each']}),o.use||'sgen')+'<div class="row2">'+pf('dens','Own density (m² each, 0 = preset)',o.dens||0,'number','step="any" min="0"')+pf('pax','Fixed headcount (0 = calculate)',o.pax||0,'number','step="1" min="0"')+'</div>';
-  h+='<div class="note">Area <b>'+cfmt(u.gross)+' m²</b>'+(u.hasLay?' · usable after its internal layout <b>'+cfmt(u.net)+' m²</b>':'')+(u.seats?' · table seats <b>'+u.seats+'</b>':'')+'<br>Capacity: <b>'+cfmt(u.cap)+' people</b>'+(u.how==='seats'?' (table seats)':u.how==='fixed'?' (fixed)':' ('+u.d+' m² each)')+'<br>Exits at this structure: <b>'+(Math.round(u.ew*10)/10)+' m</b>'+(u.cap>0?' (needs '+(Math.round(u.cap/(C.flow*C.T)*10)/10)+' m)':'')+'</div>'}
+  h+='<div class="note">Area <b>'+cfmt(u.gross)+' m²</b>'+(u.hasLay?' · usable after its internal layout <b>'+cfmt(u.net)+' m²</b>':'')+(u.seats?' · table seats <b>'+u.seats+'</b>':'')+'<br>Capacity: <b>'+cfmt(u.cap)+' people</b>'+(u.how==='seats'?' (table seats)':u.how==='fixed'?' (fixed)':' ('+u.d+' m² each)')+''+(u.opn?'<br>Open-sided: no exits required here':'<br>Exits at this structure: <b>'+(Math.round(u.ew*10)/10)+' m</b>'+(u.cap>0?' (needs '+(Math.round(u.cap/(C.flow*C.T)*10)/10)+' m)':''))+'</div>'+pchk('opn','Open-sided structure (no exits needed, people can leave in any direction)',u.opn)}
  return h}
 function lineLen(o){var s=0,P=o.pts,pp=o.closed?P.concat([P[0]]):P;for(var i=0;i<pp.length-1;i++)s+=Math.hypot(pp[i+1].x-pp[i].x,pp[i+1].y-pp[i].y);return s}
 function drawText(c,o){var sz=o.size||14,ls=String(o.text||'').split('\n'),n=ls.length;c.save();c.translate(o.x,o.y);c.rotate((o.rot||0)*D2R);ls.forEach(function(t,i){txt(c,t,0,px((i-(n-1)/2)*sz*1.2),sz,{bold:o.b!==false,halo:o.hl!==false,col:o.col})});c.restore()}
