@@ -106,6 +106,7 @@ input[type=range]{width:100%}
 #mpframe{position:absolute;pointer-events:none;border:2px solid var(--ac);box-shadow:0 0 0 9999px rgba(8,16,22,.52);z-index:500}
 #mpframe::before,#mpframe::after{content:"";position:absolute;left:50%;top:50%;background:rgba(255,255,255,.7)}
 #mpframe::before{width:18px;height:1px;margin-left:-9px}#mpframe::after{height:18px;width:1px;margin-top:-9px}
+#mpguide{position:absolute;inset:0;overflow:hidden;pointer-events:none}#mpgrid{position:absolute;left:-60%;top:-60%;width:220%;height:220%;background-image:linear-gradient(rgba(255,255,255,.38) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.38) 1px,transparent 1px);background-size:48px 48px;transform-origin:50% 50%}
 #mpread{position:absolute;left:0;top:-30px;background:var(--ac);color:var(--ac-ink);font-weight:600;font-size:13px;padding:4px 9px;border-radius:6px 6px 0 0;white-space:nowrap}
 #mpres{position:absolute;left:10px;top:58px;z-index:700;background:var(--pn);border:1px solid var(--ln);border-radius:10px;box-shadow:var(--sh);width:min(460px,calc(100% - 20px));display:none;overflow:hidden}
 #mpres.on{display:block}

@@ -9,12 +9,13 @@ function toolHint(){
 function setTool(t,arm){
  if(t!=='line'&&S.lineStyle==='evac')S.lineStyle='fence';
  if((S.tool==='line'||S.tool==='poly')&&t!==S.tool)cancelLine();
+ if(t!=='line'&&t!=='poly')S.pencil=false;
  S.tool=t;S.arm=arm||null;if(t!=='calib')S.calib=t==='calib'?S.calib:null;if(t!=='layermove')S.mv=t==='layermove'?S.mv:null;
  $$('#tools .tool').forEach(function(b){b.classList.toggle('on',b.dataset.tool===t||(t==='place'&&b.dataset.tool==='select'&&false))});
  cv.style.cursor=t==='pan'||t==='layermove'?'grab':t==='select'?'default':'crosshair';
  $('#lineSel').classList.toggle('on',t==='line');if(t==='line')$('#lineSel').value=S.lineStyle||'fence';
  $('#doneBtn').textContent=t==='layermove'?'Done aligning':(t==='poly'?'Finish shape':'Finish line');$('#doneBtn').classList.toggle('on',((t==='line'||t==='poly')&&!!S.tmp&&S.tmp.pts.length>1)||t==='layermove');
- toolHint();if(S.tab==='lib')renderPanel();draw();
+ toolHint();syncPrec();if(S.tab==='lib')renderPanel();draw();
 }
 function cancelLine(){S.tmp=null;$('#doneBtn').classList.remove('on')}
 function finishLine(){
@@ -38,10 +39,10 @@ cv.addEventListener('pointermove',function(e){
  if(pinch&&ids.length>=2){var a=ptrs[ids[0]],b=ptrs[ids[1]],d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
   if(pinch.layer){var P=pinch.layer,LP=P.L,f=d/Math.max(1,pinch.d),rt=P.rot+(Math.atan2(b.y-a.y,b.x-a.x)-P.a0)/D2R,nm=P.mpp*f,mw=s2w({x:mx,y:my}),of=rotv(P.px*nm,P.py*nm,rt*D2R);LP.mpp=nm;LP.rot=rt;LP.x=mw.x-of.x;LP.y=mw.y-of.y;if(LP.cal===true)LP.cal='eye';draw();return}
   var nz=Math.max(.0005,Math.min(20000,pinch.view.z*d/Math.max(1,pinch.d)));var wx=(pinch.mx-pinch.view.x)/pinch.view.z,wy=(pinch.my-pinch.view.y)/pinch.view.z;S.view.z=nz;S.view.x=mx-wx*nz;S.view.y=my-wy*nz;draw();return}
- S.hover=s2w(p);
+ S.hover=s2w(p);S.hp=p;S.hpt=e.pointerType==='touch';
  if(drag){onMove(e,p)}
  else{
-  if((S.tool==='line'||S.tool==='poly')&&S.tmp){S.tmp.cur=snapW(S.hover);draw()}
+  if((S.tool==='line'||S.tool==='poly')&&S.tmp){S.tmp.cur=orthoFix(snapW(S.hover));draw()}
   else if(S.tool==='calib'||S.tool==='dim'||S.tool==='area'||S.tool==='line'||S.tool==='poly'||S.tool==='gorigin'||S.arm){snapW(S.hover);draw()}
   else draw();
  }
@@ -60,6 +61,7 @@ cv.addEventListener('contextmenu',function(e){e.preventDefault()});
 var lastHT=null;
 function onDown(e,p){
  var w=s2w(p),t=S.tool,o;
+ S.hover=w;S.hp=p;S.hpt=e.pointerType==='touch';if(S.hpt&&(S.pencil||t==='calib')){snapW(w);draw()}
  var panNow=(e.button===1||e.button===2||spaceDown||t==='pan');
  if(panNow){drag={k:'pan',sx:p.x,sy:p.y,vx:S.view.x,vy:S.view.y};return}
  if(t==='select'){
@@ -79,7 +81,7 @@ function onDown(e,p){
  }
  if(t==='marq'){drag={k:'marq',a:w};S.tmp={t:'marq',a:w,b:w};return}
  if(t==='place'){
-  var sp=placePos(w,S.arm);var ob=makeAt(S.arm,sp);snapH();ob.id=newId();if(S.meta.only)ob.lay=S.meta.only;S.objs.push(ob);setSel([ob.id]);drag={k:'move',o:ob,orig:JSON.parse(JSON.stringify(ob)),w0:w,moved:false,fresh:true};draw();return;
+  var sp=placePos(w,S.arm);var ob=makeAt(S.arm,sp);snapH();ob.id=newId();if(S.meta.only)ob.lay=S.meta.only;else if(S.venueMode)ob.vn=1;S.objs.push(ob);setSel([ob.id]);drag={k:'move',o:ob,orig:JSON.parse(JSON.stringify(ob)),w0:w,moved:false,fresh:true};draw();return;
  }
  if(t==='area'||t==='dim'){var q=snapW(w);drag={k:'draw',t:t,a:q};S.tmp={t:t,a:q,b:q};draw();return}
  if(t==='line'||t==='poly'){drag={k:'linetap',sx:p.x,sy:p.y};return}
@@ -121,6 +123,7 @@ function onMove(e,p){
  if(d.k==='marq'){S.tmp.b=w;draw();return}
  if(d.k==='draw'){var q2=snapW(w);S.tmp.b=q2;draw();return}
  if(d.k==='layer'){d.L.x=d.x0+(w.x-d.w0.x);d.L.y=d.y0+(w.y-d.w0.y);draw();return}
+ if((d.k==='linetap'&&S.pencil||d.k==='calibtap')&&e.pointerType==='touch'){S.hover=w;S.hp=p;S.hpt=true;var sq=snapW(w);if(d.k==='linetap'&&S.tmp&&S.tmp.pts&&S.tmp.pts.length)S.tmp.cur=orthoFix(sq);draw();return}
  if(d.k==='linetap'||d.k==='texttap'||d.k==='calibtap'||d.k==='gotap'||d.k==='dogtap'||d.k==='facepttap'){if(Math.hypot(p.x-d.sx,p.y-d.sy)>8){drag={k:'pan',sx:d.sx,sy:d.sy,vx:S.view.x-(p.x-d.sx)+(p.x-d.sx),vy:S.view.y,moved:true};drag.sx=p.x;drag.sy=p.y;drag.vx=S.view.x;drag.vy=S.view.y}}
 }
 function onUp(e){
@@ -146,7 +149,7 @@ function onUp(e){
  if(d.k==='layer'){draw();return}
  var p=rectOf(e);
  if(d.k==='linetap'){
-  var q=snapW(s2w(p));if(!S.tmp)S.tmp={t:'line',pts:[],style:S.lineStyle||'fence',cur:null,poly:S.tool==='poly'};
+  var q=orthoFix(snapW(s2w(p)));if(!S.tmp)S.tmp={t:'line',pts:[],style:S.lineStyle||'fence',cur:null,poly:S.tool==='poly'};
   if(S.tmp.poly&&S.tmp.pts.length>=3&&Math.hypot(S.tmp.pts[0].x-q.x,S.tmp.pts[0].y-q.y)<12/S.view.z){finishLine();return}
   var last=S.tmp.pts[S.tmp.pts.length-1];
   if(last&&Math.hypot(last.x-q.x,last.y-q.y)<1e-6){finishLine();return}
@@ -163,8 +166,8 @@ function onUp(e){
   var qq=snapW(s2w(p),null,false);S.calib.pts.push({x:qq.x,y:qq.y});toolHint();
   if(S.calib.pts.length===2){var a=S.calib.pts[0],b=S.calib.pts[1],dist=Math.hypot(b.x-a.x,b.y-a.y),L2=S.layers.filter(function(l){return l.id===S.calib.id})[0];
    if(dist<1e-6){S.calib.pts=[];draw();return}
-   ask('Calibrate: real distance between the two points',[{l:'Real distance between the two points. Type 107900 mm, 107.9 m or 107.9 (plain numbers are metres)',v:''}],function(v){var real=parseDist(v[0]);if(!(real>0)){toast('Enter a distance such as 107900 mm or 107.9 m');S.calib.pts=[];toolHint();draw();return}
-    var f=real/dist;L2.mpp*=f;L2.x=a.x+(L2.x-a.x)*f;L2.y=a.y+(L2.y-a.y)*f;L2.cal=true;S.calib=null;setTool('select');fitAll();renderPanel();toast('Scale set — '+L2.name+' is now true to scale')});
+   ask('Calibrate: real distance between the two points',[{l:'Real distance between the two points. Type 80600 mm, 80.6 m or 80.6. A plain number over 300 is read as millimetres, anything smaller as metres',v:''}],function(v){var real=parseDist(v[0]);if(!(real>0)){toast('Enter a distance such as 107900 mm or 107.9 m');S.calib.pts=[];toolHint();draw();return}
+    var f=real/dist;L2.mpp*=f;L2.x=a.x+(L2.x-a.x)*f;L2.y=a.y+(L2.y-a.y)*f;L2.cal=true;S.calib=null;setTool('select');fitAll();renderPanel();toast('Scale set from '+(Math.round(real*1000)/1000)+' m — '+L2.name+' is now true to scale. Check it with Measure against another known distance.',7000)});
   }
   draw();return;
  }

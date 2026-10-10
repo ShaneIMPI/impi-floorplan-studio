@@ -26,12 +26,13 @@ async function openMap(){
  var ov=$('#mapov');
  try{await mapLoadLib()}catch(e){toast(e.message,5000);return}
  var tk=mapToken(),prov=tk?'mapbox':'esri',loc=null;try{loc=JSON.parse(lsGet('fps_maploc')||'null')}catch(e){}
- var st={pct:78,shape:'win',q:1,map:null,tl:null};
+ var st={pct:78,shape:'win',q:1,map:null,tl:null,rot:0};
  ov.innerHTML='<div class="mpbar"><b>Satellite map</b><input type="search" id="mpq" placeholder="Search an address or venue, or paste coordinates / a Google Maps link" autocomplete="off"><button class="btn sm pri" id="mpgo">Search</button><select id="mpprov" aria-label="Imagery source"></select><button class="btn sm" id="mptok" style="display:none">Add Mapbox token</button><button class="btn sm" id="mpx" aria-label="Close map">Close</button></div>'
-  +'<div id="mpwrap"><div id="mpmap"></div><div id="mpframe"><div id="mpread"></div></div><div id="mpres"></div></div>'
+  +'<div id="mpwrap"><div id="mpmap"></div><div id="mpframe"><div id="mpguide"><div id="mpgrid"></div></div><div id="mpread"></div></div><div id="mpres"></div></div>'
   +'<div class="mpfoot"><label>Frame size <input type="range" id="mpsz" min="35" max="96" value="78"></label>'
   +'<label>Shape <select id="mpshape"><option value="win">Fill window</option><option value="1.414">Sheet landscape</option><option value="0.707">Sheet portrait</option><option value="1">Square</option></select></label>'
   +'<label>Detail <select id="mpq2"><option value="0">Standard</option><option value="1" selected>High</option><option value="2">Maximum</option></select></label>'
+  +'<label>Straighten <input type="range" id="mprot" min="-45" max="45" step="0.5" value="0" style="width:120px"> <input type="number" id="mprotn" min="-90" max="90" step="0.1" value="0" style="width:64px"> °</label>'
   +'<button class="btn pri" id="mpcap">Insert this area on the plan</button><span class="mpnote" id="mpnote">Pan and zoom so the venue sits inside the orange frame. The image arrives to true scale, so no calibration is needed. Imagery can be months or years old: confirm it matches the site.</span></div>';
  ov.classList.add('on');
  function opts(){var s=$('#mpprov');s.innerHTML='<option value="mapbox"'+(tk?'':' disabled')+'>'+MAPP.mapbox.n+(tk?'':' (needs token)')+'</option><option value="esri">'+MAPP.esri.n+'</option>';s.value=prov;$('#mptok').style.display=tk?'none':''}
@@ -59,6 +60,8 @@ async function openMap(){
  function close(){window.removeEventListener('resize',upd);document.removeEventListener('keydown',kd);try{var c=map.getCenter();lsSet('fps_maploc',JSON.stringify({lat:c.lat,lon:c.lng,z:map.getZoom()}))}catch(e){}map.remove();ov.classList.remove('on');ov.innerHTML=''}
  function kd(e){if(e.key==='Escape'&&!$('#modal').classList.contains('on'))close()}document.addEventListener('keydown',kd);
  $('#mpx').onclick=close;
+ function setRot(v){v=Math.max(-90,Math.min(90,parseFloat(v)||0));st.rot=v;$('#mprot').value=v;$('#mprotn').value=v;$('#mpgrid').style.transform='rotate('+v+'deg)';$('#mpnote').textContent=v?'Turn the grid until its lines run along a fence or building edge. The plan will be rotated so those lines come out straight.':'Pan and zoom so the venue sits inside the orange frame.'}
+ $('#mprot').oninput=function(){setRot(this.value)};$('#mprotn').onchange=function(){setRot(this.value)};
  $('#mpsz').oninput=function(){st.pct=+this.value;upd()};$('#mpshape').onchange=function(){st.shape=this.value;upd()};$('#mpq2').onchange=function(){st.q=+this.value;upd()};
  $('#mpprov').onchange=function(){prov=this.value;setTiles();upd()};
  $('#mptok').onclick=function(){ask('Mapbox access token',[{l:'Public token (starts with pk.)',v:''}],function(v){var t=(v[0]||'').trim();if(!/^pk\./.test(t)){toast('That does not look like a public Mapbox token (it starts with pk.)',5000);return}lsSet('fps_mapbox',t);tk=t;prov='mapbox';opts();setTiles();upd();toast('Mapbox satellite enabled on this browser')},'Save')};
@@ -81,14 +84,15 @@ async function openMap(){
    if(fail)throw new Error(fail+' of '+jobs.length+' map tiles failed to download'+(prov==='mapbox'?'. Check the Mapbox token and your connection.':'. Check your connection and try again.'));
    try{cx.getImageData(0,0,1,1)}catch(e){throw new Error('The imagery provider blocked image export in this browser. Try the other imagery source.')}
    var geo={lat:pl.clat,lon:pl.clon,z:pl.zc,prov:prov,att:P.att,n:pl.bd.n,s:pl.bd.s,e:pl.bd.e,w:pl.bd.w,date:new Date().toISOString().slice(0,10)};
-   close();addMapLayer(cn,pl.mpp,geo)
+   var rr=st.rot;close();addMapLayer(cn,pl.mpp,geo,-rr)
   }catch(err){toast(err.message||'Could not build the image',7000)}
   finally{b.disabled=false;b.textContent=old}};
  setTimeout(function(){var q=$('#mpq');if(q)q.focus()},150);
 }
-function addMapLayer(cn,mpp,geo){
+function addMapLayer(cn,mpp,geo,rotDeg){
  var vb=viewBounds(),first=!S.layers.length&&!S.objs.length,cxw=first?0:(vb.x0+vb.x1)/2,cyw=first?0:(vb.y0+vb.y1)/2;
  var L={id:S.nl++,name:'Satellite '+geo.lat.toFixed(5)+', '+geo.lon.toFixed(5),kind:'sat',img:cn,mpp:mpp,x:cxw-cn.width*mpp/2,y:cyw-cn.height*mpp/2,rot:0,op:1,blend:'source-over',cal:true,vis:true,pdfScale:null,geo:geo};
+ if(rotDeg){L.rot=rotDeg;var rc=rotv(cn.width*mpp/2,cn.height*mpp/2,rotDeg*D2R);L.x=cxw-rc.x;L.y=cyw-rc.y}
  S.layers.push(L);S.dismissed=true;fitTo(layerBounds(),.1);S.tab='lay';updateWelcome();renderPanel();draw();
  toast('Satellite image added to true scale ('+Math.round(cn.width*mpp)+' × '+Math.round(cn.height*mpp)+' m). Start placing structures; use Measure to spot-check a known distance.',7000);
  if(matchMedia('(max-width:820px)').matches)openPanel();

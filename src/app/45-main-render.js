@@ -43,6 +43,7 @@ function handlesFor(o){
 function drawOverlay(){
  ctx.setTransform(DPR,0,0,DPR,0,0);
  var o=getSel(),i;
+ drawLoupe();
  if(S.snapPt){var sp=w2s(S.snapPt);ctx.strokeStyle='#e8590c';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sp.x,sp.y,7,0,TAU);ctx.stroke();if(S.snapJ){ctx.fillStyle='rgba(232,89,12,.4)';ctx.fill()}}
  if(S.calib){ctx.fillStyle='#e8590c';ctx.strokeStyle='#fff';ctx.lineWidth=2;S.calib.pts.forEach(function(p){var s=w2s(p);ctx.beginPath();ctx.arc(s.x,s.y,7,0,TAU);ctx.fill();ctx.stroke()});
   if(S.calib.pts.length===1&&S.hover){var a=w2s(S.calib.pts[0]),b=w2s(S.hover);ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.setLineDash([])}}

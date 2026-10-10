@@ -1,6 +1,6 @@
 /* ---------- object creation ---------- */
 function newId(){return S.nid++}
-function addObj(o){snapH();o.id=newId();if(S.meta.only&&!o.lay)o.lay=S.meta.only;S.objs.push(o);S.sel=o.id;changed(true);return o}
+function addObj(o){snapH();o.id=newId();if(S.meta.only&&!o.lay)o.lay=S.meta.only;if(S.venueMode&&!S.meta.only&&o.t!=='dim'&&o.t!=='text')o.vn=1;S.objs.push(o);S.sel=o.id;changed(true);return o}
 function makeAt(arm,p){
  var a=arm.split(':'),kind=a[0],k=a[1];
  if(kind==='item'){var L=LIBM[k],ob0={t:'rect',k:k,x:p.x,y:p.y,w:L.w,h:L.h,rot:0,label:L.lab||''};if(k==='cover')ob0.zl=-5;return ob0}

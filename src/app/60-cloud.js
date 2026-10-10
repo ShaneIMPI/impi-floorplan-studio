@@ -36,9 +36,9 @@ function cloudUser(){
  },'Add');
 }
 async function cloudLogout(){try{await api('/api/auth',{method:'POST',json:{action:'logout'}})}catch(e){}S.cloud.user=null;S.cloud.planId=null;S.cloud.rev=null;location.href='/'}
-function layerBlob(L,sc){return new Promise(function(res){var cn=document.createElement('canvas');cn.width=Math.round(L.img.width*sc);cn.height=Math.round(L.img.height*sc);var c=cn.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cn.width,cn.height);c.drawImage(L.img,0,0,cn.width,cn.height);cn.toBlob(res,'image/jpeg',.82)})}
+function layerBlob(L,sc){var jq=L.kind==='plan'?.92:.82;return new Promise(function(res){var cn=document.createElement('canvas');cn.width=Math.round(L.img.width*sc);cn.height=Math.round(L.img.height*sc);var c=cn.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cn.width,cn.height);c.drawImage(L.img,0,0,cn.width,cn.height);cn.toBlob(res,'image/jpeg',jq)})}
 async function uploadLayer(L){
- var sc=Math.min(1,3000/Math.max(L.img.width,L.img.height)),blob;
+ var sc=Math.min(1,(L.kind==='plan'?4400:3000)/Math.max(L.img.width,L.img.height)),blob;
  for(var t=0;t<4;t++){blob=await layerBlob(L,sc);if(blob.size<4200000)break;sc*=.75}
  var r=await api('/api/image',{method:'POST',body:blob,headers:{'content-type':'image/jpeg','x-name':encodeURIComponent(L.name)}});
  L.imageId=r.id;L.cloudSc=sc;
@@ -48,7 +48,7 @@ function cloudSave(){
   try{
    toast('Saving…',30000);S.meta.rev=v[0]||S.meta.rev;
    for(var i=0;i<S.layers.length;i++)if(!S.layers[i].imageId)await uploadLayer(S.layers[i]);
-   var data={v:2,meta:S.meta,objs:S.objs,nid:S.nid,custom:S.custom.map(function(c){return {k:c.k,n:c.n,w:c.w,h:c.h,src:c.src}}),layers:S.layers.map(function(L){return {name:L.name,kind:L.kind,imageId:L.imageId,mpp:L.mpp/(L.cloudSc||1),x:L.x,y:L.y,rot:L.rot,op:L.op,blend:L.blend,cal:L.cal,vis:L.vis,geo:L.geo,base:L.base,_op:L._op,pdfLong:L.pdfLong}})};
+   var data={v:2,meta:S.meta,objs:S.objs,nid:S.nid,custom:S.custom.map(function(c){return {k:c.k,n:c.n,w:c.w,h:c.h,src:c.src}}),layers:S.layers.map(function(L){return {name:L.name,kind:L.kind,imageId:L.imageId,mpp:L.mpp/(L.cloudSc||1),x:L.x,y:L.y,rot:L.rot,op:L.op,blend:L.blend,cal:L.cal,vis:L.vis,geo:L.geo,base:L.base,_op:L._op,pdfLong:L.pdfLong,crisp:L.crisp}})};
    var j=await api('/api/plans',{method:'POST',json:{planId:S.cloud.planId,label:v[0],note:v[1],data:data}});
    var chk=await api('/api/plans?id='+j.planId+'&rev='+j.rev_no),cd=chk&&chk.revision&&chk.revision.data;
    if(!cd||(cd.objs||[]).length!==S.objs.length||(cd.layers||[]).length!==S.layers.length)throw new Error('The cloud copy did not match what is on screen, so it was not trusted');
@@ -58,7 +58,7 @@ function cloudSave(){
 }
 async function applyCloud(res){
  var d=res.revision.data;Object.keys(d.meta||{}).forEach(function(k){S.meta[k]=d.meta[k]});S.logoImg=null;S.objs=d.objs||[];S.nid=d.nid||1;S.custom=[];(d.custom||[]).forEach(addCustomLib);S.layers=[];
- for(var i=0;i<(d.layers||[]).length;i++){var q=d.layers[i],im=await loadImgSrc('/api/image?id='+q.imageId);S.layers.push({id:S.nl++,name:q.name,kind:q.kind,img:im,mpp:q.mpp,x:q.x,y:q.y,rot:q.rot,op:q.op,blend:q.blend,cal:q.cal,vis:q.vis!==false,geo:q.geo,base:q.base,_op:q._op,pdfLong:q.pdfLong,pdfScale:null,imageId:q.imageId,cloudSc:1})}
+ for(var i=0;i<(d.layers||[]).length;i++){var q=d.layers[i],im=await loadImgSrc('/api/image?id='+q.imageId);S.layers.push({id:S.nl++,name:q.name,kind:q.kind,img:im,mpp:q.mpp,x:q.x,y:q.y,rot:q.rot,op:q.op,blend:q.blend,cal:q.cal,vis:q.vis!==false,geo:q.geo,base:q.base,_op:q._op,pdfLong:q.pdfLong,pdfScale:null,crisp:q.crisp,imageId:q.imageId,cloudSc:1})}
  S.sel=null;S.issues=[];hist.length=0;redoS.length=0;S.dismissed=true;S.cloud.planId=res.plan.id;S.cloud.rev=res.revision.rev_no;
  $('#brandName').textContent=S.meta.company||'FloorPlan Studio';fitAll();changed(true);S.dirty=false;S.savedAt=Date.now();S.savedHow='cloud';chipUpdate();
 }

@@ -89,7 +89,7 @@ function rdyRun(){
   if(bad.length&&bad.length===asm.length)add('warn','Assembly point','The nearest assembly point is only '+Math.round(Math.min.apply(null,bad.map(function(a){var b=Infinity;tents.forEach(function(t){b=Math.min(b,ptPolyD({x:a.x,y:a.y},selOutline(t).pts))});return b})))+' m from a structure (set minimum '+rv('asm')+' m). A collapse or fire could reach it.',bad.map(function(a){return a.id}),'Move it farther from structures.');
   else if(!F.some(function(f){return f.cat==='Assembly point'}))add('pass','Assembly point',asm.length+' assembly point'+(asm.length>1?'s':'')+' placed, clear of structures.')}
  /* 7 exit signs */
- var xs=objs.filter(function(o){return o.t==='sign'&&(o.k==='exit_run'||o.k==='exit_run_r'||o.k==='exit_box')});
+ var xs=objs.filter(function(o){return o.t==='sign'&&(o.k==='exit_run'||o.k==='exit_run_r'||o.k==='exit_box'||o.k==='exit_sign')});
  var nosign=exits.filter(function(e){return !xs.some(function(s){return dist(s,e)<=rv('sgn')})});
  if(exits.length&&nosign.length)add('warn','Exit signage',nosign.length+' exit'+(nosign.length>1?'s have':' has')+' no exit sign within '+rv('sgn')+' m.',nosign.map(function(e){return e.id}),'Signs → Safe → Emergency exit sign.');
  else if(exits.length)add('pass','Exit signage','Every exit has an exit sign.');

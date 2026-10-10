@@ -3,7 +3,7 @@ function evClear(){var n=0;S.objs=S.objs.filter(function(o){if(o.ev&&!o.keep&&!o
 function genEvac(){
  var vis=S.objs.filter(function(o){return !o.hd&&!o.ev&&(!S.meta.only||o.lay===S.meta.only)});
  var ex=vis.filter(function(o){return o.t==='door'&&(o.k==='exit'||o.k==='eexit'||(o.k==='entrance'&&S.meta.evEntr!==false))});
- if(!ex.length)ex=vis.filter(function(o){return o.t==='sign'&&(o.k==='exit_run'||o.k==='exit_run_r'||o.k==='exit_box')});
+ if(!ex.length)ex=vis.filter(function(o){return o.t==='sign'&&(o.k==='exit_run'||o.k==='exit_run_r'||o.k==='exit_box'||o.k==='exit_sign')});
  if(!ex.length){toast('Place Exit, Emergency exit or Entrance doors first (Library → Doors), then generate',6000);return}
  var as=vis.filter(function(o){return o.t==='sign'&&o.k==='assembly'});
  var OR=vis.filter(function(o){
@@ -205,7 +205,7 @@ function newLayout(){
 }
 function vo(o){return !o.hd&&(!o.ev||S.meta.evac)&&(!S.meta.only||o.lay===S.meta.only)}
 function ordered(){return S.objs.map(function(o,i){return [o,i]}).filter(function(p){return vo(p[0])}).sort(function(x,y){return ((x[0].zl||0)-(y[0].zl||0))||((PRI[x[0].t]||0)-(PRI[y[0].t]||0))||(x[1]-y[1])}).map(function(p){return p[0]})}
-var EVC='#0a8f3c',EVKEEP=/^(exit_run|exit_run_r|exit_box|assembly|first_aid|fire_ext|hose_reel|hydrant|call_point)$/;
+var EVC='#0a8f3c',EVKEEP=/^(exit_run|exit_run_r|exit_box|exit_sign|assembly|first_aid|fire_ext|hose_reel|hydrant|call_point)$/;
 function evKeep(o){return o.ev||(o.t==='rect'&&o.k==='cover')||o.t==='door'||(o.t==='sign'&&EVKEEP.test(o.k))}
 function drawObjs(c){ordered().forEach(function(o){if(S.meta.evac&&!evKeep(o)){c.save();c.globalAlpha=.27;drawObj(c,o);c.restore()}else drawObj(c,o)})}
 function evArrows(c,pts,col){
@@ -242,6 +242,6 @@ function drawModuleGrid(c,vb,m,pass){
  for(j=Math.max(0,j0-1);j<=j1;j++){var cym=gy+(j+.5)*g;if(cym<vb.y0||cym>vb.y1)continue;txt(c,String(j+1),vb.x0+px(9),cym,sz,o);txt(c,String(j+1),vb.x1-px(9),cym,sz,o)}
 }
 function drawLayer(c,L){
- if(!L.vis)return;c.save();c.translate(L.x,L.y);c.rotate(L.rot*D2R);c.scale(L.mpp,L.mpp);c.globalAlpha=L.op;c.globalCompositeOperation=L.blend||'source-over';c.imageSmoothingQuality='high';c.drawImage(L.img,0,0);c.restore();
+ if(!L.vis)return;c.save();c.translate(L.x,L.y);c.rotate(L.rot*D2R);c.scale(L.mpp,L.mpp);c.globalAlpha=L.op;c.globalCompositeOperation=L.blend||'source-over';c.imageSmoothingQuality='high';c.drawImage(L.crisp&&L.kind==='plan'?crispOf(L):L.img,0,0);c.restore();
 }
 

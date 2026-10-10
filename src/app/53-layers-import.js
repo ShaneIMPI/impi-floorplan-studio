@@ -14,7 +14,7 @@ async function addLayer(file,kind,pageNo,pdfObj){
   }else{img=await loadImgFile(file)}
   var vb=viewBounds(),mpp=Math.max(.01,(Math.max(vb.x1-vb.x0,40)*.8)/img.width),cxw=(vb.x0+vb.x1)/2,cyw=(vb.y0+vb.y1)/2;
   if(!S.layers.length&&!S.objs.length){mpp=100/img.width;cxw=0;cyw=0}
-  var L={id:S.nl++,name:file.name.replace(/\.[^.]+$/,'')+(pgSel?' (page '+pgSel+')':''),kind:kind,img:img,mpp:mpp,pdfLong:pdfLong,x:cxw-img.width*mpp/2,y:cyw-img.height*mpp/2,rot:0,op:kind==='plan'?.65:1,blend:kind==='plan'?'multiply':'source-over',cal:false,vis:true,pdfScale:pdfScale};
+  var L={id:S.nl++,name:file.name.replace(/\.[^.]+$/,'')+(pgSel?' (page '+pgSel+')':''),kind:kind,img:img,mpp:mpp,pdfLong:pdfLong,x:cxw-img.width*mpp/2,y:cyw-img.height*mpp/2,rot:0,op:kind==='plan'?.9:1,blend:kind==='plan'?'multiply':'source-over',cal:false,vis:true,pdfScale:pdfScale,crisp:kind==='plan'};
   S.layers.push(L);fitTo(layerBounds(),.1);S.tab='lay';updateWelcome();renderPanel();draw();
   toast('Now tap Calibrate and pick two points a known distance apart',4500);
   if(matchMedia('(max-width:820px)').matches)openPanel();

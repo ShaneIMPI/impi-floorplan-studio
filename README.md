@@ -127,22 +127,101 @@ Exhibition → **Number the stands** now offers: lettered rows (A1, A2… then B
 - **Set grid start by tapping the plan** (Sheet tab → exhibition module grid): tap the hall corner and the stand grid, snapping and A/B/C labels start from it.
 - Typical workflow: import page → Calibrate on a dimension → trace the hall with Plain black line (wall) → add pillars (Library → Column) and doors → set grid start at the hall corner → place and number stands → hide the plan (Images → Hide) or keep it faint for export.
 
-## NGI aerial imagery (South Africa, about 25 cm)
+## Update: work on a client's existing plan
+- Images tab → on an imported plan, **Edit this plan**: shows the plan at full strength as the drawing you annotate (prints as the sheet background), switches the fine grid off. Click again to return it to a faint tracing background.
+- **Library → Plan editing → Cover patch**: a white box that hides part of the client's plan (old notes, wrong symbols). It stays solid on the evacuation plan and is not counted in the legend.
+- Add exits with Library → Doors (Exit / Emergency exit) wherever you need them, then use Evacuation.
+- **Evacuation → "follow imported plan"** (on by default when a plan is imported): the plan's lines (walls, stands, text, symbols) become obstacles, and routes run along its aisles from the far ends toward the exits, using every exit. Needs: the plan calibrated, the hall outline traced (Line / fence → Plain black line, closed, or a Zone), and exit doors placed. "Few / Normal / Many routes" sets how densely the aisles are covered. Open halls with no aisles get one approach line per exit.
+- Check the result against the plan: very faint lines are not seen as walls, and gaps in drawn walls can let routes leak; trace over any such gap with a plain line.
 
-The **Satellite map** picker now has a third source, **NGI Aerial 25 cm (South Africa)**. It is the national aerial survey from the Chief Directorate: National Geo-spatial Information, served as tiles by OpenStreetMap South Africa.
+## Update: wall styles, dog-leg exits, green EXIT sign
+- New line styles (Line / fence dropdown, or Style in the Selected tab): **Thin line (hairline)**, **Brick wall (hatched)** and **Shell scheme wall** (double line with a panel joint every 1 m). The existing plain line, wall and fence are unchanged. All three count as walls for evacuation routes.
+- **Dog-leg exit**: select a wall line, press "Add dog-leg exit in this wall…", tap the spot on the wall, set passage width, runs and jog, and choose whether to add an emergency exit door. The wall is cut and the offset passage walls are added in the same style. Evacuation routes go through it. Undo removes it.
+- New sign "EXIT sign (green box, white text)" in the Signs library. It is kept at full strength on the evacuation plan. The old exit signs remain.
 
-- Pick it in the imagery dropdown, frame the venue, press **Insert this area on the plan**. The image arrives to true scale like the other sources.
-- The map shows NGI tiles directly. When the image is stitched, tiles are fetched through `api/tile.js`, a sign-in-only relay, so the canvas export is never blocked by the browser. Tiles are cached for 7 days.
-- The source is about 25 cm per pixel. The picker caps the zoom at 19, so it never claims more detail than the survey has. For stand-level layouts, use a drone orthomosaic (upload it as an aerial).
-- The tile server is community-run. For heavy or business-critical use, request the source imagery from NGI's sales desk in Cape Town and host it yourself; only `api/tile.js` and the `ngi` entry in `MAPP` would change.
-- The imagery credit is stored with the layer and printed in the export footer.
+## Update: draping, black shade cloth, ablutions, decking, domes
+- Line styles: **Black draping**; shade cloth is now **green** or **black**.
+- Library, Services: Portable toilet + wash basin, Wash basin, Hand-wash station (3 basins), Communal urinal (4 / 6 users), Ablution trailer (6 cubicles), Accessible (disabled) ablution trailer.
+- Library, Stage & AV: Decking 3×3, 6×3, 6×6, 9×9 (1.22 m panel grid) and Shade netting in black.
+- Library, Tents: Dome tent 8.3 × 8.3 m (Crossover L, 68 m², from the supplied spec sheet) and a Small dome 5 × 5 m. Place the deck first, then the dome on top; items draw in the order they were placed.
+- Signs: Accessible / disabled facility.
 
-## Venue library
+## Update: crowd & capacity, event times, editable evacuation routes, sign-in page
+- Sheet tab → "Event times & crowd": start/end time, expected attendance, exit flow rate (default 82 people/min/m), target clearance time (default 8 min) and editable space-per-person figures. These are planning defaults, not legal limits.
+- The sheet's right-hand panel now shows Event times, Expected attendance and a CROWD & CAPACITY block (planned capacity vs attendance, capacity per structure, open ground estimate, exit width, clearance time). On an internal-layout sheet it shows that structure's capacity only.
+- Each zone / tent / dome has a "Crowd capacity" section in the Selected tab (usage, own density, fixed headcount, leave out). With an internal layout, furniture is deducted from the usable floor and table seats are counted when "Seated at tables" is chosen.
+- "Crowd & capacity calculation…" (Sheet tab or Evacuation bar) shows the full table, including exit width per structure and warnings for double counting.
+- Evacuation routes: select any route to edit it (drag points, add/remove points, reverse direction). "Draw a route" adds your own, "Lock / unlock routes" and the per-route "Keep" tick stop Generate from replacing them.
+- Sign-in page: if you are already signed in it now says so and offers Open / Sign out instead of redirecting at once.
 
-Survey a venue once, reuse it for every event there.
+## Update: saving that cannot lose work
+- Auto-save now keeps the whole session on the device in IndexedDB (plan, settings, cloud plan id **and the background images**), in addition to the old localStorage copy. Refresh, crash or closed tab: reopen and everything is back, including "Edit this plan" and calibration.
+- Cloud and project-file saves now also keep the "Edit this plan" flag and PDF details of each background.
+- Cloud save is verified: after saving, the revision is read back and compared. If it fails, a backup .json file is downloaded automatically.
+- A status chip in the header shows "Unsaved changes" / "Saved to cloud #n hh:mm" / "Backup file saved"; the browser warns before closing with unsaved changes.
+- An expired sign-in no longer throws you off the page when there is work on screen: sign in again (Sheet tab, Cloud) and save.
+- Note: browser copies are per device. Clearing site data removes them; the cloud revisions and .json files are the permanent record.
 
-- **Save:** on any image card in the **Layers** tab (satellite map, NGI aerial, drone orthomosaic or client plan) press **Save to venue library**. The image must be at true scale (inserted from the map, or calibrated). Choose an existing venue or create a new one, name the base map and add a note (who surveyed it, drone used, date).
-- **Reuse:** in the **Layers** tab press **+ From venue library**, pick the venue, then **Use**. The base map arrives at true scale with its rotation and imagery credit, so there is nothing to calibrate. If the plan's venue field is still the `[VENUE]` placeholder it is filled in for you.
-- **Delete:** the person who saved a base map, or an admin, can delete it from the venue's list. Plans that already use the image are not affected.
-- Images are stored in the same `plan_images` table as other layer images (3000 px JPEG, under 4 MB). Each saved map adds roughly one image to the database's free allowance.
-- `api/venues.js` creates the two new tables (`venues`, `venue_maps`) the first time it is used, so no manual database step is needed. The same SQL is at the end of `schema.sql` for reference.
+## DXF import / export (AutoCAD, BricsCAD, LibreCAD)
+
+**Import** (Plan editing → Import DXF): pick a .dxf; units are auto-detected from the file (override if wrong). Choose how to bring it in: *Underlay* (to-scale background to trace over), *Editable* (lines become editable plan lines), or *Both*. Untick layers you don't want (dimensions, hatching, furniture clutter). Far-away stray objects are ignored when sizing. Supported entities: LINE, LWPOLYLINE/POLYLINE (incl. arcs), CIRCLE, ARC, ELLIPSE, SPLINE, SOLID/3DFACE, TEXT/MTEXT, INSERT (blocks, scaled/rotated/arrays), DIMENSION. Not read: hatches, 3D solids, embedded images.
+
+**Export** (Export → DXF): choose mm or m. Writes AutoCAD R2000 DXF with layers named FPS-* (stands, tents, stage, furniture, services, lines by style, doors, signs, text, dimensions, zones, labels) and an info block below the drawing. Background images are not exported.
+
+**DWG import**: supported (LibreDWG reads R13 to 2018; only 2004 format tested here) via LibreDWG compiled to WebAssembly (`public/vendor/libredwg/`, ~9.5 MB, loaded only when a DWG is opened). The DWG is converted to DXF in the browser and then follows the normal import dialog. Tested on a real 1 MB AutoCAD 2004 client tech plan (27 layers, ~10,000 lines/shapes, converts in ~2 s). **DWG export is not possible** (no open DWG writer): export DXF, then in AutoCAD use Save As → DWG, or send the DXF.
+
+**Licence note**: LibreDWG is GPL-3.0 (see `public/vendor/libredwg/`). Fine for internal staff use; talk to a lawyer before redistributing the app to third parties.
+
+## Approval readiness check
+
+Sheet tab (and the "Before you submit" block in the Export area) → **Approval readiness check…**. Lists what to FIX, REVIEW, and what passes, each with a Show button that jumps to the objects on the plan, and a downloadable HTML report.
+
+Checks: attendance/times entered; background images calibrated; capacity vs attendance; number of exits, minimum exit width, total exit width vs attendance (flow rate and target time from the Sheet tab); per structure: exits present, 2+ exits above a headcount, exit width for its capacity, straight-line distance to nearest exit, fire extinguishers by area, first aid nearby by headcount; first aid on plan; assembly point present, not inside a structure, minimum distance from structures; exit signs at exits; tent/marquee spacing (including touching/overlapping).
+
+All limits are editable under "Settings used by this check" and are stored with the plan (`S.meta.rdy`). Defaults are planning starting points, NOT legal limits: confirm with SANS 10400, the risk category and your ESSPC / fire department. Distances are straight lines.
+
+## Working on the app (source layout, tests, safe deploys)
+
+`private/app.html` is now a **generated file**. Do not edit it by hand. The source lives in `src/app/` as small numbered parts (styles, page markup, then one file per feature: `42-crowd-capacity.js`, `43-readiness-check.js`, `44-evacuation-routes.js`, `59-dxf-dwg.js`, `60-cloud.js` …). They are joined in file-name order, inside the same single closure as before, so behaviour is identical. The first build was verified byte-for-byte identical to the previous single-file app.
+
+```
+node build.mjs            # rebuild private/app.html from src/app
+node build.mjs --check    # fail if private/app.html is out of date
+```
+
+**Tests** (headless Chromium, no cloud needed):
+```
+npm test                                   # installs the test tools once, then runs everything
+DWG_FIXTURE=/path/plan.dwg npm test        # also tests DWG import on a real file (not shipped: client files stay private)
+node tests/smoke-live.mjs https://impi-floorplan-studio.vercel.app   # after every deploy
+```
+They check: the app builds and matches the source; server code parses; vendor files present; app loads without script errors; undo/redo; crowd maths; readiness check flags a bad plan and passes a good one; evacuation routes generate; DXF export is well formed and round-trips to the same size; DXF import is to scale; objects and backgrounds survive a reload; (optional) DWG import. `.github/workflows/test.yml` runs them on every push if the project is on GitHub.
+
+**Release routine:** change `src/app/…` → `npm test` → commit (including the rebuilt `private/app.html`) → push → `node tests/smoke-live.mjs <url>` → open the site, sign in, save and reopen one plan.
+
+## Dog-leg exits (updated)
+Line / fence → select the wall → Dog-leg, then tap the wall. Choose **Use**: *Building / hall wall* (1.5 m passage, short runs) or *Festival fence line* (3 m passage, 3 m runs and jog; edit any number). **Corners**: *Square, 90° turns* (default) or *Angled 45°*. **Door / gate at the end**: Emergency exit, Exit, Entrance or none (open passage).
+
+## Gazebos
+Library → Tents → Gazebo 3 × 3 and Gazebo 3 × 6 (two bays). Counted as structures for capacity and fire equipment. Readiness check uses a separate, smaller minimum gap between two gazebos (default 1.5 m, editable) so rows of gazebos are not flagged like marquees.
+
+## Trussing
+Library → Stage & AV: Truss frame 3×3, 4×4, 6×4, 6×6 and Truss run 3 m / 6 m (sizes editable under Selected). Or Line / fence → style **Truss** to draw any run or frame (width 0.3 m, set per line). Drawn to scale as double rails with bracing and corner towers; open underneath, so it does not count as floor space for capacity and does not block evacuation routes. Exports to DXF on layer FPS-TRUSS (library frames on FPS-STAGE-AV).
+
+## Crowd: event site boundary and open-sided structures
+- **Event site boundary:** open ground is only counted inside a boundary. Crowd & capacity → *Draw event boundary now*, tap around the whole event, Finish. (Or select any Shape / closed line and tick *Event site boundary*.) Open ground = site area minus the floor space of structures inside it, at the "Open ground" density (editable, Sheet tab). Without a boundary the crowd figure covers structures only, and the Crowd table, legend and readiness check say so. Older plans that had a closed perimeter line keep working.
+- **Venue already has fencing (don't want to draw it):** type the total event area in m² under Crowd & capacity (or Sheet tab → *Event site area*). Open ground = that area minus the floor space of all structures, at the Open-ground density. A drawn boundary, if there is one, takes priority.
+- **Certified capacity:** enter the venue's fitness-certificate figure (Crowd & capacity, or Sheet tab). The plan's total is never allowed above it, and attendance over it fails the readiness check.
+- **Open-sided structures:** Bedouin tents and gazebos are open-sided by default; tick *Open-sided structure* on any structure to change it. They are not checked for exits (none required, exit width, travel distance) and are shown as "open sides" in the capacity table. Decks, shade netting and truss were never structures for exits. Fire equipment and first aid rules still apply.
+
+## Straightening the satellite map
+In the satellite map window, use **Straighten (°)** (slider or number). A grid appears inside the orange frame: turn it until its lines run along a fence, road or building edge, then Insert. The plan is inserted rotated so those lines are straight (true scale kept). You can still fine-tune afterwards under Layers → Rotate (°).
+
+## Redrawing a venue from its plan (Pencil, loupe, Ortho, Venue)
+- **Calibrating:** Layers → *Calibrate*, tap the two ends of a dimension on the plan, then type its value exactly as printed: `80600` (plain numbers over 300 are millimetres), `80600 mm`, `80.6 m` or `80,6 m`. (An earlier build could not read these; fixed. Calibrate with the longest dimension on the plan for the best accuracy, then check another known distance with Measure.)
+- **Sharpen lines:** each imported plan has *Sharpen lines (crisp, for tracing)*: paper goes transparent and the lines are made solid, so tracing is clear even on a blurry scan. Saved plans now keep more detail (up to 4400 px, higher JPEG quality).
+- **Pencil:** toolbar *Pencil* is the line tool with exact snapping. Corners and line ends snap first; otherwise the point slides along the centre of the nearest line. A magnifier (loupe) shows the exact point; on a phone one finger drags the cursor (two fingers pan and zoom). Use *Shape* for buildings.
+- **Ortho:** keeps each segment horizontal or vertical along the plan's own axes (follows a rotated plan).
+- **Detect fire equipment & exits:** Layers → *Detect fire equipment & exits* scans the (calibrated) plan for red, green and yellow markers and places real extinguisher, EXIT sign and electrical items on them after you confirm. The red legend box on a page is ignored. Check the result: a red marker may be a hose reel.
+- **Venue (permanent features):** toolbar *Venue*. Turn on "Everything I draw now is part of the venue", mark/unmark selected objects, lock them, then *Start new event from this venue* to keep only the venue and clear the event details (it saves as a separate plan).
+- **EXIT sign:** Library → Safety signs → *EXIT sign (standard green, white text)*.

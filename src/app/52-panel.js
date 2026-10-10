@@ -99,6 +99,7 @@ function layHTML(){
  if(!S.layers.length)h+='<p class="note">No images yet.</p>';
  S.layers.forEach(function(L,i){
   h+='<div class="card" data-lid="'+L.id+'"><b>'+esc(L.name)+'</b><span class="badge '+(L.cal===true?'ok':'warn')+'">'+(L.cal===true?(L.geo?'true scale (map)':'scale set'):L.cal==='eye'?'scaled by eye':'not calibrated')+'</span>';
+  if(L.kind==='plan')h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px;margin:6px 0"><input type="checkbox" data-lcrisp="'+L.id+'"'+(L.crisp?' checked':'')+'> Sharpen lines (crisp, for tracing)</label><div class="btns"><button class="btn sm" data-ldet="'+L.id+'" title="Find the red, green and yellow safety markers on this plan and place real items on them">Detect fire equipment &amp; exits</button></div>';
   h+='<label class="fld" style="margin:8px 0 6px">Opacity '+Math.round(L.op*100)+'%<input type="range" min="5" max="100" value="'+Math.round(L.op*100)+'" data-lop="'+L.id+'"></label>';
   h+='<div class="btns"><button class="btn sm pri" data-lcal="'+L.id+'">Calibrate</button><button class="btn sm" data-lmv="'+L.id+'">Move</button><button class="btn sm" data-lvis="'+L.id+'">'+(L.vis?'Hide':'Show')+'</button>'+(L.kind==='plan'?'<button class="btn sm'+(L.base?' pri':'')+'" data-lbase="'+L.id+'" title="Show the imported plan at full strength as the drawing you annotate">'+(L.base?'Editing this plan ✓':'Edit this plan')+'</button>':'')+'<button class="btn sm" data-lup="'+L.id+'">Up</button><button class="btn sm" data-ldn="'+L.id+'">Down</button><button class="btn sm dng" data-ldel="'+L.id+'">Remove</button></div>';
   h+='<div class="row2"><label class="fld">Rotate (°)<input type="number" step="0.1" value="'+(+L.rot.toFixed(2))+'" data-lrot="'+L.id+'"></label>'+(L.kind==='plan'?'<label class="fld">Blend<select data-lbl="'+L.id+'"><option value="multiply"'+(L.blend==='multiply'?' selected':'')+'>See-through (best for plans)</option><option value="source-over"'+(L.blend!=='multiply'?' selected':'')+'>Normal</option></select></label>':'<div></div>')+'</div>';
@@ -181,6 +182,7 @@ function wirePanel(b){
   if(d.osel){var o3=S.objs.filter(function(q){return q.id===+d.osel})[0];if(o3){if(e.shiftKey||e.ctrlKey){var ids2=selIds().slice(),ix2=ids2.indexOf(o3.id);if(ix2>=0)ids2.splice(ix2,1);else ids2.push(o3.id);setSel(ids2)}else setSel([o3.id]);var bb=boundsOf(o3);S.view.x=cv.clientWidth/2-((bb.x0+bb.x1)/2)*S.view.z;S.view.y=cv.clientHeight/2-((bb.y0+bb.y1)/2)*S.view.z;renderSelbar();renderPanel();draw()}return}
   if(d.arm){var a=d.arm;setTool('place',a);toast('Tap the plan to place');if(matchMedia('(max-width:820px)').matches)closePanel();return}
   if(d.act){act(d.act);return}
+  if(d.ldet){var LD=layer(+d.ldet);if(LD)detectModal(LD);return}
   if(d.lcal){var L=layer(+d.lcal);S.calib={id:L.id,pts:[]};setTool('calib');if(matchMedia('(max-width:820px)').matches)closePanel();return}
   if(d.lmv){S.mv=+d.lmv;setTool('layermove');if(matchMedia('(max-width:820px)').matches)closePanel();return}
   if(d.lsc){var pr=d.lsc.split(':'),Ls=layer(+pr[0]);scaleLayer(Ls,parseFloat(pr[1]));if(Ls.cal===true)Ls.cal='eye';renderPanel();draw();return}
@@ -192,6 +194,7 @@ function wirePanel(b){
   if(d.iss!=null){var it=S.issues[+d.iss];if(it){var cx=(it.a.x+it.b.x)/2,cy=(it.a.y+it.b.y)/2;S.view.x=cv.clientWidth/2-cx*S.view.z;S.view.y=cv.clientHeight/2-cy*S.view.z;draw()}return}
  };
  $$('[data-lop]',b).forEach(function(r){r.oninput=function(){layer(+r.dataset.lop).op=r.value/100;draw();r.parentNode.firstChild.nodeValue='Opacity '+r.value+'%'}});
+ $$('[data-lcrisp]',b).forEach(function(r){r.onchange=function(){var L=layer(+r.dataset.lcrisp);L.crisp=r.checked;draw()}});
  $$('[data-lrot]',b).forEach(function(r){r.onchange=function(){var L=layer(+r.dataset.lrot);L.rot=parseFloat(r.value)||0;draw()}});
  $$('[data-lw]',b).forEach(function(r){r.onchange=function(){var L=layer(+r.dataset.lw),nw=parseFloat(r.value);if(nw>0){scaleLayer(L,nw/(L.img.width*L.mpp));L.cal=true;renderPanel();draw()}}});
  $$('[data-lbl]',b).forEach(function(r){r.onchange=function(){layer(+r.dataset.lbl).blend=r.value;draw()}});

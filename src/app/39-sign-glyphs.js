@@ -22,6 +22,7 @@ var SIGIMG={},SIGIMG_BY={};
 Object.keys(SIGIMG_SRC).forEach(function(k){var u=SIGIMG_SRC[k],im=SIGIMG_BY[u];if(!im){im=new Image();im.onload=function(){try{draw();if(S.tab==='lib'||S.tab==='sheet')renderPanel()}catch(e){}};im.src=u;SIGIMG_BY[u]=im}SIGIMG[k]=im});
 function drawSign(c,k,s){
  var sg=SIGNM[k];if(!sg)return;
+ if(k==='exit_sign'){c.save();c.scale(s,s);var lw0=px(1.2)/s;c.fillStyle='#fff';c.fillRect(-.5,-.25,1,.5);c.lineWidth=lw0;c.strokeStyle=INK;c.strokeRect(-.5,-.25,1,.5);c.fillStyle='#009640';c.fillRect(-.465,-.215,.93,.43);c.fillStyle='#fff';c.font='bold .31px Arial,Helvetica,sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('EXIT',0,.012);c.restore();return}
  var gim=SIGIMG[k];if(gim&&gim.complete&&gim.naturalWidth){c.save();c.scale(s,s);var ar=gim.naturalWidth/gim.naturalHeight,dw=ar>=1?1:ar,dh=ar>=1?1/ar:1;if(sg.flip)c.scale(-1,1);c.drawImage(gim,-dw/2,-dh/2,dw,dh);c.restore();return}c.save();c.scale(s,s);var lw1=px(1.2)/s;
  if(sg.t==='fire'||sg.t==='safe'){
   c.fillStyle=sg.t==='fire'?'#d32f2f':'#12804a';rr(c,-.5,-.5,1,1,.1);c.fill();c.lineWidth=lw1;c.strokeStyle=INK;c.stroke();

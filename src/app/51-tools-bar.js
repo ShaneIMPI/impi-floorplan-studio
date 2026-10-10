@@ -4,18 +4,19 @@ function svg(n){return '<svg viewBox="0 0 24 24"><path d="'+IC[n]+'"/></svg>'}
 function buildTools(){
  var T=[['select','Select'],['marq','Box select'],['pan','Pan'],['dim','Measure'],['area','Zone'],['poly','Shape'],['line','Line / fence'],['text','Note']],h='';
  T.forEach(function(t){h+='<button class="tool" data-tool="'+t[0]+'" aria-label="'+t[1]+'">'+svg(t[0])+t[1]+'</button>'});
- h+='<div class="sep"></div><button class="tool" data-act="lib" aria-label="Library">'+svg('lib')+'Library</button><button class="tool" data-act="trace" aria-label="Snap to plan lines" title="When tracing over an imported plan, snap to its lines and corners">'+svg('trace')+'Snap lines</button><button class="tool" data-act="evac" aria-label="Evacuation plan">'+svg('evac')+'Evacuation</button><div class="sep"></div>';
+ h+='<div class="sep"></div><button class="tool" data-act="pencil" aria-label="Pencil: exact tracing" title="Exact tracing over an imported plan, with a magnifier">'+svg('pencil')+'Pencil</button><button class="tool" data-act="ortho" aria-label="Ortho" title="Keep lines straight along the plan">'+svg('ortho')+'Ortho</button><button class="tool" data-act="venue" aria-label="Venue layer" title="Permanent venue features">'+svg('venue')+'Venue</button><div class="sep"></div><button class="tool" data-act="lib" aria-label="Library">'+svg('lib')+'Library</button><button class="tool" data-act="trace" aria-label="Snap to plan lines" title="When tracing over an imported plan, snap to its lines and corners">'+svg('trace')+'Snap lines</button><button class="tool" data-act="evac" aria-label="Evacuation plan">'+svg('evac')+'Evacuation</button><div class="sep"></div>';
  h+='<select id="snapSel" aria-label="Snap grid"><option value="0.01">Snap 1 cm</option><option value="0.05">Snap 5 cm</option><option value="0.1">Snap 0.1 m</option><option value="0.25">Snap 0.25 m</option><option value="0.5">Snap 0.5 m</option><option value="1" selected>Snap 1 m</option><option value="1.5">Snap 1.5 m</option><option value="2">Snap 2 m</option><option value="3">Snap 3 m</option><option value="5">Snap 5 m</option><option value="0">Snap off</option><option value="custom">Custom…</option></select>';
   h+='<select id="viewSel" aria-label="View"></select>';
  h+='<select id="lineSel" aria-label="Line style">'+LINES.filter(function(l){return l.k!=='evac'}).map(function(l){return '<option value="'+l.k+'">'+l.n+'</option>'}).join('')+'</select>';
  h+='<div class="sep"></div><button class="tool" data-act="undo\" aria-label="Undo">'+svg('undo')+'Undo</button><button class="tool" data-act="redo" aria-label="Redo">'+svg('redo')+'Redo</button><button class="tool" data-act="fit" aria-label="Fit view">'+svg('fit')+'Fit</button>';
  $('#tools').innerHTML=h;
  $('#tools').onclick=function(e){var b=e.target.closest('.tool');if(!b)return;
-  if(b.dataset.tool){if(b.dataset.tool==='line'){S.lineStyle=S.lineStyle||'fence'}setTool(b.dataset.tool)}
+  if(b.dataset.tool){if(b.dataset.tool==='line'){S.lineStyle=S.lineStyle||'fence'}S.pencil=false;setTool(b.dataset.tool)}
+  else if(b.dataset.act==='pencil')togglePencil();else if(b.dataset.act==='ortho')toggleOrtho();else if(b.dataset.act==='venue')venueModal();
   else if(b.dataset.act==='undo')undo();else if(b.dataset.act==='redo')redo();else if(b.dataset.act==='fit')fitAll();
   else if(b.dataset.act==='lib'){S.tab='lib';openPanel()}else if(b.dataset.act==='trace'){S.traceSnap=S.traceSnap===false;syncTrace();toast(S.traceSnap===false?'Snap to plan lines is off':'Snap to plan lines is on: tracing locks onto the imported plan\'s lines and corners',3500)}else if(b.dataset.act==='evac')setEvac(!S.meta.evac)
  };
- renderViewSel();syncEvac();syncTrace();$('#layBar').onclick=function(e){var t=e.target.closest('button');if(!t)return;var k=t.dataset.lb;if(k==='back')setView(null);else exportSheet(k)};
+ renderViewSel();syncEvac();syncTrace();syncPrec();$('#layBar').onclick=function(e){var t=e.target.closest('button');if(!t)return;var k=t.dataset.lb;if(k==='back')setView(null);else exportSheet(k)};
  $('#evBar').onclick=function(e){var t=e.target.closest('button');if(t)act(t.dataset.ev)};
  $('#viewSel').onchange=function(){var v=this.value;if(v==='__new'){this.value=S.meta.only||'';newLayout();return}setView(v)};
  $('#lineSel').onchange=function(){S.lineStyle=this.value;if(S.tmp&&S.tmp.t==='line')S.tmp.style=this.value;draw()};

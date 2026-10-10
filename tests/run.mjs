@@ -183,6 +183,72 @@ await test('crowd: an event area smaller than the structures is flagged, not sil
   const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.addObj(T.makeAt('item:marq10', { x: 10, y: 10 })); T.S.meta.attend = 500; T.S.meta.siteArea = 50; const c = T.crowdAll(); const f = T.rdyRun().some(x => /no bigger than the structures/.test(x.msg)); T.S.meta.siteArea = 0; return { w: c.warn.some(x => /no bigger than the floor space/.test(x)), f }; });
   ok(r.w && r.f, JSON.stringify(r));
 });
+await test('map: inserting with a straighten angle rotates the layer and keeps it centred', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.layers = []; T.S.objs = [];
+    const cn = document.createElement('canvas'); cn.width = 400; cn.height = 200; T.addMapLayer(cn, 0.5, { lat: -25.7, lon: 28.2 }, -12.5);
+    const L = T.S.layers[0]; return { rot: L.rot }; });
+  ok(r.rot === -12.5, JSON.stringify(r));
+});
+await test('map window: the Straighten control turns the guide grid', async () => {
+  await page.evaluate(() => __T.openMap()); await page.waitForSelector('#mprotn', { timeout: 8000 });
+  await page.fill('#mprotn', '17'); await page.press('#mprotn', 'Tab');
+  const g = await page.evaluate(() => ({ t: document.getElementById('mpgrid').style.transform, r: document.getElementById('mprot').value }));
+  await page.keyboard.press('Escape');
+  ok(/rotate\(17deg\)/.test(g.t) && g.r === '17', JSON.stringify(g));
+});
+await test('calibration: distances typed the way plans print them are understood', async () => {
+  const r = await page.evaluate(() => ['80600', '80600 mm', '80.6 m', '80,6m', '80 600', '107.9', '250', '5 cm', '2.5km', 'abc', '', '0'].map(v => __T.parseDist(v)));
+  const want = [80.6, 80.6, 80.6, 80.6, 80.6, 107.9, 250, 0.05, 2500, NaN, NaN, NaN];
+  r.forEach((v, i) => ok((isNaN(want[i]) && isNaN(v)) || Math.abs(v - want[i]) < 1e-9, 'case ' + i + ': got ' + v + ' want ' + want[i]));
+});
+await test('pencil snap: centres on the line, slides along it, stops at its end, finds corners', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.layers = []; T.S.objs = []; T.S.view = { x: 400, y: 300, z: 40 };
+    const cn = document.createElement('canvas'); cn.width = 600; cn.height = 400; const c = cn.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 600, 400); c.fillStyle = '#000';
+    c.fillRect(100, 99, 300, 4);   /* horizontal line, 4 px thick, centre y = 101 */
+    c.fillRect(100, 99, 4, 200);   /* vertical line down from the left end (corner at 102,101) */
+    T.S.layers.push({ id: 1, name: 'p', kind: 'plan', img: cn, mpp: 0.1, x: 0, y: 0, rot: 0, op: 1, blend: 'multiply', cal: true, vis: true });
+    const px = (x, y) => ({ x: (x + .5) * 0.1, y: (y + .5) * 0.1 });
+    const on = T.underlaySnap({ x: px(250, 104).x, y: px(250, 104).y });          /* 3 px below the line, mid-way along */
+    const end = T.underlaySnap({ x: px(402, 101).x, y: px(402, 101).y });          /* just beyond the right end of the line */
+    const cor = T.underlaySnap({ x: px(105, 104).x, y: px(105, 104).y });          /* near the corner */
+    return { on, end, cor }; });
+  ok(r.on && Math.abs(r.on.y - 10.1) < 0.06 && Math.abs(r.on.x - 25.05) < 0.12, 'on-line: ' + JSON.stringify(r.on));
+  ok(r.end && Math.abs(r.end.x - 39.95) < 0.2 && Math.abs(r.end.y - 10.1) < 0.15, 'line end: ' + JSON.stringify(r.end));
+  ok(r.cor && r.cor.j && Math.abs(r.cor.x - 10.2) < 0.08 && Math.abs(r.cor.y - 10.1) < 0.08, 'corner: ' + JSON.stringify(r.cor));
+});
+await test('ortho: a segment being drawn is held to the plan axes', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.layers = []; T.S.ortho = true; T.S.tmp = { t: 'line', pts: [{ x: 10, y: 10 }], style: 'wall' };
+    const a = T.orthoFix({ x: 30, y: 11.5 }), b = T.orthoFix({ x: 10.8, y: 40 }); T.S.ortho = false; T.S.tmp = null; return { a, b }; });
+  ok(r.a.y === 10 && r.a.x === 30 && r.b.x === 10 && r.b.y === 40, JSON.stringify(r));
+});
+await test('crisp lines: paper goes transparent, ink stays solid', async () => {
+  const r = await page.evaluate(() => { const T = __T; const cn = document.createElement('canvas'); cn.width = 20; cn.height = 20; const c = cn.getContext('2d'); c.fillStyle = '#fafafa'; c.fillRect(0, 0, 20, 20); c.fillStyle = '#666'; c.fillRect(5, 5, 4, 4);
+    const out = T.crispOf({ img: cn, kind: 'plan' }); const d = out.getContext('2d').getImageData(0, 0, 20, 20).data; return { paper: d[3], ink: d[(6 * 20 + 6) * 4 + 3] }; });
+  ok(r.paper === 0 && r.ink === 255, JSON.stringify(r));
+});
+await test('plan symbols: red, green and yellow markers are found, the legend frame is ignored', async () => {
+  const r = await page.evaluate(() => { const T = __T; const cn = document.createElement('canvas'); cn.width = 1000; cn.height = 600; const c = cn.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 1000, 600);
+    c.fillStyle = '#e02020'; c.fillRect(100, 100, 24, 24); c.fillStyle = '#fff'; c.fillRect(108, 106, 8, 12);       /* extinguisher square with white glyph, 1.2 m */
+    c.fillStyle = '#0a9a40'; c.fillRect(300, 100, 30, 12); c.fillRect(340, 98, 12, 24);                           /* exit label and arrow: one exit */
+    c.fillStyle = '#f2d800'; c.fillRect(500, 100, 22, 22);
+    c.strokeStyle = '#e02020'; c.lineWidth = 6; c.strokeRect(600, 300, 380, 280); c.fillStyle = '#e02020'; c.fillRect(640, 340, 24, 24);   /* legend frame with an icon inside */
+    const res = T.detectSymbols({ img: cn, mpp: 0.05, x: 0, y: 0, rot: 0 }); const n = { 1: 0, 2: 0, 3: 0 }; res.forEach(o => n[o.k]++); return n; });
+  ok(r[1] === 1 && r[2] === 1 && r[3] === 1, JSON.stringify(r));
+});
+await test('new EXIT sign draws, and the pencil/ortho/venue buttons toggle', async () => {
+  const r = await page.evaluate(() => { const T = __T; const cn = document.createElement('canvas'); cn.width = 200; cn.height = 100; const c = cn.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 200, 100); c.translate(100, 50); c.scale(150, 150); T.drawSign(c, 'exit_sign', 1);
+    const d = c.getImageData ? null : null; const g = cn.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); const px = g.getImageData(60, 50, 1, 1).data; return { g: px[1] > px[0] + 40 && px[1] > 100 }; });
+  ok(r.g, 'sign is not green');
+  await page.click('#tools [data-act="pencil"]'); await page.click('#tools [data-act="ortho"]');
+  const st = await page.evaluate(() => ({ p: __T.S.pencil, o: __T.S.ortho, tool: __T.S.tool })); ok(st.p === true && st.o === true && st.tool === 'line', JSON.stringify(st));
+  await page.click('#tools [data-act="pencil"]'); await page.click('#tools [data-act="ortho"]');
+});
+await test('venue: a new event keeps venue objects only and starts a separate plan', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.event = 'Old event'; T.S.meta.attend = 900;
+    const a = T.addObj({ t: 'line', style: 'wall', pts: [{ x: 0, y: 0 }, { x: 10, y: 0 }] }); a.vn = 1; T.addObj(T.makeAt('item:marq10', { x: 20, y: 20 }));
+    T.venueNewEvent(); return { n: T.S.objs.length, vn: T.S.objs.every(o => o.vn), ev: T.S.meta.event, att: T.S.meta.attend }; });
+  ok(r.n === 1 && r.vn && !r.ev && !r.att, JSON.stringify(r));
+});
 await test('open-sided structures (Bedouin, gazebo) are not failed for exits; closed marquees are', async () => {
   const r = await page.evaluate(() => { const T = __T, add = (a, x, y) => T.addObj(T.makeAt(a, { x, y }));
     T.S.objs = []; add('item:bedouin', 0, 0); add('item:marq10', 30, 0); T.S.meta.attend = 100;

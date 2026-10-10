@@ -61,7 +61,7 @@ var SIGNS=[
  {k:'fire_ext',n:'Fire extinguisher',t:'fire'},{k:'hydrant',n:'Fire hydrant',t:'fire'},
  {k:'hose_reel',n:'Fire hose reel',t:'fire'},{k:'call_point',n:'Fire alarm call point',t:'fire'},
  {k:'assembly',n:'Assembly point',t:'safe'},{k:'exit_run',n:'Emergency exit sign',t:'safe'},
- {k:'first_aid',n:'First aid',t:'safe'},{k:'exit_run_r',n:'Emergency exit sign (mirrored)',t:'safe',flip:1},{k:'exit_box',n:'EXIT sign (green box, white text)',t:'safe'},{k:'disabled',n:'Accessible / disabled facility',t:'safe'},
+ {k:'first_aid',n:'First aid',t:'safe'},{k:'exit_run_r',n:'Emergency exit sign (mirrored)',t:'safe',flip:1},{k:'exit_box',n:'EXIT sign (green box, white text)',t:'safe'},{k:'exit_sign',n:'EXIT sign (standard green, white text)',t:'safe'},{k:'disabled',n:'Accessible / disabled facility',t:'safe'},
  {k:'no_smoking',n:'No smoking',t:'proh'},{k:'no_entry',n:'No entry / restricted',t:'proh'},
  {k:'warn_elec',n:'Electrical hazard',t:'warn'},{k:'warn_gen',n:'General warning',t:'warn'}
 ];
