@@ -169,6 +169,16 @@ await test('crowd: total never exceeds the venue certified capacity', async () =
   const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.siteArea = 9000; T.S.meta.attend = 7000; T.S.meta.certCap = 0; const a = T.crowdAll(); T.S.meta.certCap = 6000; const b = T.crowdAll(); T.S.meta.certCap = 0; T.S.meta.siteArea = 0; return { a: a.total, b: b.total, c: b.capped, o: b.over }; });
   ok(r.a === 9000 && r.b === 6000 && r.c && r.o, JSON.stringify(r));
 });
+await test('crowd window: the Set button and the Sheet-tab fields really change the crowd figure', async () => {
+  await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.siteArea = 0; T.S.meta.certCap = 0; T.S.meta.attend = 7000; T.addObj(T.makeAt('item:marq10', { x: 10, y: 10 })); });
+  await page.click('#tabs button[data-tab="sheet"]');
+  await page.fill('#m_sitearea', '9000'); await page.press('#m_sitearea', 'Tab');
+  const a = await page.evaluate(() => __T.crowdAll().total); ok(a === 9000, 'Sheet-tab area gave ' + a);
+  await page.click('[data-act="crowd"]'); await page.fill('#cm_sitearea', '12000'); await page.fill('#cm_cert', '5500'); await page.click('#modal [data-act="sitearea"]');
+  const b = await page.evaluate(() => ({ t: __T.crowdAll().total, m: __T.S.meta.siteArea, txt: document.getElementById('modal').innerText }));
+  ok(b.t === 5500 && b.m === 12000 && /certified 5,500/.test(b.txt), 'modal Set gave ' + JSON.stringify([b.t, b.m]));
+  await page.click('#modal #mc'); await page.evaluate(() => { __T.S.meta.siteArea = 0; __T.S.meta.certCap = 0; });
+});
 await test('open-sided structures (Bedouin, gazebo) are not failed for exits; closed marquees are', async () => {
   const r = await page.evaluate(() => { const T = __T, add = (a, x, y) => T.addObj(T.makeAt(a, { x, y }));
     T.S.objs = []; add('item:bedouin', 0, 0); add('item:marq10', 30, 0); T.S.meta.attend = 100;
