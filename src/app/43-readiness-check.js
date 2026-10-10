@@ -37,6 +37,7 @@ function rdyRun(){
  if(!(att>0))add('fail','Plan basics','Expected attendance has not been entered. Capacity and exit checks cannot be judged without it.',[],'Sheet tab → Expected attendance.');
  if(!m.tstart||!m.tend)add('warn','Plan basics','Event start and end times are not entered.',[],'Sheet tab → Event times.');
  if(!objs.length){add('fail','Plan basics','The plan is empty.');return F}
+ if(C.open&&C.open.occ>=C.open.area)add('warn','Capacity','The event area ('+cfmt(C.open.area)+' m²) is no bigger than the structures on it ('+cfmt(C.open.occ)+' m²), so no open ground is counted. Check the area figure or boundary.',[],'Crowd & capacity → enter the whole fenced area.');
  if(att>0&&!siteBoundary()&&!(+S.meta.siteArea>0))add('warn','Capacity','No event site area is set, so open ground is not counted in the capacity. Type the venue\'s total event area (m²) in Crowd & capacity (no need to draw existing fencing), or draw a boundary.',[],'Crowd & capacity → type the event area → Set.');
  /* 2 capacity */
  if(att>0&&C.total>0){if(C.over)add('fail','Capacity','Expected attendance ('+cfmt(att)+') is more than the planned capacity ('+cfmt(C.total)+').',[],'Add space, reduce the crowd, or change how each structure is used.');

@@ -179,6 +179,10 @@ await test('crowd window: the Set button and the Sheet-tab fields really change 
   ok(b.t === 5500 && b.m === 12000 && /certified 5,500/.test(b.txt), 'modal Set gave ' + JSON.stringify([b.t, b.m]));
   await page.click('#modal #mc'); await page.evaluate(() => { __T.S.meta.siteArea = 0; __T.S.meta.certCap = 0; });
 });
+await test('crowd: an event area smaller than the structures is flagged, not silently zero', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.addObj(T.makeAt('item:marq10', { x: 10, y: 10 })); T.S.meta.attend = 500; T.S.meta.siteArea = 50; const c = T.crowdAll(); const f = T.rdyRun().some(x => /no bigger than the structures/.test(x.msg)); T.S.meta.siteArea = 0; return { w: c.warn.some(x => /no bigger than the floor space/.test(x)), f }; });
+  ok(r.w && r.f, JSON.stringify(r));
+});
 await test('open-sided structures (Bedouin, gazebo) are not failed for exits; closed marquees are', async () => {
   const r = await page.evaluate(() => { const T = __T, add = (a, x, y) => T.addObj(T.makeAt(a, { x, y }));
     T.S.objs = []; add('item:bedouin', 0, 0); add('item:marq10', 30, 0); T.S.meta.attend = 100;
