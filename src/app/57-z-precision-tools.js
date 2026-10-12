@@ -115,11 +115,14 @@ function venueModal(){
  +'<div class="btns"><button class="btn sm" data-vn="mark"'+(sel?'':' disabled')+'>Mark selected as venue</button><button class="btn sm" data-vn="unmark"'+(sel?'':' disabled')+'>Mark selected as event</button></div>'
  +'<div class="btns"><button class="btn sm" data-vn="lock"'+(n?'':' disabled')+'>'+(n&&nl===n?'Unlock venue objects':'Lock venue objects')+'</button></div>'
  +'<h4>Start a new event on this venue</h4><p class="note">Keeps the venue objects and the background plan; removes everything else and clears the event details. Save this venue first (Sheet tab → Save to cloud). The new event saves as a separate plan.</p>'
- +'<div class="btns"><button class="btn sm pri" data-vn="newev"'+(n?'':' disabled')+'>Start new event from this venue</button></div>';
+ +'<div class="btns"><button class="btn sm pri" data-vn="newev"'+(n?'':' disabled')+'>Start new event from this venue</button></div>'
+ +'<h4>Venue library (cloud)</h4><p class="note">Save the traced and checked venue once. It is stored by venue name with its objects locked, and every event at that venue starts from it.</p><div class="btns"><button class="btn sm pri" data-vn="savev"'+(n?'':' disabled')+'>Save as venue</button><button class="btn sm" data-vn="openv">Start new event from a saved venue…</button></div>';
  box(h);var m=$('#modal');
  m.onclick=function(e){var b=e.target.closest('[data-vn]');if(!b)return;var a=b.dataset.vn;
   if(a==='mark'||a==='unmark'){snapH();selObjs().forEach(function(o){if(a==='mark')o.vn=1;else{delete o.vn}});changed(true);venueModal();return}
   if(a==='lock'){snapH();var lock=!(n&&nl===n);S.objs.forEach(function(o){if(o.vn){if(lock)o.lk=1;else delete o.lk}});changed(true);S.sel=null;renderSelbar();venueModal();return}
+  if(a==='savev'){m.classList.remove('on');m.innerHTML='';cloudSaveVenue();return}
+  if(a==='openv'){m.classList.remove('on');m.innerHTML='';cloudVenuePick();return}
   if(a==='newev'){if(b.dataset.ok!=='1'){b.dataset.ok='1';b.textContent='Click again to confirm: removes event objects';return}venueNewEvent();m.classList.remove('on');m.innerHTML='';return}};
  var c=$('#vn_mode');if(c)c.onchange=function(){S.venueMode=c.checked;syncPrec();toast(S.venueMode?'Venue mode on: new objects are marked as venue':'Venue mode off',3500)}}
 function venueNewEvent(){

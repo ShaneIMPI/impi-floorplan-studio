@@ -325,6 +325,32 @@ await test('Stand names dialog: names added after numbering, saved, and cleared 
   r = await page.evaluate(() => __T.S.objs.map(o => o.label + ':' + (o.sname || '')).join('|'));
   ok(r === 'A1:|A2:|A10:Acme', r);
 });
+await test('auto-trace: outline and walls come out of a synthetic plan at the right size', async () => {
+  const r = await page.evaluate(() => { const T = __T;
+    const cn = document.createElement('canvas'); cn.width = 1200; cn.height = 800; const c = cn.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 1200, 800); c.strokeStyle = '#000'; c.fillStyle = '#000';
+    c.lineWidth = 3; c.strokeRect(8, 8, 1184, 784);                       /* page frame */
+    c.lineWidth = 8; c.beginPath(); c.moveTo(100, 100); c.lineTo(500, 100); c.moveTo(520, 100); c.lineTo(1100, 100); c.lineTo(1100, 700); c.lineTo(100, 700); c.lineTo(100, 96); c.stroke(); /* 1 m doorway in top wall */
+    c.lineWidth = 6; c.beginPath(); c.moveTo(600, 100); c.lineTo(600, 390); c.moveTo(600, 410); c.lineTo(600, 700); c.moveTo(100, 400); c.lineTo(600, 400); c.stroke();
+    c.font = '40px sans-serif'; c.fillText('HALL 1', 300, 250); c.fillRect(800, 300, 20, 20); c.fillRect(900, 500, 30, 12);
+    const L = { img: cn, mpp: 0.05, x: 0, y: 0, rot: 0, kind: 'plan', cal: true, op: 1, vis: true };
+    const res = T.traceVenue(L, {});
+    const o = res.outlines[0]; let ar = 0; if (o) for (let i = 0; i < o.pts.length; i++) { const a = o.pts[i], b = o.pts[(i + 1) % o.pts.length]; ar += a.x * b.y - b.x * a.y; }
+    const xs = o ? o.pts.map(p => p.x) : [0], ys = o ? o.pts.map(p => p.y) : [0];
+    return { n: res.outlines.length, np: o && o.pts.length, area: Math.abs(ar / 2), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys), walls: res.walls.map(w => [w.a.x, w.a.y, w.b.x, w.b.y].map(v => +v.toFixed(1))) }; });
+  ok(r.n === 1 && r.np === 4, JSON.stringify(r));
+  ok(Math.abs(r.w - 50.4) < 0.8 && Math.abs(r.h - 30.4) < 0.8, JSON.stringify(r));
+  ok(r.walls.length >= 3 && r.walls.length <= 6, JSON.stringify(r));
+});
+await test('auto-trace: result is placed as venue lines, fades the plan, and one undo removes it', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.objs = [];
+    const cn = document.createElement('canvas'); cn.width = 800; cn.height = 600; const c = cn.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 800, 600); c.strokeStyle = '#000'; c.lineWidth = 8; c.strokeRect(100, 100, 600, 400);
+    const L = { img: cn, mpp: 0.05, x: 0, y: 0, rot: 0, kind: 'plan', cal: true, op: 1, vis: true };
+    const res = T.traceVenue(L, {}); const n = T.applyTrace(L, res, { vn: true, fade: true });
+    const a = { n, objs: T.S.objs.length, vn: T.S.objs.every(o => o.vn && o.t === 'line' && o.style === 'wall'), closed: T.S.objs[0] && T.S.objs[0].closed, op: L.op };
+    T.undo(); a.after = T.S.objs.length; return a; });
+  ok(r.objs === 1 && r.vn && r.closed && r.op <= 0.3 && r.after === 0, JSON.stringify(r));
+});
 await test('Sheet tab: Clear project button needs a second click, then leaves a blank sheet', async () => {
   await page.evaluate(() => { const T = __T; T.S.objs = []; T.addObj(T.makeAt('item:marq10', { x: 3, y: 3 })); T.S.meta.attend = 500; T.S.meta.event = 'Big Show'; T.S.meta.siteArea = 4000; T.S.tab = 'sheet'; });
   await page.evaluate(() => document.querySelector('[data-tab="sheet"]').click());

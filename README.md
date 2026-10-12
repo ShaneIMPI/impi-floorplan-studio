@@ -250,3 +250,15 @@ Exhibition stands now show the **stand name** top-left (optional, typed later un
 ## Stand names after numbering
 
 Number the stands as before. Later, on the Sheet tab, press **Stand names…** to see every stand in number order with a box for its name. Type names in, or paste a list (one per line, in number order), then Save. Tap a stand number to jump to it on the plan. Blank = no name.
+
+## Auto-trace venue shell
+
+Images tab, on a calibrated plan: **Auto-trace venue shell**. It builds the bare venue as editable venue lines: the outer outline of the building(s), plus the long straight internal walls (double lines become one centre line, wall ends are squared onto crossing walls, dashed structural grid lines and text are ignored). Settings: bridge openings up to X m (doors in the outer wall), ignore attachments narrower than X m (leader lines, boxes), shortest wall to keep. One Undo removes the whole result. Furniture, symbols and curves are not traced; use Pencil and Detect for those.
+
+Auto-trace tip: with "Heavy lines only" ticked, walls drawn in thin lines (event stands, stages, furniture on a client's layout plan) are skipped and only the heavier building walls are kept. Untick it on a scanned plan where every line is thin.
+
+## Venue library (save once, start every event from it)
+
+1. Import the venue plan, calibrate, press **Auto-trace venue shell** (with "Heavy lines only" ticked it traces the whole structure: outline, annexes beside the building and the heavier walls, and leaves stands, text, grid and furniture alone). Fix any corners, add Detect/Pencil items (fire equipment, exits), all marked as venue.
+2. Toolbar **Venue** > **Save as venue**. Stored in the cloud by venue name as "VENUE: <name>", venue objects locked, event details and crowd inputs blank. Saving again with the same venue updates it.
+3. For each event: **Venue** > **Start new event from a saved venue…**, pick the venue. It opens with the venue locked in place and blank event details; add the event layout. It saves as its own plan, and the venue is never overwritten.
