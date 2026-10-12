@@ -91,7 +91,8 @@ function drawItem(c,o,ic){
  else{bx(L.f||'#e6ebef')}
  drawFront(c,o,L,w,h,lw);
  var lab=o.label;
- if(!ic&&lab){labelBox(c,o,lab,w,h,{dark:(s==='stage'||s==='screen'),max:16}); }
+ if(s==='stand'&&!ic)standLabels(c,o,w,h);
+ else if(!ic&&lab){labelBox(c,o,lab,w,h,{dark:(s==='stage'||s==='screen'),max:16}); }
 }
 function areaPath(c,o){c.beginPath();if(o.sh==='ellipse')c.ellipse(0,0,o.w/2,o.h/2,0,0,TAU);else c.rect(-o.w/2,-o.h/2,o.w,o.h)}
 function areaSqm(o){return o.sh==='ellipse'?Math.PI*o.w*o.h/4:o.w*o.h}

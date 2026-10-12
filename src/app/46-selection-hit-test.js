@@ -86,7 +86,7 @@ function autoNumber(){
  pv();
  function close(){m.classList.remove('on');m.innerHTML=''}
  $('#mc').onclick=close;
- $('#mo').onclick=function(){var cf=cfg(),P=numPlan(target(),cf);close();snapH();P.list.forEach(function(x){x.o.label=x.label});changed(true);toast(P.list.length+' stands numbered in '+P.groups+(cf.axis==='row'?' rows':' columns'),4500)};
+ $('#mo').onclick=function(){var cf=cfg(),P=numPlan(target(),cf);close();snapH();P.list.forEach(function(x){x.o.label=x.label});changed(true);toast(P.list.length+' stands numbered in '+P.groups+(cf.axis==='row'?' rows':' columns')+'. Add the stand names later under Sheet > Stand names.',6000)};
  m.onkeydown=function(e){if(e.key==='Escape')close()};
 }
 function snapW(p,ex,noObj){

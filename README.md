@@ -242,3 +242,11 @@ In the satellite map window, use **Straighten (°)** (slider or number). A grid 
 ## Clear project (Sheet tab)
 
 Top of the Sheet tab: **Clear project (blank)** wipes objects, background images, event details, crowd inputs and layouts for the next redraw (company, logo and paper size stay). It asks for a second click to confirm, and Undo restores it. **Clear event only (keep venue)** appears when you have venue-permanent items and keeps them.
+
+## Stand layout: name, size, number
+
+Exhibition stands now show the **stand name** top-left (optional, typed later under Selected > Stand name), the **size** (for example 3x3) bottom-left and the **stand number** bottom-right. Auto-numbering fills the number as before; the name stays empty until you type it. Small stands drop the parts that do not fit.
+
+## Stand names after numbering
+
+Number the stands as before. Later, on the Sheet tab, press **Stand names…** to see every stand in number order with a box for its name. Type names in, or paste a list (one per line, in number order), then Save. Tap a stand number to jump to it on the plan. Blank = no name.

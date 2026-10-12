@@ -89,3 +89,39 @@ function clearProject(){
  if(typeof syncEvac==='function')syncEvac();if(typeof renderViewSel==='function')renderViewSel();
  setTool('select');changed(true);fitAll();toast('Project cleared. Blank sheet ready.')}
 function armClear(k){S.clrArm=k;renderPanel();setTimeout(function(){if(S.clrArm===k){S.clrArm=null;if(S.tab==='sheet')renderPanel()}},6000)}
+
+/* ---------- exhibition stand: name top-left, size bottom-left, number bottom-right ---------- */
+function standLabels(c,o,w,h){
+ var ppu=R.z/R.u,wp=w*ppu,hp=h*ppu,rot=(o.rot||0)*D2R,rel=normAng(rot)-rot,flip=Math.cos(rel)<0?-1:1,
+  num=String(o.label||'').trim(),nm=String(o.sname||'').trim(),sz=+(w.toFixed(1))+'x'+(+(h.toFixed(1))),
+  pad=5,col=o.lc||'#12202b',m=Math.min(wp,hp);
+ if(m<26||o.lm==='off')return;
+ var big=Math.max(8,Math.min(+o.ls>0?+o.ls:15,m*.2)),small=Math.max(7,Math.min(10,m*.14)),i,y;
+ function at(px0,py0,t,size,al,bold){txt(c,t,flip*px(px0),flip*px(py0),size,{rot:rel,col:col,bold:bold,align:al,halo:false})}
+ /* bottom row */
+ var rowY=hp/2-pad-big*.55;
+ if(num)at(wp/2-pad,rowY,num,big,'right',true);
+ if(wp>tw(c,num||'',big,true)+tw(c,sz,small,false)+pad*3)at(-wp/2+pad,hp/2-pad-small*.6,sz,small,'left',false);
+ /* name, wrapped, top-left */
+ if(nm){var availH=hp-pad*2-big*1.4-2,availW=wp-pad*2,fs,L,ok=false;
+  for(fs=Math.min(big*1.05,18);fs>=7;fs-=.5){L=wrapAt(c,nm.toUpperCase(),fs,availW,false);var widest=0;L.forEach(function(l){widest=Math.max(widest,tw(c,l,fs,false))});if(widest<=availW&&L.length*fs*1.15<=availH){ok=true;break}}
+  if(ok){y=-hp/2+pad+fs*.6;L.forEach(function(l){at(-wp/2+pad,y,l,fs,'left',false);y+=fs*1.15})}}}
+
+/* ---------- stand names: fill in after the stands are numbered ---------- */
+function natCmp(a,b){return String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:'base'})}
+function standNamesModal(){
+ var st=S.objs.filter(function(o){return o.t==='rect'&&/^stand/.test(o.k||'')&&vo(o)});
+ if(!st.length){toast('No stands on the plan yet');return}
+ st.sort(function(a,b){return natCmp(a.label||'~',b.label||'~')||(a.y-b.y)||(a.x-b.x)});
+ var m=$('#modal'),inS='style="border:1px solid var(--ln);background:var(--pn2);border-radius:8px;padding:7px;color:var(--ink);width:100%;min-height:36px"';
+ m.innerHTML='<div class="mbox" role="dialog" aria-label="Stand names" style="width:min(560px,100%)"><h3>Stand names</h3><p class="note">Type the exhibitor name next to each stand number. Leave blank for none. Tap a number to see that stand on the plan.</p>'
+  +'<div style="max-height:52vh;overflow:auto;border:1px solid var(--ln);border-radius:8px">'+st.map(function(o,i){return '<div style="display:flex;gap:8px;align-items:center;padding:4px 8px;border-bottom:1px solid var(--ln)"><button class="btn sm" data-sn="'+i+'" style="min-width:64px">'+esc(o.label||'(no no.)')+'</button><span style="font-size:12px;color:var(--mut);min-width:44px">'+fmt(o.w)+'x'+fmt(o.h)+'</span><input data-nm="'+i+'" value="'+esc(o.sname||'')+'" placeholder="Stand name" '+inS+'></div>'}).join('')+'</div>'
+  +'<details style="margin-top:8px"><summary style="cursor:pointer;font-size:13px">Paste a list of names (one per line, in stand-number order)</summary><textarea id="sn_paste" rows="5" '+inS+'></textarea><div class="mrow"><button class="btn sm" id="sn_fill">Fill names from list</button></div></details>'
+  +'<div class="mrow"><button class="btn" id="mc">Cancel</button><button class="btn pri" id="mo">Save names</button></div></div>';
+ m.classList.add('on');
+ function close(){m.classList.remove('on');m.innerHTML=''}
+ $('#mc').onclick=close;
+ m.onclick=function(e){var b=e.target.closest('[data-sn]');if(b){var o=st[+b.dataset.sn],bb=boundsOf(o);setSel([o.id]);try{fitTo(bb,.8)}catch(x){}draw()}};
+ $('#sn_fill').onclick=function(){var L=$('#sn_paste').value.split(/\r?\n/).map(function(x){return x.trim()});var ins=$$('[data-nm]',m);ins.forEach(function(inp,i){if(i<L.length&&L[i])inp.value=L[i]})};
+ $('#mo').onclick=function(){snapH();var n=0;$$('[data-nm]',m).forEach(function(inp){var o=st[+inp.dataset.nm],v=inp.value.trim();if(v){if(o.sname!==v)n++;o.sname=v}else if(o.sname){delete o.sname;n++}});close();changed(true);toast(n+' stand name'+(n===1?'':'s')+' saved')};
+}

@@ -298,6 +298,33 @@ await test('boom gate, sliding gate and stairs draw and are marked passable', as
     out.ps = ['boom4','sgate4','stairs_m'].every(k => T.LIBM[k].ps === 1); return out; });
   ok(!r.err && r.ps && ['boom4','boom6','sgate4','sgate6','stairs_s','stairs_m','stairs_l'].every(k => r[k] > 20), JSON.stringify(r));
 });
+await test('stand shows name, size and number; number-only and name-only stands draw without errors', async () => {
+  const r = await page.evaluate(() => { const T = __T, out = {}; T.S.objs = [];
+    const mk = (ex, rot) => { const o = T.addObj(T.makeAt('item:stand33', { x: 5, y: 5 })); Object.assign(o, ex, { rot: rot || 0 }); return o; };
+    T.setR(60, 1);
+    const ink = (o) => { const cn = document.createElement('canvas'); cn.width = 300; cn.height = 300; const c = cn.getContext('2d'); c.setTransform(60, 0, 0, 60, 150, 150);
+      try { T.drawItem(c, o, false); } catch (e) { out.err = String(e); } const d = c.getImageData(0, 0, 300, 300).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i + 3] && d[i] < 90 && d[i + 1] < 90) n++; return n; };
+    const a = mk({}), b = mk({ label: 'B02' }), c2 = mk({ label: 'B02', sname: 'Rotho-blaas' }), d2 = mk({ label: 'B02', sname: 'Rotho-blaas' }, 180), e = mk({ label: 'B02', sname: 'X' }, 90);
+    out.a = ink(a); out.b = ink(b); out.c = ink(c2); out.d = ink(d2); out.e = ink(e); return out; });
+  ok(!r.err && r.b > r.a && r.c > r.b && r.d > r.b && r.e > r.a, JSON.stringify(r));
+});
+await test('Stand names dialog: names added after numbering, saved, and cleared when blank', async () => {
+  await page.evaluate(() => { const T = __T; T.S.objs = []; ['A1','A2','A10'].forEach((l, i) => { const o = T.addObj(T.makeAt('item:stand33', { x: i * 4, y: 0 })); o.label = l; }); T.S.tab = 'sheet'; });
+  await page.evaluate(() => document.querySelector('[data-tab="sheet"]').click());
+  await page.waitForSelector('[data-act="stnames"]');
+  await page.click('[data-act="stnames"]');
+  await page.waitForSelector('[data-nm]');
+  const order = await page.evaluate(() => [...document.querySelectorAll('[data-sn]')].map(b => b.textContent));
+  ok(order.join() === 'A1,A2,A10', 'order ' + order);
+  await page.fill('[data-nm="0"]', 'Rothoblaas'); await page.fill('[data-nm="2"]', 'Acme');
+  await page.click('#mo');
+  let r = await page.evaluate(() => __T.S.objs.map(o => o.label + ':' + (o.sname || '')).join('|'));
+  ok(r === 'A1:Rothoblaas|A2:|A10:Acme', r);
+  await page.click('[data-act="stnames"]'); await page.waitForSelector('[data-nm]');
+  await page.fill('[data-nm="0"]', ''); await page.click('#mo');
+  r = await page.evaluate(() => __T.S.objs.map(o => o.label + ':' + (o.sname || '')).join('|'));
+  ok(r === 'A1:|A2:|A10:Acme', r);
+});
 await test('Sheet tab: Clear project button needs a second click, then leaves a blank sheet', async () => {
   await page.evaluate(() => { const T = __T; T.S.objs = []; T.addObj(T.makeAt('item:marq10', { x: 3, y: 3 })); T.S.meta.attend = 500; T.S.meta.event = 'Big Show'; T.S.meta.siteArea = 4000; T.S.tab = 'sheet'; });
   await page.evaluate(() => document.querySelector('[data-tab="sheet"]').click());
