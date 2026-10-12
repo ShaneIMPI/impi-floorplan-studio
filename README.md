@@ -262,3 +262,7 @@ Auto-trace tip: with "Heavy lines only" ticked, walls drawn in thin lines (event
 1. Import the venue plan, calibrate, press **Auto-trace venue shell** (with "Heavy lines only" ticked it traces the whole structure: outline, annexes beside the building and the heavier walls, and leaves stands, text, grid and furniture alone). Fix any corners, add Detect/Pencil items (fire equipment, exits), all marked as venue.
 2. Toolbar **Venue** > **Save as venue**. Stored in the cloud by venue name as "VENUE: <name>", venue objects locked, event details and crowd inputs blank. Saving again with the same venue updates it.
 3. For each event: **Venue** > **Start new event from a saved venue…**, pick the venue. It opens with the venue locked in place and blank event details; add the event layout. It saves as its own plan, and the venue is never overwritten.
+
+## Fight cage, ring and round stages (Library > Stage & AV)
+
+MMA octagon cage 9.1 m and 7.3 m (platform included, two door gaps, corner posts), boxing / K-1 ring 6.1 m and 7.3 m (ropes, red / blue / white corner posts, neutral-corner steps), round stage 6 m and 8 m, and a catwalk / runway. The size in each name is the cage or rope size; the placed footprint is the platform. They count as structures: they take floor space in the crowd figure and block evacuation routes. Resize under Selected to match the supplier's spec.

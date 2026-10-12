@@ -125,3 +125,34 @@ function standNamesModal(){
  $('#sn_fill').onclick=function(){var L=$('#sn_paste').value.split(/\r?\n/).map(function(x){return x.trim()});var ins=$$('[data-nm]',m);ins.forEach(function(inp,i){if(i<L.length&&L[i])inp.value=L[i]})};
  $('#mo').onclick=function(){snapH();var n=0;$$('[data-nm]',m).forEach(function(inp){var o=st[+inp.dataset.nm],v=inp.value.trim();if(v){if(o.sname!==v)n++;o.sname=v}else if(o.sname){delete o.sname;n++}});close();changed(true);toast(n+' stand name'+(n===1?'':'s')+' saved')};
 }
+
+/* ---------- fight cage, ring and round stage (top view, footprint = platform) ---------- */
+function arenaItem(c,o,L,s,w,h,lw){
+ var hx=w/2,hy=h/2,i;c.lineWidth=lw;c.strokeStyle=INK;c.lineJoin='round';
+ if(s==='rstage'){
+  c.fillStyle='#d9dee3';c.beginPath();c.ellipse(0,0,hx,hy,0,0,TAU);c.fill();c.stroke();
+  c.lineWidth=lw*.6;c.strokeStyle='#8a97a1';c.setLineDash([lw*3,lw*2]);c.beginPath();c.ellipse(0,0,hx*.86,hy*.86,0,0,TAU);c.stroke();c.setLineDash([]);return}
+ /* platform */
+ c.fillStyle='#e3e7ea';c.fillRect(-hx,-hy,w,h);c.strokeRect(-hx,-hy,w,h);
+ var cg=Math.min(L.cg||w*.85,Math.min(w,h)*.99);
+ if(s==='octagon'){
+  var a=cg/2,k=a*Math.tan(Math.PI/8),P=[[k,-a],[a,-k],[a,k],[k,a],[-k,a],[-a,k],[-a,-k],[-k,-a]];
+  c.fillStyle='#f4f5f6';c.beginPath();P.forEach(function(p,j){j?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])});c.closePath();c.fill();
+  /* cage fence: heavy outline with two door gaps (top and bottom flats) */
+  c.lineWidth=lw*2.4;c.strokeStyle='#22313d';c.beginPath();
+  for(i=0;i<8;i++){var p1=P[i],p2=P[(i+1)%8];
+   if(i===0||i===4){var mx=(p1[0]+p2[0])/2,my=(p1[1]+p2[1])/2,g=Math.min(.55,Math.abs(p2[0]-p1[0])*.28),dx=(p2[0]-p1[0])/Math.hypot(p2[0]-p1[0],p2[1]-p1[1]),dy=(p2[1]-p1[1])/Math.hypot(p2[0]-p1[0],p2[1]-p1[1]);
+    c.moveTo(p1[0],p1[1]);c.lineTo(mx-dx*g,my-dy*g);c.moveTo(mx+dx*g,my+dy*g);c.lineTo(p2[0],p2[1])}
+   else{c.moveTo(p1[0],p1[1]);c.lineTo(p2[0],p2[1])}}
+  c.stroke();
+  c.lineWidth=lw*.6;c.strokeStyle='#5b6b78';c.setLineDash([lw*2,lw*2]);c.beginPath();P.forEach(function(p,j){j?c.lineTo(p[0]*.93,p[1]*.93):c.moveTo(p[0]*.93,p[1]*.93)});c.closePath();c.stroke();c.setLineDash([]);
+  c.fillStyle='#22313d';P.forEach(function(p){c.beginPath();c.arc(p[0],p[1],Math.max(.07,cg*.012),0,TAU);c.fill()});
+  c.lineWidth=lw*.7;c.strokeStyle='#5b6b78';c.beginPath();c.arc(0,0,cg*.18,0,TAU);c.stroke();return}
+ /* ring: ropes square inset on the platform, coloured corner posts, steps at the neutral corners */
+ var r=cg/2;c.fillStyle='#f4f5f6';c.fillRect(-r,-r,cg,cg);
+ c.lineWidth=lw*1.6;c.strokeStyle='#c62828';c.strokeRect(-r,-r,cg,cg);
+ c.lineWidth=lw*.7;c.strokeStyle='#1e57a8';c.strokeRect(-r*.97,-r*.97,cg*.97,cg*.97);
+ var cols=['#c62828','#ffffff','#1e57a8','#ffffff'],cs=[[-r,-r],[r,-r],[r,r],[-r,r]],ps=Math.max(.12,cg*.03);
+ cs.forEach(function(q,j){c.fillStyle=cols[j];c.lineWidth=lw;c.strokeStyle=INK;c.fillRect(q[0]-ps,q[1]-ps,2*ps,2*ps);c.strokeRect(q[0]-ps,q[1]-ps,2*ps,2*ps)});
+ c.fillStyle='#8a97a1';c.lineWidth=lw*.8;c.strokeStyle=INK;var st=Math.min(.9,(hx-r)*1.2);
+ [[r,-r],[-r,r]].forEach(function(q){var sx=q[0]>0?q[0]+(hx-r)*.1:q[0]-(hx-r)*.1-st;c.fillRect(sx,q[1]-st/2,st,st);c.strokeRect(sx,q[1]-st/2,st,st)})}

@@ -50,6 +50,7 @@ function drawItem(c,o,ic){
  else if(s==='umbrella'){var r3=m/2;c.fillStyle='rgba(247,226,170,.88)';c.beginPath();c.arc(0,0,r3,0,TAU);c.fill();c.stroke();c.lineWidth=lw*.6;c.beginPath();for(i=0;i<8;i++){var a2=i/8*TAU;c.moveTo(0,0);c.lineTo(Math.cos(a2)*r3,Math.sin(a2)*r3)}c.stroke();c.fillStyle='#fff';c.beginPath();c.arc(0,0,Math.max(r3*.08,px(1.5)),0,TAU);c.fill();c.stroke()}
  else if(s==='truss'){var tw=Math.min(.3,m/2),lp;if(m<=.5){lp=[{x:-w/2+tw/2,y:0},{x:w/2-tw/2,y:0}]}else{var ix=w/2-tw/2,iy=h/2-tw/2;lp=[{x:-ix,y:-iy},{x:ix,y:-iy},{x:ix,y:iy},{x:-ix,y:iy},{x:-ix,y:-iy}]}trussDraw(c,lp,tw,o.fc?o.fc:INK,o.legs!==false)}
  else if(s==='boom'||s==='sgate'||s==='stairs'){siteItem(c,o,L,s,w,h,lw)}
+ else if(s==='octagon'||s==='ring'||s==='rstage'){arenaItem(c,o,L,s,w,h,lw)}
  else if(s==='ropebox'){var rk=L.rp||'velvet',hx=w/2,hy=h/2,gp=Math.min(1.2,w*.3),rpts=[{x:-gp/2,y:hy},{x:-hx,y:hy},{x:-hx,y:-hy},{x:hx,y:-hy},{x:hx,y:hy},{x:gp/2,y:hy}];c.fillStyle=o.fc||'rgba(255,248,225,.55)';c.fillRect(-hx,-hy,w,h);ropePoles(c,rpts,rk,{});
  }
  else if(s==='tent'){bx('#fbfaf5');var q=m*.05;c.lineWidth=lw*.6;c.strokeRect(-w/2+q,-h/2+q,w-2*q,h-2*q);c.strokeStyle='#8a97a1';c.beginPath();c.moveTo(-w/2,-h/2);c.lineTo(w/2,h/2);c.moveTo(w/2,-h/2);c.lineTo(-w/2,h/2);c.stroke()}

@@ -351,6 +351,15 @@ await test('auto-trace: result is placed as venue lines, fades the plan, and one
     T.undo(); a.after = T.S.objs.length; return a; });
   ok(r.objs === 1 && r.vn && r.closed && r.op <= 0.3 && r.after === 0, JSON.stringify(r));
 });
+await test('fight cage, ring and round stage draw and are real obstacles (not passable)', async () => {
+  const r = await page.evaluate(() => { const T = __T, out = {}; T.S.objs = []; T.setR(30, 1);
+    ['oct91','oct73','ring61','ring73','rstage6','rstage8','runway'].forEach(k => { const o = T.addObj(T.makeAt('item:' + k, { x: 5, y: 5 }));
+      const cn = document.createElement('canvas'); cn.width = 400; cn.height = 400; const c = cn.getContext('2d'); c.setTransform(30, 0, 0, 30, 200, 200);
+      try { T.drawItem(c, o, false); } catch (e) { out.err = k + ' ' + e; }
+      const d = c.getImageData(0, 0, 400, 400).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i + 3] && d[i] < 90 && d[i + 1] < 90) n++; out[k] = n; });
+    out.size = T.LIBM.oct91.w === 10.7 && T.LIBM.ring61.cg === 6.1; out.ps = ['oct91','ring61','rstage6'].some(k => T.LIBM[k].ps); return out; });
+  ok(!r.err && r.size && !r.ps && ['oct91','oct73','ring61','ring73','rstage6','rstage8'].every(k => r[k] > 30), JSON.stringify(r));
+});
 await test('Sheet tab: Clear project button needs a second click, then leaves a blank sheet', async () => {
   await page.evaluate(() => { const T = __T; T.S.objs = []; T.addObj(T.makeAt('item:marq10', { x: 3, y: 3 })); T.S.meta.attend = 500; T.S.meta.event = 'Big Show'; T.S.meta.siteArea = 4000; T.S.tab = 'sheet'; });
   await page.evaluate(() => document.querySelector('[data-tab="sheet"]').click());
