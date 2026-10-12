@@ -111,7 +111,7 @@ function layHTML(){
  return h;
 }
 function sheetHTML(){
- var m=S.meta,h='<h4>Title block</h4>';
+ var m=S.meta,h='<h4>Clear project</h4><p class="note">Finished a redraw? Wipe the sheet for the next one. Your company name, logo and paper size stay.</p><div class="btns"><button class="btn sm dng" data-act="clearp">'+(S.clrArm==='p'?'Click again to confirm: clears everything':'Clear project (blank)')+'</button>'+(S.objs.some(function(o){return o.vn})?'<button class="btn sm" data-act="clearev">'+(S.clrArm==='e'?'Click again to confirm: removes event objects':'Clear event only (keep venue)')+'</button>':'')+'</div><h4>Title block</h4>';
  h+=fld('m_event','Event name',m.event)+fld('m_title','Drawing title',m.title)+'<div class="row2">'+fld('m_venue','Venue',m.venue)+fld('m_client','Client',m.client)+'</div><div class="row3">'+fld('m_date','Date',m.date)+fld('m_rev','Revision',m.rev)+fld('m_drawn','Drawn by',m.drawn)+'</div>'+fld('m_ref','Reference no.',m.ref)+(isAdmin()?fld('m_company','Company name (watermark &amp; title block)',m.company):'<p class="note">Company name, logo and footer are fixed to '+esc(BRAND_NAME)+' on every sheet.</p>');
  if(isAdmin())h+='<div class="btns"><button class="btn sm" data-act="logo">'+(m.logo?'Replace logo':'Upload logo')+'</button>'+(m.logo?'<button class="btn sm dng" data-act="nologo">Remove logo</button>':'')+'</div>';
  h+='<h4>Event logo</h4><p class="note">Shown at the top of the right-hand panel on the sheet, above the event details. Any image or PDF works (PNG, JPG, SVG, WebP, GIF, PDF…); a transparent PNG looks best.</p><div class="btns"><button class="btn sm pri" data-act="elogo">'+(m.eventLogo?'Replace event logo':'Upload event logo')+'</button>'+(m.eventLogo?'<button class="btn sm dng" data-act="noelogo">Remove</button>':'')+'</div>';
@@ -245,6 +245,8 @@ function act(a){
  else if(a==='pdf')exportSheet('pdf');else if(a==='png')exportSheet('png');else if(a==='dxf')exportDxf();else if(a==='adddxf')importDxf();
  else if(a==='save')saveProject();else if(a==='open')openProject();
  else if(a==='clogin')cloudAuth('login');else if(a==='csetup')cloudAuth('setup');else if(a==='clogout')cloudLogout();else if(a==='csave')cloudSave();else if(a==='copen')cloudOpen();else if(a==='crevs')cloudRevs();else if(a==='cuser')cloudUser();
+ else if(a==='clearp'){if(S.clrArm!=='p'){armClear('p');return}S.clrArm=null;clearProject()}
+ else if(a==='clearev'){if(S.clrArm!=='e'){armClear('e');return}S.clrArm=null;venueNewEvent();toast('Event cleared, venue kept');renderPanel()}
  else if(a==='newp'){ask('Start a new plan?',[{l:'Type YES to clear the current plan and images',v:''}],function(v){if(v[0].trim().toUpperCase()==='YES'){snapH();S.objs=[];S.layers=[];S.sel=null;S.issues=[];S.meta.only=null;S.meta.layouts=[];S.meta.evac=false;syncEvac();renderViewSel();S.cloud.planId=null;S.cloud.rev=null;changed(true);fitAll()}},'Clear')}
 }
 function renderSelbar(){

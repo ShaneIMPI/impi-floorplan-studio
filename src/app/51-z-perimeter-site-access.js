@@ -78,3 +78,14 @@ function siteItem(c,o,L,s,w,h,lw){
   c.lineWidth=lw;c.strokeStyle='#5b6b78';c.beginPath();c.moveTo(-hx+.05,-hy);c.lineTo(-hx+.05,hy);c.moveTo(hx-.05,-hy);c.lineTo(hx-.05,hy);c.stroke();
   var ar=Math.min(w*.18,h*.12,.4);c.strokeStyle='#e8590c';c.fillStyle='#e8590c';c.lineWidth=lw*1.4;c.beginPath();c.moveTo(0,hy-h*.12);c.lineTo(0,-hy+h*.16);c.stroke();
   c.beginPath();c.moveTo(0,-hy+h*.1);c.lineTo(-ar,-hy+h*.1+ar*1.2);c.lineTo(ar,-hy+h*.1+ar*1.2);c.closePath();c.fill()}}
+
+/* ---------- clear project: a blank sheet for the next redraw ---------- */
+function clearProject(){
+ snapH();var m=S.meta;
+ S.objs=[];S.layers=[];S.sel=null;S.issues=[];S.tmp=null;S.perim=false;S.gapNext=false;S.pencil=false;
+ m.title='SITE & FLOOR PLAN';m.event='[EVENT NAME]';m.venue='[VENUE]';m.client='[CLIENT]';m.date=today();m.rev='A';m.drawn='[DRAWN BY]';m.ref='FP-'+today().replace(/-/g,'')+'-001';
+ m.tstart='';m.tend='';m.attend=0;m.certCap=0;m.siteArea=0;delete m.dens;m.only=null;m.layouts=[];m.evac=false;m.north=0;m.scale='auto';m.extent='content';m.mode='outdoor';m.gridMod=0;m.gx=0;m.gy=0;
+ if(S.cloud){S.cloud.planId=null;S.cloud.rev=null}
+ if(typeof syncEvac==='function')syncEvac();if(typeof renderViewSel==='function')renderViewSel();
+ setTool('select');changed(true);fitAll();toast('Project cleared. Blank sheet ready.')}
+function armClear(k){S.clrArm=k;renderPanel();setTimeout(function(){if(S.clrArm===k){S.clrArm=null;if(S.tab==='sheet')renderPanel()}},6000)}

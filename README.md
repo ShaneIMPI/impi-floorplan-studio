@@ -238,3 +238,7 @@ In the satellite map window, use **Straighten (°)** (slider or number). A grid 
 - Select a perimeter to switch section lengths on/off, or remove all gaps. Dragging, adding or deleting points keeps the gaps in the right place. DXF/DWG export writes each fenced stretch as its own polyline.
 - Gaps are not treated as barriers by the evacuation route generator.
 - **Library > Site & access**: boom gate 4.5 / 6.5 m, sliding gate 4 / 6 m opening (shows the open position dashed), stairs in three sizes. They are visual only: they do not block routes, count as floor space, or count as exits. Put an Exit door in an emergency-exit opening.
+
+## Clear project (Sheet tab)
+
+Top of the Sheet tab: **Clear project (blank)** wipes objects, background images, event details, crowd inputs and layouts for the next redraw (company, logo and paper size stay). It asks for a second click to confirm, and Undo restores it. **Clear event only (keep venue)** appears when you have venue-permanent items and keeps them.

@@ -261,6 +261,54 @@ await test('stanchions and rope: four styles, posts at set spacing, VIP enclosur
   ok(r.stanchion === 6 && r.velvet === 6 && r.belt === 6 && r.ropepole === 5 && r.sp3 === 4, 'posts: ' + JSON.stringify(r));
   ok(r.inLines && r.ink > 300 && r.vip, JSON.stringify(r));
 });
+await test('perimeter: gaps split the fence into runs, lengths and remapping are right', async () => {
+  const r = await page.evaluate(() => { const T = __T, out = {};
+    const o = { t: 'line', style: 'fence', pts: [{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}], closed: true, gaps: [1] };
+    const rn = T.lineRuns(o); out.runs = rn.runs.length; out.gaps = rn.gaps.length; out.glen = T.gapLen(o);
+    out.fenced = T.lineLen(o); out.all = T.lineLenAll(o);
+    const ga = T.gapArr(o); T.gapsInsert(ga, 1); out.ins = ga.join('');
+    const o2 = { t: 'line', pts: [{x:0,y:0},{x:5,y:0},{x:10,y:0},{x:15,y:0}], gaps: [1] }; const g2 = T.gapsRemove(o2, T.gapArr(o2), 1); out.rem = g2.join('');
+    const cn = document.createElement('canvas'); cn.width = 300; cn.height = 300; const c = cn.getContext('2d'); c.setTransform(10,0,0,10,10,10);
+    let err = null; try { T.drawLineObj(c, o, false); T.drawLineObj(c, Object.assign({}, o, { segl: 1 }), false); } catch (e) { err = String(e); } out.err = err; return out; });
+  ok(r.gaps === 1 && Math.abs(r.glen - 10) < 1e-6 && Math.abs(r.fenced - 30) < 1e-6 && Math.abs(r.all - 40) < 1e-6, JSON.stringify(r));
+  ok(r.ins === '01100' && !r.err && r.rem === '10', JSON.stringify(r));
+});
+await test('perimeter tool: clicking along a fence with a gap and closing makes one measured perimeter in the legend', async () => {
+  await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.layers = []; T.S.tab = 'lib'; T.togglePerim(); });
+  const pts = [[0,0],[8,0],[8,6],[0,6]];
+  const box = await page.evaluate(() => { const b = document.querySelector('canvas').getBoundingClientRect(); return { l: b.left, t: b.top }; });
+  const scr = await page.evaluate((pp) => pp.map(p => { const s = __T.w2s({ x: p[0], y: p[1] }); return [s.x, s.y]; }), pts);
+  const click = async (xy) => { await page.mouse.move(box.l + xy[0], box.t + xy[1]); await page.mouse.down(); await page.mouse.up(); await page.waitForTimeout(40); };
+  await click(scr[0]); await click(scr[1]);
+  await page.evaluate(() => __T.toggleGap());
+  await click(scr[2]); await click(scr[3]);
+  await page.evaluate(() => __T.toggleGap());
+  await click(scr[0]);
+  const o = await page.evaluate(() => { const T = __T, l = T.S.objs.filter(x => x.t === 'line')[0]; const lg = T.legendData().filter(e => e.g === 'Perimeter'); return { n: T.S.objs.length, l: l && { c: l.closed, g: l.gaps, p: l.perim, np: l.pts.length }, lg: lg.map(e => e.name + '=' + e.q) }; });
+  ok(o.n === 1 && o.l && o.l.c && o.l.p && o.l.np === 4, JSON.stringify(o));
+  ok(o.l.g && o.l.g.length === 2 && o.l.g.indexOf(1) >= 0 && o.l.g.indexOf(3) >= 0, JSON.stringify(o));
+  ok(/fenced\)=16 m/.test(o.lg.join('|')) && /Total perimeter incl\. gaps=28 m/.test(o.lg.join('|')), JSON.stringify(o));
+});
+await test('boom gate, sliding gate and stairs draw and are marked passable', async () => {
+  const r = await page.evaluate(() => { const T = __T, out = {}; T.S.objs = [];
+    ['boom4','boom6','sgate4','sgate6','stairs_s','stairs_m','stairs_l'].forEach(k => { const o = T.addObj(T.makeAt('item:' + k, { x: 5, y: 5 }));
+      const cn = document.createElement('canvas'); cn.width = 200; cn.height = 200; const c = cn.getContext('2d'); c.setTransform(10,0,0,10,100,100);
+      try { T.drawItem(c, o, false); } catch (e) { out.err = k + ' ' + e; }
+      const d = c.getImageData(0,0,200,200).data; let ink = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) ink++; out[k] = ink; });
+    out.ps = ['boom4','sgate4','stairs_m'].every(k => T.LIBM[k].ps === 1); return out; });
+  ok(!r.err && r.ps && ['boom4','boom6','sgate4','sgate6','stairs_s','stairs_m','stairs_l'].every(k => r[k] > 20), JSON.stringify(r));
+});
+await test('Sheet tab: Clear project button needs a second click, then leaves a blank sheet', async () => {
+  await page.evaluate(() => { const T = __T; T.S.objs = []; T.addObj(T.makeAt('item:marq10', { x: 3, y: 3 })); T.S.meta.attend = 500; T.S.meta.event = 'Big Show'; T.S.meta.siteArea = 4000; T.S.tab = 'sheet'; });
+  await page.evaluate(() => document.querySelector('[data-tab="sheet"]').click());
+  await page.waitForSelector('[data-act="clearp"]');
+  await page.click('[data-act="clearp"]');
+  let r = await page.evaluate(() => __T.S.objs.length);
+  ok(r === 1, 'cleared on first click: ' + r);
+  await page.click('[data-act="clearp"]');
+  r = await page.evaluate(() => { const S = __T.S; return { n: S.objs.length, a: S.meta.attend, e: S.meta.event, sa: S.meta.siteArea, co: S.meta.company, l: S.layers.length }; });
+  ok(r.n === 0 && r.a === 0 && r.e === '[EVENT NAME]' && r.sa === 0 && r.co === 'IMPI RMS' && r.l === 0, JSON.stringify(r));
+});
 await test('open-sided structures (Bedouin, gazebo) are not failed for exits; closed marquees are', async () => {
   const r = await page.evaluate(() => { const T = __T, add = (a, x, y) => T.addObj(T.makeAt(a, { x, y }));
     T.S.objs = []; add('item:bedouin', 0, 0); add('item:marq10', 30, 0); T.S.meta.attend = 100;
