@@ -14,7 +14,7 @@ function legendData(){
  var L=[],cnt={},i,objs=S.objs.filter(function(o){return vo(o)});
  objs.forEach(function(o){var key=null;if(o.t==='rect')key='r:'+o.k;else if(o.t==='sign')key='s:'+o.k;else if(o.t==='door')key='d:'+o.k;if(key){cnt[key]=cnt[key]||{n:0,w:0};cnt[key].n++}});
  objs.filter(function(o){return o.t==='area'||o.t==='poly'}).forEach(function(o){L.push({g:'Zones',t:'area',col:o.col||'#5b6770',name:o.label||'Zone',q:Math.round(o.t==='poly'?Math.abs(polyArea(o.pts)):areaSqm(o)).toLocaleString('en-ZA')+' m²'})});
- var rg={},ro=[],cats=['Exhibition','Tents','Stage & AV','Furniture','Services','Custom'];
+ var rg={},ro=[],cats=['Exhibition','Tents','Stage & AV','Furniture','Services','Site & access','Custom'];
  function sz1(v){return (+v.toFixed(1)).toString()}
  objs.forEach(function(o){if(o.t!=='rect'||o.k==='cover')return;var l=LIBM[o.k];if(!l)return;
   var changed=Math.abs(o.w-l.w)>.05||Math.abs(o.h-l.h)>.05,key=o.k+'|'+(l.c==='Exhibition'?'':(o.label||''))+'|'+o.w.toFixed(1)+'|'+o.h.toFixed(1);
@@ -26,6 +26,14 @@ function legendData(){
  SIGNS.forEach(function(s){if(cnt['s:'+s.k])L.push({g:'Safety',t:'sign',k:s.k,name:s.n,q:'×'+cnt['s:'+s.k].n})});
  DOORS.forEach(function(d){if(cnt['d:'+d.k])L.push({g:'Access',t:'door',k:d.k,name:d.n,q:'×'+cnt['d:'+d.k].n})});
  LINES.forEach(function(ln){var tot=0,n=0;objs.forEach(function(o){if(o.t==='line'&&(o.style||'fence')===ln.k){tot+=lineLen(o);n++}});if(n)L.push({g:'Lines',t:'line',k:ln.k,name:ln.n,q:Math.round(tot)+' m'})});
+
+ objs.filter(function(o){return o.t==='line'&&o.perim&&o.pts&&o.pts.length>1}).forEach(function(o,pi){
+  var rn=lineRuns(o),all=lineLenAll(o),fl=lineLen(o),nm=(LINES.filter(function(l){return l.k===(o.style||'fence')})[0]||{n:'Fence'}).n,base=gapBase(o);
+  L.push({g:'Perimeter',t:'line',k:o.style||'fence',name:'Perimeter '+(pi+1)+' — '+nm+' (fenced)',q:(Math.round(fl*10)/10)+' m'});
+  if(rn.gaps.length){rn.gaps.forEach(function(g,k){L.push({g:'Perimeter',t:'line',k:'thin',name:'Gap G'+(base+k+1)+' (open)',q:(Math.round(g.len*10)/10)+' m'})});
+   L.push({g:'Perimeter',t:'line',k:'thin',name:'Total gaps',q:(Math.round(gapLen(o)*10)/10)+' m'});
+   L.push({g:'Perimeter',t:'line',k:'thin',name:'Total perimeter incl. gaps',q:(Math.round(all*10)/10)+' m'})}
+  if(o.closed&&o.pts.length>=3)L.push({g:'Perimeter',t:'line',k:'thin',name:'Area enclosed',q:Math.round(Math.abs(polyArea(o.pts))).toLocaleString('en-ZA')+' m²'})});
  return L;
 }
 function allLib(){return LIB.concat(S.custom)}

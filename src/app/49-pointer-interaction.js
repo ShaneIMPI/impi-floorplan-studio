@@ -10,6 +10,7 @@ function setTool(t,arm){
  if(t!=='line'&&S.lineStyle==='evac')S.lineStyle='fence';
  if((S.tool==='line'||S.tool==='poly')&&t!==S.tool)cancelLine();
  if(t!=='line'&&t!=='poly')S.pencil=false;
+ if(t!=='line'){S.perim=false;S.gapNext=false}
  S.tool=t;S.arm=arm||null;if(t!=='calib')S.calib=t==='calib'?S.calib:null;if(t!=='layermove')S.mv=t==='layermove'?S.mv:null;
  $$('#tools .tool').forEach(function(b){b.classList.toggle('on',b.dataset.tool===t||(t==='place'&&b.dataset.tool==='select'&&false))});
  cv.style.cursor=t==='pan'||t==='layermove'?'grab':t==='select'?'default':'crosshair';
@@ -23,7 +24,7 @@ function finishLine(){
  var pts=t.pts.map(function(p){return {x:p.x,y:p.y}});
  if(t.poly){if(pts.length<3){toast('A shape needs at least 3 corners');cancelLine();draw();return}
   var n=S.objs.filter(function(o){return o.t==='area'||o.t==='poly'}).length+1;S.tmp=null;var sn=S.siteNext;S.siteNext=false;addObj(sn?{t:'poly',pts:pts,col:'#12804a',fo:.05,site:1,label:'Event site'}:{t:'poly',pts:pts,col:ZCOL[0].c,label:'Zone '+n});$('#doneBtn').classList.remove('on');setTool('select');return}
- var o={t:'line',style:t.style,pts:pts,closed:false};if(t.style==='evac'){o.ev=1;o.man=1;o.keep=1;if(S.meta.only)o.lay=S.meta.only}S.tmp=null;addObj(o);$('#doneBtn').classList.remove('on');setTool('select');
+ var o={t:'line',style:t.style,pts:pts,closed:!!t.closeIt};if(t.gaps&&t.gaps.length)o.gaps=t.gaps.slice();if(S.perim){o.perim=1;o.segl=1}S.perim=false;S.gapNext=false;if(t.style==='evac'){o.ev=1;o.man=1;o.keep=1;if(S.meta.only)o.lay=S.meta.only}S.tmp=null;addObj(o);$('#doneBtn').classList.remove('on');setTool('select');
 }
 cv.addEventListener('pointerdown',function(e){
  cv.setPointerCapture(e.pointerId);var p=rectOf(e);ptrs[e.pointerId]=p;var ids=Object.keys(ptrs);
@@ -67,8 +68,8 @@ function onDown(e,p){
  if(t==='select'){
   o=getSel();
   if(o&&!o.lk){var h=hitHandle(o,p);if(h){snapH();
-   if(h.id[0]==='m'&&(o.t==='line'||o.t==='poly')){var mi=+h.id.slice(1),PP=o.pts,pa=PP[mi],pb=PP[(mi+1)%PP.length];PP.splice(mi+1,0,{x:(pa.x+pb.x)/2,y:(pa.y+pb.y)/2});h={id:'v'+(mi+1)}}
-   else if(h.id[0]==='v'){var nt=Date.now();if(lastHT&&lastHT.o===o.id&&lastHT.id===h.id&&nt-lastHT.t<450&&o.pts.length>(o.t==='poly'?3:2)){o.pts.splice(+h.id.slice(1),1);lastHT=null;changed(true);toast('Point removed');return}lastHT={o:o.id,id:h.id,t:nt}}
+   if(h.id[0]==='m'&&(o.t==='line'||o.t==='poly')){var mi=+h.id.slice(1),PP=o.pts,pa=PP[mi],pb=PP[(mi+1)%PP.length];var gaI=o.t==='line'?gapArr(o):null;PP.splice(mi+1,0,{x:(pa.x+pb.x)/2,y:(pa.y+pb.y)/2});if(gaI){gapsInsert(gaI,mi);gapSet(o,gaI)}h={id:'v'+(mi+1)}}
+   else if(h.id[0]==='v'){var nt=Date.now();if(lastHT&&lastHT.o===o.id&&lastHT.id===h.id&&nt-lastHT.t<450&&o.pts.length>(o.t==='poly'?3:2)){var rI=+h.id.slice(1),gaR=o.t==='line'?gapsRemove(o,gapArr(o),rI):null;o.pts.splice(rI,1);if(gaR)gapSet(o,gaR);lastHT=null;changed(true);toast('Point removed');return}lastHT={o:o.id,id:h.id,t:nt}}
    drag={k:'handle',h:h.id,o:o,orig:JSON.parse(JSON.stringify(o)),moved:false,sh:e.shiftKey};return}}
   var hit=hitTest(w);
   if(hit){
@@ -152,7 +153,11 @@ function onUp(e){
   var q=orthoFix(snapW(s2w(p)));if(!S.tmp)S.tmp={t:'line',pts:[],style:S.lineStyle||'fence',cur:null,poly:S.tool==='poly'};
   if(S.tmp.poly&&S.tmp.pts.length>=3&&Math.hypot(S.tmp.pts[0].x-q.x,S.tmp.pts[0].y-q.y)<12/S.view.z){finishLine();return}
   var last=S.tmp.pts[S.tmp.pts.length-1];
+  if(S.perim&&S.tool==='line'&&S.tmp.pts.length>=3&&Math.hypot(S.tmp.pts[0].x-q.x,S.tmp.pts[0].y-q.y)<12/S.view.z){
+   if(S.gapNext){S.tmp.gaps=(S.tmp.gaps||[]);S.tmp.gaps.push(S.tmp.pts.length-1);S.gapNext=false}
+   S.tmp.closeIt=true;finishLine();return}
   if(last&&Math.hypot(last.x-q.x,last.y-q.y)<1e-6){finishLine();return}
+  if(S.gapNext&&S.tmp.pts.length>=1){(S.tmp.gaps=S.tmp.gaps||[]).push(S.tmp.pts.length-1);S.gapNext=false;syncPrec()}
   S.tmp.pts.push(q);S.snapPt=null;$('#doneBtn').classList.toggle('on',S.tmp.pts.length>1);draw();return;
  }
  if(d.k==='texttap'){var wp=d.w;ask('Add note / label',[{l:'Text',v:''}],function(v){if(v[0].trim())addObj({t:'text',x:wp.x,y:wp.y,text:v[0].trim(),size:14,rot:0});setTool('select')});return}

@@ -225,3 +225,16 @@ In the satellite map window, use **Straighten (°)** (slider or number). A grid 
 - **Detect fire equipment & exits:** Layers → *Detect fire equipment & exits* scans the (calibrated) plan for red, green and yellow markers and places real extinguisher, EXIT sign and electrical items on them after you confirm. The red legend box on a page is ignored. Check the result: a red marker may be a hose reel.
 - **Venue (permanent features):** toolbar *Venue*. Turn on "Everything I draw now is part of the venue", mark/unmark selected objects, lock them, then *Start new event from this venue* to keep only the venue and clear the event details (it saves as a separate plan).
 - **EXIT sign:** Library → Safety signs → *EXIT sign (standard green, white text)*.
+
+## Stanchions, ropes and poles (exhibitions and outdoor VIP)
+- **Line / fence** → style: *Stanchion & rope* (chrome posts, red rope), *VIP velvet rope* (gold posts, red rope), *Retractable belt barrier* (black posts, belt) or *Rope & timber poles* (outdoor / VIP). Posts are drawn at every corner and at a set spacing (Selected → *Post spacing*, default 2 to 2.5 m); colour and weight are editable. Close the shape for a full enclosure.
+- **Ready-made enclosures** (Library): *VIP rope enclosure 4 × 4* and *8 × 5* (Exhibition), *Stanchion & rope enclosure 3 × 3*, and *Outdoor VIP rope & pole area 10 × 6* (Tents). Each has a gap for the entrance, resizes like any item, and the outdoor one counts as an open-sided area for crowd capacity.
+- Ropes and belts are not treated as solid barriers for evacuation routes (they are unclipped in an emergency). Use a Crowd barrier or Fence where a physical barrier is required.
+
+## Perimeter line with gaps, boom gate, sliding gate, stairs
+
+- **Perimeter** (toolbar): tap along an existing fence. Where the fence stops, press **Gap**, then tap where it starts again. The gap is drawn dashed and labelled G1, G2 … with its width. Tap the first point (or Finish) to close the loop. Each section shows its length.
+- The **legend** gets a Perimeter block: fenced length, each gap, total gaps, total perimeter including gaps, and the enclosed area if closed.
+- Select a perimeter to switch section lengths on/off, or remove all gaps. Dragging, adding or deleting points keeps the gaps in the right place. DXF/DWG export writes each fenced stretch as its own polyline.
+- Gaps are not treated as barriers by the evacuation route generator.
+- **Library > Site & access**: boom gate 4.5 / 6.5 m, sliding gate 4 / 6 m opening (shows the open position dashed), stairs in three sizes. They are visual only: they do not block routes, count as floor space, or count as exits. Put an Exit door in an emergency-exit opening.

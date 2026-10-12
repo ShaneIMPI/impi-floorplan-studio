@@ -8,6 +8,24 @@ function drawFront(c,o,L,w,h,lw){
  if(f==='s'){c.moveTo(-w/2,h/2);c.lineTo(w/2,h/2)}else if(f==='n'){c.moveTo(-w/2,-h/2);c.lineTo(w/2,-h/2)}else if(f==='e'){c.moveTo(w/2,-h/2);c.lineTo(w/2,h/2)}else{c.moveTo(-w/2,-h/2);c.lineTo(-w/2,h/2)}
  c.stroke();c.restore()}
 /* box truss: drawn to scale (tw = truss width in metres), double rails + zig-zag bracing + corner/joint towers */
+/* stanchions / rope-and-pole barriers: posts at every corner and at a set spacing, rope or belt hung between them (open, never a wall) */
+var ROPEK={
+ stanchion:{post:'#aab4bc',edge:'#2b3540',rope:'#b42318',sp:2,sag:0,rw:2.2,pr:1},
+ velvet:{post:'#c9a227',edge:'#6b5410',rope:'#8e1b2d',sp:2,sag:0,rw:3.4,pr:1.15},
+ belt:{post:'#22313d',edge:'#0b1218',rope:'#1c3a5e',sp:2.2,sag:0,rw:2.6,pr:1},
+ ropepole:{post:'#8a5a2b',edge:'#4a2f14',rope:'#d9c9a0',sp:2.5,sag:0,rw:2.4,pr:.9}};
+function ropePoles(c,pts,st,o){
+ var K=ROPEK[st]||ROPEK.stanchion,sp=o.sp>0?+o.sp:K.sp,rope=o.col||K.rope,wt=o.wt||1,i,j,posts=[],segs=[];
+ for(i=0;i<pts.length-1;i++){var a=pts[i],b=pts[i+1],L=Math.hypot(b.x-a.x,b.y-a.y);if(L<1e-6)continue;var n=Math.max(1,Math.round(L/sp));
+  segs.push({a:a,b:b,n:n,L:L});for(j=(i===0?0:1);j<=n;j++)posts.push({x:a.x+(b.x-a.x)*j/n,y:a.y+(b.y-a.y)*j/n})}
+ c.save();c.lineCap='round';c.lineJoin='round';
+ c.strokeStyle=rope;c.lineWidth=Math.max(px(K.rw*wt),.025);
+ segs.forEach(function(s){var dx=(s.b.x-s.a.x)/s.L,dy=(s.b.y-s.a.y)/s.L,nx=-dy,ny=dx,step=s.L/s.n;
+  for(var k=0;k<s.n;k++){var p0={x:s.a.x+dx*step*k,y:s.a.y+dy*step*k},p1={x:p0.x+dx*step,y:p0.y+dy*step},sg=Math.min(K.sag*step,step*.18);
+   c.beginPath();c.moveTo(p0.x,p0.y);if(sg>0)c.quadraticCurveTo((p0.x+p1.x)/2+nx*sg,(p0.y+p1.y)/2+ny*sg,p1.x,p1.y);else c.lineTo(p1.x,p1.y);c.stroke()}});
+ var pr=Math.max(px(2.8*K.pr),.07*K.pr);c.fillStyle=K.post;c.strokeStyle=K.edge;c.lineWidth=Math.max(px(.9),.01);
+ posts.forEach(function(q){c.beginPath();c.arc(q.x,q.y,pr,0,TAU);c.fill();c.stroke();c.fillStyle=K.edge;c.beginPath();c.arc(q.x,q.y,pr*.38,0,TAU);c.fill();c.fillStyle=K.post});
+ c.restore();return posts.length}
 function trussDraw(c,pts,tw,ink,legs){
  var W0=Math.max(tw,px(4)),ed=px(1.1),Wi=Math.max(W0-2*ed,px(.5)),hw=(W0-2*ed)/2,i,n=pts.length;
  c.save();c.setLineDash([]);c.lineJoin='miter';c.lineCap='butt';
@@ -31,6 +49,9 @@ function drawItem(c,o,ic){
  else if(s==='cocktail'){var r2=m/2;c.fillStyle='#e0cfb4';c.beginPath();c.arc(0,0,r2,0,TAU);c.fill();c.stroke();c.lineWidth=lw*.6;c.beginPath();c.moveTo(-r2*.5,0);c.lineTo(r2*.5,0);c.moveTo(0,-r2*.5);c.lineTo(0,r2*.5);c.stroke()}
  else if(s==='umbrella'){var r3=m/2;c.fillStyle='rgba(247,226,170,.88)';c.beginPath();c.arc(0,0,r3,0,TAU);c.fill();c.stroke();c.lineWidth=lw*.6;c.beginPath();for(i=0;i<8;i++){var a2=i/8*TAU;c.moveTo(0,0);c.lineTo(Math.cos(a2)*r3,Math.sin(a2)*r3)}c.stroke();c.fillStyle='#fff';c.beginPath();c.arc(0,0,Math.max(r3*.08,px(1.5)),0,TAU);c.fill();c.stroke()}
  else if(s==='truss'){var tw=Math.min(.3,m/2),lp;if(m<=.5){lp=[{x:-w/2+tw/2,y:0},{x:w/2-tw/2,y:0}]}else{var ix=w/2-tw/2,iy=h/2-tw/2;lp=[{x:-ix,y:-iy},{x:ix,y:-iy},{x:ix,y:iy},{x:-ix,y:iy},{x:-ix,y:-iy}]}trussDraw(c,lp,tw,o.fc?o.fc:INK,o.legs!==false)}
+ else if(s==='boom'||s==='sgate'||s==='stairs'){siteItem(c,o,L,s,w,h,lw)}
+ else if(s==='ropebox'){var rk=L.rp||'velvet',hx=w/2,hy=h/2,gp=Math.min(1.2,w*.3),rpts=[{x:-gp/2,y:hy},{x:-hx,y:hy},{x:-hx,y:-hy},{x:hx,y:-hy},{x:hx,y:hy},{x:gp/2,y:hy}];c.fillStyle=o.fc||'rgba(255,248,225,.55)';c.fillRect(-hx,-hy,w,h);ropePoles(c,rpts,rk,{});
+ }
  else if(s==='tent'){bx('#fbfaf5');var q=m*.05;c.lineWidth=lw*.6;c.strokeRect(-w/2+q,-h/2+q,w-2*q,h-2*q);c.strokeStyle='#8a97a1';c.beginPath();c.moveTo(-w/2,-h/2);c.lineTo(w/2,h/2);c.moveTo(w/2,-h/2);c.lineTo(-w/2,h/2);c.stroke()}
  else if(s==='gazebo'){bx('#f6f3ea');var gb=Math.max(1,Math.round(Math.max(w,h)/m)),bw=w>=h?w/gb:w,bh2=w>=h?h:h/gb,gq=m*.05;c.lineWidth=lw*.6;c.strokeStyle='#8a97a1';c.beginPath();for(i=0;i<gb;i++){var bx0=w>=h?-w/2+i*bw:-w/2,by0=w>=h?-h/2:-h/2+i*bh2;c.moveTo(bx0,by0);c.lineTo(bx0+bw,by0+bh2);c.moveTo(bx0+bw,by0);c.lineTo(bx0,by0+bh2)}c.stroke();c.strokeStyle=INK;c.lineWidth=lw*.8;c.strokeRect(-w/2+gq,-h/2+gq,w-2*gq,h-2*gq);c.fillStyle=INK;var gr=Math.max(m*.04,px(1.8));for(i=0;i<=gb;i++)for(var j=0;j<2;j++){var gx=w>=h?-w/2+i*bw:-w/2+j*w,gy=w>=h?-h/2+j*h:-h/2+i*bh2;c.fillRect(gx-gr,gy-gr,2*gr,2*gr)}}
  else if(s==='bedouin'){bx('#f0e2c4');var q2=m*.1;c.lineWidth=lw*.7;c.setLineDash([px(6),px(4)]);c.strokeRect(-w/2+q2,-h/2+q2,w-2*q2,h-2*q2);c.setLineDash([]);c.fillStyle=INK;[[-1,-1],[1,-1],[1,1],[-1,1],[0,0]].forEach(function(p){c.beginPath();c.arc(p[0]*(w/2-q2),p[1]*(h/2-q2),Math.max(m*.022,px(1.6)),0,TAU);c.fill()})}
@@ -114,9 +135,10 @@ function drawDoor(c,o,ic){
    txt(c,lbl,0,gy,sz,{col:o.lc||col,bold:true,rot:rel});txt(c,fm(w),0,gy2,Math.max(7,sz-1),{col:'#33444f',rot:rel})}}
  c.restore();
 }
-function drawLineObj(c,o,ic){
+function drawLineObj0(c,o,ic){
  var P=o.pts;if(!P||P.length<2)return;var st=o.style||'fence',sdef='#2e7d32';if(st==='shadeb'){st='shade';sdef='#1b1b1b'}
  if(st==='truss'){trussDraw(c,o.closed?P.concat([P[0]]):P,o.tw>0?+o.tw:.3,o.col||INK,o.legs!==false);return}
+ if(ROPEK[st]){ropePoles(c,o.closed?P.concat([P[0]]):P,st,o);return}
  c.save();c.lineJoin='round';c.lineCap='butt';
  var pts=o.closed?P.concat([P[0]]):P,wt=o.wt||1;
  if(st==='barrier'){c.strokeStyle=o.col||'#e8590c';c.lineWidth=px(3.6*wt);c.setLineDash([px(9),px(4)])}

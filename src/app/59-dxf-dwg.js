@@ -107,7 +107,7 @@ function doImportDxf(f,fl,sel,u,mode){
  toast('Imported to scale: '+Wm.toFixed(1)+' × '+Hm.toFixed(1)+' m'+(mode==='u'?'. Trace over it, or tick "Edit this plan" in the Images tab.':'.'),6000);
  if(matchMedia('(max-width:820px)').matches)openPanel()}
 
-var DXFCOL={fence:8,barrier:30,wall:7,tape:1,shade:3,shadeb:250,drape:250,plain:7,thin:7,brick:7,shell:7,evac:3,truss:9};
+var DXFCOL={fence:8,barrier:30,wall:7,tape:1,shade:3,shadeb:250,drape:250,plain:7,thin:7,brick:7,shell:7,evac:3,truss:9,stanchion:1,velvet:1,belt:5,ropepole:30};
 var DXFW={truss:.3,wall:.2,brick:.23,shell:.04};
 function exportDxf(){
  var objs=S.objs.filter(vo);if(!objs.length){toast('Draw something first');return}
@@ -133,7 +133,7 @@ function buildDxf(objs,k,iu){
    if(o.label)tx(lay('FPS-LABELS',7),o.x-Math.min(o.w*.4,String(o.label).length*.14),o.y,Math.max(.15,Math.min(.5,Math.min(o.w,o.h)*.16)),o.label,0)}
   else if(o.t==='area'){var ly2=lay('FPS-ZONES',8),P=[];if(o.sh==='ellipse'){for(var i=0;i<64;i++){var a=i/64*TAU,q=rotv(Math.cos(a)*o.w/2,Math.sin(a)*o.h/2,(o.rot||0)*D2R);P.push({x:o.x+q.x,y:o.y+q.y})}}else P=corners(o);pl(ly2,P,true,0);if(o.label){tx('FPS-LABELS',o.x-String(o.label).length*.12,o.y,.4,o.label,0);lay('FPS-LABELS',7)}}
   else if(o.t==='poly'){pl(lay('FPS-ZONES',8),o.pts,true,0);if(o.label){var cen=polyCentroid(o.pts);tx('FPS-LABELS',cen.x-String(o.label).length*.12,cen.y,.4,o.label,0);lay('FPS-LABELS',7)}}
-  else if(o.t==='line'){var st=o.style||'fence',ly3=lay('FPS-'+st.toUpperCase(),DXFCOL[st]||7);pl(ly3,o.pts,!!o.closed,DXFW[st]||0)}
+  else if(o.t==='line'){var st=o.style||'fence',ly3=lay('FPS-'+st.toUpperCase(),DXFCOL[st]||7);if(o.gaps&&o.gaps.length){lineRuns(o).runs.forEach(function(r){pl(ly3,r,false,DXFW[st]||0)})}else pl(ly3,o.pts,!!o.closed,DXFW[st]||0)}
   else if(o.t==='door'){var th=o.th||.6,ly4=lay('FPS-DOORS',3);pl(ly4,corners({x:o.x,y:o.y,rot:o.rot||0,w:o.w,h:th,t:'x'}),true,0);tx('FPS-LABELS',o.x-.6,o.y-th,.25,o.label||(DOORM[o.k]||{}).lab||'',0);lay('FPS-LABELS',7)}
   else if(o.t==='sign'){var ly5=lay('FPS-SIGNS',6),sz=Math.max(.3,o.s||1)/(/^exit/.test(o.k)?1:2);pl(ly5,corners({x:o.x,y:o.y,rot:o.rot||0,w:sz,h:sz*(/^exit/.test(o.k)?.42:1),t:'x'}),true,0);tx('FPS-SIGNS',o.x-sz/2,o.y+sz*.8,.2,String(o.k).replace(/_/g,' ').toUpperCase(),0)}
   else if(o.t==='text'){tx(lay('FPS-TEXT',7),o.x,o.y,Math.max(.2,.06*(o.size||14)),o.text,o.rot||0)}

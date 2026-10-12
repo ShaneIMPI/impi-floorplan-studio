@@ -25,7 +25,7 @@ function drawTmp(c){
  if(t.t==='area'){var o={t:'area',x:(t.a.x+t.b.x)/2,y:(t.a.y+t.b.y)/2,w:Math.abs(t.b.x-t.a.x),h:Math.abs(t.b.y-t.a.y),rot:0,col:'#e8590c',label:''};if(o.w>0&&o.h>0)drawArea(c,o)}
  else if(t.t==='dim'){dimLine(c,t.a,t.b,0,null,'#e8590c')}
  else if(t.t==='marq'){c.save();c.strokeStyle='#e8590c';c.fillStyle='rgba(232,89,12,.08)';c.lineWidth=px(1.4);c.setLineDash([px(6),px(4)]);c.fillRect(t.a.x,t.a.y,t.b.x-t.a.x,t.b.y-t.a.y);c.strokeRect(t.a.x,t.a.y,t.b.x-t.a.x,t.b.y-t.a.y);c.restore()}
- else if(t.t==='line'&&t.pts.length){var P=t.pts.slice();if(t.cur)P.push(t.cur);if(P.length>2&&t.poly)drawPoly(c,{pts:P,col:'#e8590c',nodim:true});else if(P.length>1)drawLineObj(c,{pts:P,style:t.style||'fence'});c.save();c.fillStyle='#e8590c';t.pts.forEach(function(p){c.beginPath();c.arc(p.x,p.y,px(4),0,TAU);c.fill()});
+ else if(t.t==='line'&&t.pts.length){var P=t.pts.slice();if(t.cur)P.push(t.cur);if(P.length>2&&t.poly)drawPoly(c,{pts:P,col:'#e8590c',nodim:true});else if(P.length>1)drawLineObj(c,{pts:P,style:t.style||'fence',gaps:tmpGaps(t,P),segl:S.perim?1:0});c.save();c.fillStyle='#e8590c';t.pts.forEach(function(p){c.beginPath();c.arc(p.x,p.y,px(4),0,TAU);c.fill()});
   if(t.cur){var L=0,Q=t.pts.concat([t.cur]);for(var i=0;i<Q.length-1;i++)L+=Math.hypot(Q[i+1].x-Q[i].x,Q[i+1].y-Q[i].y);var l=Q[Q.length-1];txt(c,fm(L),l.x,l.y-px(14),12,{col:'#e8590c',bold:true})}c.restore()}
 }
 var RS={nw:[-1,-1],n:[0,-1],ne:[1,-1],e:[1,0],se:[1,1],s:[0,1],sw:[-1,1],w:[-1,0]};

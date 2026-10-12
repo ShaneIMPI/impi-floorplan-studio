@@ -45,7 +45,7 @@ function crowdAll(){
   var us2=us.filter(function(u){return cin(boundsOf(u.o))});
   /* structures inside the site take floor space; one nested inside a larger one is not subtracted twice */
   us2.forEach(function(u){var b=boundsOf(u.o),cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;if(us2.some(function(v){if(v===u||v.gross<=u.gross)return false;var c=boundsOf(v.o);return cx>=c.x0&&cx<=c.x1&&cy>=c.y0&&cy<=c.y1}))return;occ+=u.gross});
-  S.objs.forEach(function(q){if(q.t!=='rect'||q.hd||q.lay||q.k==='cover'||/^netting/.test(q.k||'')||(q.k||'').indexOf('deck')===0||(LIBM[q.k]||{}).s==='truss'||isUnit(q))return;
+  S.objs.forEach(function(q){if(q.t!=='rect'||q.hd||q.lay||q.k==='cover'||/^netting/.test(q.k||'')||(q.k||'').indexOf('deck')===0||(LIBM[q.k]||{}).s==='truss'||(LIBM[q.k]||{}).ps||isUnit(q))return;
    if(!inPoly({x:q.x,y:q.y},SP))return;
    if(us.some(function(u){var b=boundsOf(u.o);return q.x>=b.x0&&q.x<=b.x1&&q.y>=b.y0&&q.y<=b.y1}))return;occ+=q.w*q.h});
   var dd=dOf('open'),oa=Math.max(0,pa-occ);open={area:pa,free:oa,occ:occ,d:dd,cap:Math.floor(oa/dd),src:site.src,name:site.name}}

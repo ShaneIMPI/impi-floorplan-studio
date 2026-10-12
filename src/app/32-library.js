@@ -5,6 +5,17 @@ var LIB=[
  {k:'round8',n:'Round table (8 seat)',w:2.4,h:2.4,c:'Furniture',s:'round',seats:8,lab:''},
  {k:'cocktail',n:'Cocktail table',w:0.8,h:0.8,c:'Furniture',s:'cocktail',lab:''},
  {k:'umbrella',n:'Umbrella (3 m)',w:3,h:3,c:'Furniture',s:'umbrella',lab:''},
+ {k:'vip_a',n:'VIP rope enclosure 4 × 4 (velvet)',w:4,h:4,c:'Exhibition',s:'ropebox',rp:'velvet',lab:'VIP'},
+ {k:'vip_b',n:'VIP rope enclosure 8 × 5 (velvet)',w:8,h:5,c:'Exhibition',s:'ropebox',rp:'velvet',lab:'VIP'},
+ {k:'vip_out',n:'Outdoor VIP rope & pole area 10 × 6',w:10,h:6,c:'Tents',s:'ropebox',rp:'ropepole',lab:'VIP',opn:1},
+ {k:'rope_sq',n:'Stanchion & rope enclosure 3 × 3',w:3,h:3,c:'Exhibition',s:'ropebox',rp:'stanchion',lab:''},
+ {k:'boom4',n:'Boom gate 4.5 m',w:4.5,h:.6,c:'Site & access',s:'boom',ps:1,lab:'Boom gate'},
+ {k:'boom6',n:'Boom gate 6.5 m',w:6.5,h:.6,c:'Site & access',s:'boom',ps:1,lab:'Boom gate'},
+ {k:'sgate4',n:'Sliding gate 4 m opening',w:8,h:.5,c:'Site & access',s:'sgate',ps:1,lab:'Sliding gate'},
+ {k:'sgate6',n:'Sliding gate 6 m opening',w:12,h:.5,c:'Site & access',s:'sgate',ps:1,lab:'Sliding gate'},
+ {k:'stairs_s',n:'Stairs 1.2 × 3 m',w:1.2,h:3,c:'Site & access',s:'stairs',ps:1,lab:'Stairs'},
+ {k:'stairs_m',n:'Stairs 2.4 × 4 m',w:2.4,h:4,c:'Site & access',s:'stairs',ps:1,lab:'Stairs'},
+ {k:'stairs_l',n:'Stairs 4 × 5 m',w:4,h:5,c:'Site & access',s:'stairs',ps:1,lab:'Stairs'},
  {k:'gaz3',n:'Gazebo 3 × 3',w:3,h:3,c:'Tents',s:'gazebo',lab:'Gazebo',opn:1},
  {k:'gaz36',n:'Gazebo 3 × 6',w:6,h:3,c:'Tents',s:'gazebo',lab:'Gazebo',opn:1},
  {k:'marq3',n:'Marquee 3 × 3',w:3,h:3,c:'Tents',s:'tent',lab:'Marquee'},
@@ -73,7 +84,7 @@ var DOORS=[
  {k:'gate',n:'Vehicle / service gate',col:'#7a4b2a',w:5,lab:'GATE'}
 ];
 var DOORM={}; DOORS.forEach(function(d){DOORM[d.k]=d});
-var LINES=[{k:'fence',n:'Perimeter fence'},{k:'barrier',n:'Crowd barrier'},{k:'wall',n:'Wall / solid structure'},{k:'tape',n:'Tape / rope line'},{k:'shade',n:'Shade cloth fencing (green)'},{k:'shadeb',n:'Shade cloth fencing (black)'},{k:'drape',n:'Black draping'},{k:'truss',n:'Truss (draw any run or frame)'},{k:'plain',n:'Plain black line'},{k:'thin',n:'Thin line (hairline)'},{k:'brick',n:'Brick wall (hatched)'},{k:'shell',n:'Shell scheme wall'},{k:'evac',n:'Evacuation route'}];
+var LINES=[{k:'fence',n:'Perimeter fence'},{k:'barrier',n:'Crowd barrier'},{k:'wall',n:'Wall / solid structure'},{k:'tape',n:'Tape / rope line'},{k:'shade',n:'Shade cloth fencing (green)'},{k:'shadeb',n:'Shade cloth fencing (black)'},{k:'drape',n:'Black draping'},{k:'truss',n:'Truss (draw any run or frame)'},{k:'stanchion',n:'Stanchion & rope (chrome posts, red rope)'},{k:'velvet',n:'VIP velvet rope (gold posts, red rope)'},{k:'belt',n:'Retractable belt barrier (black posts)'},{k:'ropepole',n:'Rope & timber poles (outdoor / VIP)'},{k:'plain',n:'Plain black line'},{k:'thin',n:'Thin line (hairline)'},{k:'brick',n:'Brick wall (hatched)'},{k:'shell',n:'Shell scheme wall'},{k:'evac',n:'Evacuation route'}];
 var LINEM={}; LINES.forEach(function(l){LINEM[l.k]=l});
 var ZCOL=[{c:'#5b6770',n:'Tent / structure'},{c:'#1c6bb0',n:'Hospitality'},{c:'#b7791f',n:'VIP'},{c:'#c62828',n:'Restricted'},{c:'#12804a',n:'General admission'},{c:'#7c3aed',n:'Backstage'}];
 var PAPER={A5:{w:210,h:148},A4:{w:297,h:210},A3:{w:420,h:297},A2:{w:594,h:420},A1:{w:841,h:594},A0:{w:1189,h:841}};

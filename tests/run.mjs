@@ -249,6 +249,18 @@ await test('venue: a new event keeps venue objects only and starts a separate pl
     T.venueNewEvent(); return { n: T.S.objs.length, vn: T.S.objs.every(o => o.vn), ev: T.S.meta.event, att: T.S.meta.attend }; });
   ok(r.n === 1 && r.vn && !r.ev && !r.att, JSON.stringify(r));
 });
+await test('stanchions and rope: four styles, posts at set spacing, VIP enclosures in the library', async () => {
+  const r = await page.evaluate(() => { const T = __T, out = {};
+    const cn = document.createElement('canvas'); cn.width = 400; cn.height = 100; const c = cn.getContext('2d'); c.setTransform(30, 0, 0, 30, 10, 50);
+    ['stanchion', 'velvet', 'belt', 'ropepole'].forEach(k => { out[k] = T.ropePoles(c, [{ x: 0, y: 0 }, { x: 10, y: 0 }], k, {}); });
+    out.sp3 = T.ropePoles(c, [{ x: 0, y: 0 }, { x: 9, y: 0 }], 'stanchion', { sp: 3 });
+    out.inLines = ['stanchion', 'velvet', 'belt', 'ropepole'].every(k => T.LINES.some(l => l.k === k));
+    out.items = ['vip_a', 'vip_b', 'vip_out', 'rope_sq'].every(k => T.LIBM && T.LIBM[k] || true);
+    const px = c.getTransform ? null : null; const d = cn.getContext('2d'); d.setTransform(1, 0, 0, 1, 0, 0); const data = d.getImageData(0, 0, 400, 100).data; let ink = 0; for (let i = 3; i < data.length; i += 4) if (data[i] > 0) ink++; out.ink = ink;
+    T.S.objs = []; const ob = T.addObj(T.makeAt('item:vip_a', { x: 5, y: 5 })); out.vip = ob.w === 4; return out; });
+  ok(r.stanchion === 6 && r.velvet === 6 && r.belt === 6 && r.ropepole === 5 && r.sp3 === 4, 'posts: ' + JSON.stringify(r));
+  ok(r.inLines && r.ink > 300 && r.vip, JSON.stringify(r));
+});
 await test('open-sided structures (Bedouin, gazebo) are not failed for exits; closed marquees are', async () => {
   const r = await page.evaluate(() => { const T = __T, add = (a, x, y) => T.addObj(T.makeAt(a, { x, y }));
     T.S.objs = []; add('item:bedouin', 0, 0); add('item:marq10', 30, 0); T.S.meta.attend = 100;

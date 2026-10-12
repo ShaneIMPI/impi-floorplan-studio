@@ -94,11 +94,14 @@ function drawLoupe(){
 /* ----- pencil / ortho / venue toolbar actions ----- */
 function syncPrec(){
  $$('#tools [data-act=pencil]').forEach(function(x){x.classList.toggle('on',!!S.pencil&&(S.tool==='line'||S.tool==='poly'))});
+ $$('#tools [data-act=perim]').forEach(function(x){x.classList.toggle('on',!!S.perim&&S.tool==='line')});
+ $$('#tools [data-act=gap]').forEach(function(x){x.classList.toggle('on',!!S.gapNext)});
  $$('#tools [data-act=ortho]').forEach(function(x){x.classList.toggle('on',!!S.ortho)});
  $$('#tools [data-act=venue]').forEach(function(x){x.classList.toggle('on',!!S.venueMode)})}
 function togglePencil(){
+ if(S.pencil&&S.perim&&S.tool==='line'){S.pencil=false;syncPrec();toast('Pencil off');return}
  if(S.pencil&&(S.tool==='line'||S.tool==='poly')){S.pencil=false;setTool('select');syncPrec();toast('Pencil off');return}
- S.traceSnap=true;syncTrace();setTool('line');S.pencil=true;S.lineStyle=S.lineStyle&&S.lineStyle!=='evac'?S.lineStyle:'wall';$('#lineSel').value=S.lineStyle;syncPrec();draw();
+ S.traceSnap=true;syncTrace();var pm=S.perim;setTool('line');S.perim=pm;S.pencil=true;S.lineStyle=S.lineStyle&&S.lineStyle!=='evac'?S.lineStyle:'wall';$('#lineSel').value=S.lineStyle;syncPrec();draw();
  toast('Pencil: tap along the plan lines, they snap exactly. A magnifier shows the point. Use Shape for buildings, Ortho for straight walls, Venue to mark it permanent.',7000)}
 function toggleOrtho(){S.ortho=!S.ortho;syncPrec();toast(S.ortho?'Ortho on: lines run along the plan\'s own horizontal and vertical':'Ortho off',3500)}
 

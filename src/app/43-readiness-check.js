@@ -135,7 +135,8 @@ function crowdPanel(o){
  if(!o.nc){h+=psel('use','Used as',DENS.map(function(x){return [x.k,x.n+' · '+dOf(x.k)+' m² each']}),o.use||'sgen')+'<div class="row2">'+pf('dens','Own density (m² each, 0 = preset)',o.dens||0,'number','step="any" min="0"')+pf('pax','Fixed headcount (0 = calculate)',o.pax||0,'number','step="1" min="0"')+'</div>';
   h+='<div class="note">Area <b>'+cfmt(u.gross)+' m²</b>'+(u.hasLay?' · usable after its internal layout <b>'+cfmt(u.net)+' m²</b>':'')+(u.seats?' · table seats <b>'+u.seats+'</b>':'')+'<br>Capacity: <b>'+cfmt(u.cap)+' people</b>'+(u.how==='seats'?' (table seats)':u.how==='fixed'?' (fixed)':' ('+u.d+' m² each)')+''+(u.opn?'<br>Open-sided: no exits required here':'<br>Exits at this structure: <b>'+(Math.round(u.ew*10)/10)+' m</b>'+(u.cap>0?' (needs '+(Math.round(u.cap/(C.flow*C.T)*10)/10)+' m)':''))+'</div>'+pchk('opn','Open-sided structure (no exits needed, people can leave in any direction)',u.opn)}
  return h}
-function lineLen(o){var s=0,P=o.pts,pp=o.closed?P.concat([P[0]]):P;for(var i=0;i<pp.length-1;i++)s+=Math.hypot(pp[i+1].x-pp[i].x,pp[i+1].y-pp[i].y);return s}
+function lineLen(o){var s=0,P=o.pts,pp=o.closed?P.concat([P[0]]):P,gs=o.gaps||[];for(var i=0;i<pp.length-1;i++){if(gs.indexOf(i)>=0)continue;s+=Math.hypot(pp[i+1].x-pp[i].x,pp[i+1].y-pp[i].y)}return s}
+function lineLenAll(o){var s=0,P=o.pts,pp=o.closed?P.concat([P[0]]):P;for(var i=0;i<pp.length-1;i++)s+=Math.hypot(pp[i+1].x-pp[i].x,pp[i+1].y-pp[i].y);return s}
 function drawText(c,o){var sz=o.size||14,ls=String(o.text||'').split('\n'),n=ls.length;c.save();c.translate(o.x,o.y);c.rotate((o.rot||0)*D2R);ls.forEach(function(t,i){txt(c,t,0,px((i-(n-1)/2)*sz*1.2),sz,{bold:o.b!==false,halo:o.hl!==false,col:o.col})});c.restore()}
 function textBox(o){var sz=o.size||14,ls=String(o.text||'').split('\n'),w=0;ls.forEach(function(t){w=Math.max(w,tw(ctx,t,sz,o.b!==false))});return {w:w,h:ls.length*sz*1.2}}
 function drawObj(c,o,ic){
