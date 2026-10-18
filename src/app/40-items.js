@@ -105,10 +105,33 @@ function drawArea(c,o,ic){
  if(!ell){c.strokeStyle=hexA(col,.55);c.lineWidth=px(.9);var q=px(4);if(w>q*6&&h>q*6)c.strokeRect(-w/2+q,-h/2+q,w-2*q,h-2*q)}
  if(!ic&&o.label){
   var k=ell?.72:1,sub=fmt(w)+' × '+fmt(h)+' m  ·  '+Math.round(areaSqm(o)).toLocaleString('en-ZA')+' m²';
-  labelBox(c,o,o.label,w*k,h*k,{sub:o.nodim?null:sub,max:16});
+  if(LBLQ)LBLQ.push({o:o,sub:o.nodim?null:sub,k:k});else labelBox(c,o,o.label,w*k,h*k,{sub:o.nodim?null:sub,max:16});
  }
  c.restore();
  if(!ic&&!o.nodim){var K=corners(o);dimLine(c,K[0],K[1],-15);dimLine(c,K[3],K[0],-15)}
+}
+/* Zone labels are drawn after everything else and moved to the freest part of the zone, so a tent or sign sitting on a zone no longer hides its name. */
+var LBLQ=null;
+function flushZoneLabels(c){
+ var q=LBLQ;LBLQ=null;if(!q||!q.length)return;
+ var obst=[];S.objs.forEach(function(b){if(!vo(b))return;if(b.t==='rect'&&b.k!=='cover'||b.t==='sign'||b.t==='door'){try{obst.push(corners(b))}catch(e){}}});
+ var placed=[];
+ q.forEach(function(it){var o=it.o,w=o.w,h=o.h,k=it.k;
+  var loc=function(P){var xs=[],ys=[];P.forEach(function(p){var l=toLocal(o,p);xs.push(l.x);ys.push(l.y)});return {x0:Math.min.apply(null,xs),x1:Math.max.apply(null,xs),y0:Math.min.apply(null,ys),y1:Math.max.apply(null,ys)}};
+  var ob=obst.map(loc).concat(placed.map(loc));
+  var bh=Math.min(h*.3,Math.max(h*.2,3)),bw=Math.min(w*.3,Math.max(w*.2,3));
+  var cand=[[0,0,w*k,h*k],[0,-h/2+bh/2,w,bh],[0,h/2-bh/2,w,bh],[-w/2+bw/2,0,bw,h],[w/2-bw/2,0,bw,h]];
+  var best=null,bc=1e9;
+  cand.forEach(function(cd,i){var bx0=cd[0]-cd[2]/2,bx1=cd[0]+cd[2]/2,by0=cd[1]-cd[3]/2,by1=cd[1]+cd[3]/2,ov=0;
+   ob.forEach(function(r){var ix=Math.min(bx1,r.x1)-Math.max(bx0,r.x0),iy=Math.min(by1,r.y1)-Math.max(by0,r.y0);if(ix>0&&iy>0)ov+=ix*iy});
+   ov=Math.min(1,ov/(cd[2]*cd[3]));
+   c.save();c.translate(o.x,o.y);c.rotate(o.rot*D2R);var fit=labelBox(c,o,o.label,cd[2],cd[3],{sub:it.sub,max:16,dry:true});c.restore();
+   if(!fit)return;var cost=ov+(1-fit.sz/16)*.2+i*.01;if(cost<bc){bc=cost;best={cd:cd,ov:ov}}});
+  c.save();if(S.meta.evac){c.globalAlpha=.27}c.translate(o.x,o.y);c.rotate(o.rot*D2R);
+  if(best){labelBox(c,o,o.label,best.cd[2],best.cd[3],{sub:it.sub,max:16,cx:best.cd[0],cy:best.cd[1]});
+   placed.push([[-1,-1],[1,-1],[1,1],[-1,1]].map(function(s){return toWorld(o,best.cd[0]+s[0]*best.cd[2]/2,best.cd[1]+s[1]*best.cd[3]/2)}))}
+  else labelBox(c,o,o.label,w*k,h*k,{sub:it.sub,max:16});
+  c.restore()})
 }
 function drawPoly(c,o,ic){
  var P=o.pts;if(!P||P.length<2)return;var col=o.col||'#5b6770',i;

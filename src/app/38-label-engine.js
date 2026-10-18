@@ -26,6 +26,7 @@ function labelBox(c,o,lab,w,h,opt){
   }
  }
  if(!best){if(!manual)return false;L=wrapAt(c,lab,minSz,Math.max(10,axisAvail),true);best={L:L,sz:minSz,sz2:7,sub:null,tH:L.length*minSz*1.12}}
+ if(opt.dry)return best;
  var cx0=opt.cx||0,cy0=opt.cy||0,ca=Math.cos(rel),sa=Math.sin(rel),n=best.L.length,total=best.tH,y0=-total/2,dark=!!opt.dark,col=o.lc||(dark?'#fff':(opt.col||'#12202b'));
  best.L.forEach(function(l,i){var dy=y0+(i+.5)*best.sz*1.12;txt(c,l,cx0+(-sa)*px(dy),cy0+ca*px(dy),best.sz,{rot:rel,col:col,bold:true,halo:!dark})});
  if(best.sub){var dy2=y0+n*best.sz*1.12+best.sz2*.65;txt(c,best.sub,cx0+(-sa)*px(dy2),cy0+ca*px(dy2),best.sz2,{rot:rel,col:o.lc||'#33444f',halo:!dark})}

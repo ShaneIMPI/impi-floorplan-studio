@@ -207,7 +207,7 @@ function vo(o){return !o.hd&&(!o.ev||S.meta.evac)&&(!S.meta.only||o.lay===S.meta
 function ordered(){return S.objs.map(function(o,i){return [o,i]}).filter(function(p){return vo(p[0])}).sort(function(x,y){return ((x[0].zl||0)-(y[0].zl||0))||((PRI[x[0].t]||0)-(PRI[y[0].t]||0))||(x[1]-y[1])}).map(function(p){return p[0]})}
 var EVC='#0a8f3c',EVKEEP=/^(exit_run|exit_run_r|exit_box|exit_sign|assembly|first_aid|fire_ext|hose_reel|hydrant|call_point)$/;
 function evKeep(o){return o.ev||(o.t==='rect'&&o.k==='cover')||o.t==='door'||(o.t==='sign'&&EVKEEP.test(o.k))}
-function drawObjs(c){ordered().forEach(function(o){if(S.meta.evac&&!evKeep(o)){c.save();c.globalAlpha=.27;drawObj(c,o);c.restore()}else drawObj(c,o)})}
+function drawObjs(c){LBLQ=[];try{ordered().forEach(function(o){if(S.meta.evac&&!evKeep(o)){c.save();c.globalAlpha=.27;drawObj(c,o);c.restore()}else drawObj(c,o)})}finally{flushZoneLabels(c)}}
 function evArrows(c,pts,col){
  var tot=0,i,seg=[];for(i=0;i<pts.length-1;i++){var l=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y);seg.push(l);tot+=l}
  if(tot<=0)return;var a=px(7),sp=px(95),d=Math.min(sp/2,tot/2),marks=[];

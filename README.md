@@ -269,3 +269,6 @@ MMA octagon cage 9.1 m and 7.3 m (platform included, two door gaps, corner posts
 
 ## Export legend size
 The legend on the exported sheet now picks the largest readable text that fits the space left in the side panel (about 8 pt on A3 for a 30-item legend, was about 5 pt). Names wrap onto two lines, items are balanced across two columns, icons are a uniform size, and the notes block shrinks to fit. On busy legends the per-structure rows under Crowd & capacity are dropped (they are in the legend anyway) to give the legend more room.
+
+## Zone labels
+Zone names and sizes are now drawn after everything else and placed in the freest part of the zone (centre, or a band along an edge), so a tent, sign or stage sitting on a zone no longer hides its name.
