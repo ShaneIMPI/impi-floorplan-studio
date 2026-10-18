@@ -266,3 +266,6 @@ Auto-trace tip: with "Heavy lines only" ticked, walls drawn in thin lines (event
 ## Fight cage, ring and round stages (Library > Stage & AV)
 
 MMA octagon cage 9.1 m and 7.3 m (platform included, two door gaps, corner posts), boxing / K-1 ring 6.1 m and 7.3 m (ropes, red / blue / white corner posts, neutral-corner steps), round stage 6 m and 8 m, and a catwalk / runway. The size in each name is the cage or rope size; the placed footprint is the platform. They count as structures: they take floor space in the crowd figure and block evacuation routes. Resize under Selected to match the supplier's spec.
+
+## Export legend size
+The legend on the exported sheet now picks the largest readable text that fits the space left in the side panel (about 8 pt on A3 for a 30-item legend, was about 5 pt). Names wrap onto two lines, items are balanced across two columns, icons are a uniform size, and the notes block shrinks to fit. On busy legends the per-structure rows under Crowd & capacity are dropped (they are in the legend anyway) to give the legend more room.

@@ -60,7 +60,7 @@ h4:first-child{margin-top:0}
 .pal{display:flex;flex-direction:column;align-items:flex-start;gap:3px;border:1px solid var(--ln);background:var(--pn2);border-radius:10px;padding:7px;cursor:pointer;text-align:left;min-width:0}
 .pal:hover{border-color:var(--ac)}
 .pal.on{border-color:var(--ac);box-shadow:0 0 0 2px rgba(232,89,12,.3)}
-.pal canvas{width:100%;height:44px;display:block;border-radius:6px;background:#fff}
+.pal canvas{width:100%;height:44px;object-fit:contain;display:block;border-radius:6px;background:#fff}
 .pal span{font-size:13px;font-weight:600;line-height:1.1}
 .pal small{font-size:11px;color:var(--mut);font-weight:400;display:block}
 .fld{display:flex;flex-direction:column;gap:3px;margin:0 0 9px;font-size:13px;color:var(--mut)}
