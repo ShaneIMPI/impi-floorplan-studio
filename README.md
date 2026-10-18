@@ -272,3 +272,6 @@ The legend on the exported sheet now picks the largest readable text that fits t
 
 ## Zone labels
 Zone names and sizes are now drawn after everything else and placed in the freest part of the zone (centre, or a band along an edge), so a tent, sign or stage sitting on a zone no longer hides its name.
+
+## Footer logos
+The sheet footer shows each distinct logo once. If the project logo is the same artwork as the standard IMPI footer logo (for example the same logo uploaded again in Project settings), the duplicate is skipped.

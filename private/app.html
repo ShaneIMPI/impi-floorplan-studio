@@ -2302,7 +2302,12 @@ async function renderSheet(){
  var cx=document.createElement('canvas');cx.width=W;cx.height=H;var c=cx.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,W,H);
  function mm(v){return v*ppm}
  var brand=await loadBrand(),flogos=[],fl=(isAdmin()&&m.logo?[m.logo]:[]).concat(brand.logos||[]);
-  for(var fi=0;fi<fl.length;fi++){var fim=await loadImgCached(fl[fi]);if(fim)flogos.push(fim)}
+  var fhs=[];
+  function logoHash(im){var S0=96,cn=document.createElement('canvas');cn.width=S0;cn.height=S0;var g=cn.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,S0,S0);var sc=Math.min(S0/im.width,S0/im.height),dw=im.width*sc,dh=im.height*sc;g.drawImage(im,(S0-dw)/2,(S0-dh)/2,dw,dh);var d=g.getImageData(0,0,S0,S0).data,x0=S0,y0=S0,x1=0,y1=0,x,y;for(y=0;y<S0;y++)for(x=0;x<S0;x++){var i=(y*S0+x)*4;if(d[i]*.3+d[i+1]*.59+d[i+2]*.11<225){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+   if(x1<=x0||y1<=y0)return null;var k=16,c2=document.createElement('canvas');c2.width=k;c2.height=k;var g2=c2.getContext('2d');g2.fillStyle='#fff';g2.fillRect(0,0,k,k);g2.drawImage(cn,x0,y0,x1-x0+1,y1-y0+1,0,0,k,k);var d2=g2.getImageData(0,0,k,k).data,v=[],s=0,i2;for(i2=0;i2<k*k;i2++){var l=d2[i2*4]*.3+d2[i2*4+1]*.59+d2[i2*4+2]*.11;v.push(l);s+=l}s/=k*k;var r=v.map(function(l){return l<s?1:0});r.ar=(x1-x0+1)/(y1-y0+1);return r}
+  for(var fi=0;fi<fl.length;fi++){var fim=await loadImgCached(fl[fi]);if(!fim)continue;
+   var dup=false;try{var hh=logoHash(fim);if(hh){fhs.forEach(function(o){var df=0;for(var q=0;q<hh.length;q++)if(hh[q]!==o[q])df++;if(df<=hh.length*.18&&Math.abs(Math.log(hh.ar/o.ar))<.15)dup=true});if(!dup)fhs.push(hh)}}catch(e){}
+   if(!dup)flogos.push(fim)}
   var flines=(brand.lines||[]).filter(Boolean);var gat={};S.layers.forEach(function(L){if(L.vis!==false&&L.geo&&L.geo.att)gat[L.geo.att]=1});if(Object.keys(gat).length)flines=flines.concat(['Aerial imagery: '+Object.keys(gat).join('; ')]);var FH=(flogos.length||flines.length)?20*kk:0;
   var M=8,panW=Math.round(88*kk),A={x0:M,y0:M,x1:P.w-M-panW,y1:P.h-M-FH};
  var b=(m.extent==='view'&&!m.only)?viewBounds():(objBounds()||layerBounds()||viewBounds());
