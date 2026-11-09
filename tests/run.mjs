@@ -237,10 +237,19 @@ await test('map: inserting with a straighten angle rotates the layer and keeps i
     const L = T.S.layers[0]; return { rot: L.rot }; });
   ok(r.rot === -12.5, JSON.stringify(r));
 });
-await test('map window: the Straighten control turns the guide grid', async () => {
+await test('map window: a straightened selection arrives upright (no tilted image) with north set', async () => {
+  await page.evaluate(() => { const T = __T; T.S.layers = []; T.S.objs = []; T.S.meta.north = 0; const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); g.fillStyle = '#3a7'; g.fillRect(0, 0, 256, 256); window.__TILE_OVERRIDE = c.toDataURL('image/png'); return T.openMap(); });
+  await page.waitForSelector('#mprotn', { timeout: 8000 }); await page.waitForTimeout(300);
+  await page.selectOption('#mpq2', '0'); await page.fill('#mprotn', '20'); await page.press('#mprotn', 'Tab');
+  const fr = await page.evaluate(() => { const f = document.getElementById('mpframe'); return f.offsetWidth / f.offsetHeight; });
+  await page.click('#mpcap'); await page.waitForFunction(() => __T.S.layers.length === 1, null, { timeout: 20000 });
+  const r = await page.evaluate(() => { const L = __T.S.layers[0], d = L.img.getContext('2d').getImageData(2, 2, 1, 1).data; delete window.__TILE_OVERRIDE; return { rot: L.rot, ar: L.img.width / L.img.height, north: __T.S.meta.north, g: d[1], grot: L.geo.rot }; });
+  ok(r.rot === 0 && Math.abs(r.ar - fr) < 0.02 && r.north === -20 && r.g > 100 && r.grot === 20, JSON.stringify(r) + ' frame ' + fr);
+});
+await test('map window: the Straighten control turns the capture frame', async () => {
   await page.evaluate(() => __T.openMap()); await page.waitForSelector('#mprotn', { timeout: 8000 });
   await page.fill('#mprotn', '17'); await page.press('#mprotn', 'Tab');
-  const g = await page.evaluate(() => ({ t: document.getElementById('mpgrid').style.transform, r: document.getElementById('mprot').value }));
+  const g = await page.evaluate(() => ({ t: document.getElementById('mpframe').style.transform, r: document.getElementById('mprot').value }));
   await page.keyboard.press('Escape');
   ok(/rotate\(17deg\)/.test(g.t) && g.r === '17', JSON.stringify(g));
 });

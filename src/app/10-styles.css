@@ -103,7 +103,7 @@ input[type=range]{width:100%}
 #mapov select{border:1px solid var(--ln);background:var(--pn2);border-radius:8px;padding:7px;min-height:38px;color:var(--ink)}
 #mpwrap{position:relative;flex:1;min-height:0;background:#0b1620}
 #mpmap{position:absolute;inset:0}
-#mpframe{position:absolute;pointer-events:none;border:2px solid var(--ac);box-shadow:0 0 0 9999px rgba(8,16,22,.52);z-index:500}
+#mpframe{transform-origin:50% 50%;position:absolute;pointer-events:none;border:2px solid var(--ac);box-shadow:0 0 0 9999px rgba(8,16,22,.52);z-index:500}
 #mpframe::before,#mpframe::after{content:"";position:absolute;left:50%;top:50%;background:rgba(255,255,255,.7)}
 #mpframe::before{width:18px;height:1px;margin-left:-9px}#mpframe::after{height:18px;width:1px;margin-top:-9px}
 #mpguide{position:absolute;inset:0;overflow:hidden;pointer-events:none}#mpgrid{position:absolute;left:-60%;top:-60%;width:220%;height:220%;background-image:linear-gradient(rgba(255,255,255,.38) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.38) 1px,transparent 1px);background-size:48px 48px;transform-origin:50% 50%}
@@ -175,3 +175,4 @@ h4::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--g
 #status{border-radius:8px;box-shadow:var(--sh2)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) h4,:root:not([data-theme="light"]) .mbox h3{color:#e8eef2}:root:not([data-theme="light"]) #tabs button.on{color:#fff}}
 :root[data-theme="dark"] h4,:root[data-theme="dark"] .mbox h3{color:#e8eef2}
+#mpwrap{overflow:hidden}

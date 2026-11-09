@@ -45,22 +45,22 @@ async function openMap(){
  function frame(){var w=$('#mpmap').clientWidth,h=$('#mpmap').clientHeight,p=st.pct/100,fw,fh;
   if(st.shape==='win'){fw=w*p;fh=h*p}else{var r=parseFloat(st.shape);fh=Math.min(h*p,w*p/r);fw=fh*r}
   return {x:(w-fw)/2,y:(h-fh)/2,w:fw,h:fh}}
- function bounds(){var f=frame(),a=map.containerPointToLatLng([f.x,f.y]),b=map.containerPointToLatLng([f.x+f.w,f.y+f.h]);return {n:a.lat,w:a.lng,s:b.lat,e:b.lng}}
+ function bounds(){var f=frame();if(st.rot){var rd=st.rot*Math.PI/180,cs=Math.abs(Math.cos(rd)),sn=Math.abs(Math.sin(rd)),bw=f.w*cs+f.h*sn,bh=f.w*sn+f.h*cs;f={x:f.x+f.w/2-bw/2,y:f.y+f.h/2-bh/2,w:bw,h:bh}}var a=map.containerPointToLatLng([f.x,f.y]),b=map.containerPointToLatLng([f.x+f.w,f.y+f.h]);return {n:a.lat,w:a.lng,s:b.lat,e:b.lng}}
  function plan(){var bd=bounds(),P=MAPP[prov],vz=map.getZoom(),zc=Math.min(P.max,vz+st.q),clat=(bd.n+bd.s)/2,p0,p1,x0,y0,x1,y1,W,H,tiles;
   for(;;){p0=mp2px(bd.n,bd.w,zc);p1=mp2px(bd.s,bd.e,zc);x0=Math.floor(p0.x);y0=Math.floor(p0.y);x1=Math.ceil(p1.x);y1=Math.ceil(p1.y);
    W=(x1-x0)*P.s;H=(y1-y0)*P.s;tiles=(Math.floor((x1-1)/256)-Math.floor(x0/256)+1)*(Math.floor((y1-1)/256)-Math.floor(y0/256)+1);
    if((Math.max(W,H)<=5200&&tiles<=420)||zc<=3)break;zc--}
   var mpp=MAPC*Math.cos(clat*Math.PI/180)/Math.pow(2,zc)/P.s;
-  return {bd:bd,zc:zc,x0:x0,y0:y0,x1:x1,y1:y1,W:W,H:H,tiles:tiles,mpp:mpp,clat:clat,clon:(bd.w+bd.e)/2,wm:hav({lat:clat,lon:bd.w},{lat:clat,lon:bd.e}),hm:hav({lat:bd.n,lon:(bd.w+bd.e)/2},{lat:bd.s,lon:(bd.w+bd.e)/2}),capped:zc<Math.min(P.max,vz+st.q)}}
- function upd(){var f=frame(),fr=$('#mpframe');fr.style.left=f.x+'px';fr.style.top=f.y+'px';fr.style.width=f.w+'px';fr.style.height=f.h+'px';
+  var o={bd:bd,zc:zc,x0:x0,y0:y0,x1:x1,y1:y1,W:W,H:H,tiles:tiles,mpp:mpp,clat:clat,clon:(bd.w+bd.e)/2,wm:hav({lat:clat,lon:bd.w},{lat:clat,lon:bd.e}),hm:hav({lat:bd.n,lon:(bd.w+bd.e)/2},{lat:bd.s,lon:(bd.w+bd.e)/2}),capped:zc<Math.min(P.max,vz+st.q)};if(st.rot){var f0=frame(),gm=MAPC*Math.cos(clat*Math.PI/180)/Math.pow(2,vz);o.wm=f0.w*gm;o.hm=f0.h*gm;o.sc=Math.pow(2,zc-vz)*P.s;o.fw=f0.w;o.fh=f0.h}return o}
+ function upd(){var f=frame(),fr=$('#mpframe');fr.style.left=f.x+'px';fr.style.top=f.y+'px';fr.style.width=f.w+'px';fr.style.height=f.h+'px';fr.style.transform=st.rot?'rotate('+st.rot+'deg)':'';
   var pl=plan(),fmt=function(v){return v>=1000?(v/1000).toFixed(2)+' km':Math.round(v)+' m'};
   $('#mpread').textContent='≈ '+fmt(pl.wm)+' × '+fmt(pl.hm)+'  ·  '+(pl.mpp*100).toFixed(pl.mpp<.1?1:0)+' cm per pixel'+(pl.capped?'  ·  detail reduced for size':'');
-  var big=pl.wm>1500||pl.hm>1500;$('#mpnote').textContent=big?'That is a large area. Zoom in or shrink the frame for a sharper plan (the venue should fill most of the frame).':'Pan and zoom so the venue sits inside the orange frame. The image arrives to true scale, so no calibration is needed. Imagery can be months or years old: confirm it matches the site.'}
+  var big=pl.wm>1500||pl.hm>1500;$('#mpnote').textContent=big?'That is a large area. Zoom in or shrink the frame for a sharper plan (the venue should fill most of the frame).':(st.rot?'Turn the orange frame until it lines up with your field or fence. What is inside the frame arrives on the plan upright; north arrow follows.':'Pan and zoom so the venue sits inside the orange frame. The image arrives to true scale, so no calibration is needed. Imagery can be months or years old: confirm it matches the site.')}
  map.on('move zoom moveend zoomend resize',upd);window.addEventListener('resize',upd);setTimeout(function(){map.invalidateSize();upd()},60);
  function close(){window.removeEventListener('resize',upd);document.removeEventListener('keydown',kd);try{var c=map.getCenter();lsSet('fps_maploc',JSON.stringify({lat:c.lat,lon:c.lng,z:map.getZoom()}))}catch(e){}map.remove();ov.classList.remove('on');ov.innerHTML=''}
  function kd(e){if(e.key==='Escape'&&!$('#modal').classList.contains('on'))close()}document.addEventListener('keydown',kd);
  $('#mpx').onclick=close;
- function setRot(v){v=Math.max(-90,Math.min(90,parseFloat(v)||0));st.rot=v;$('#mprot').value=v;$('#mprotn').value=v;$('#mpgrid').style.transform='rotate('+v+'deg)';$('#mpnote').textContent=v?'Turn the grid until its lines run along a fence or building edge. The plan will be rotated so those lines come out straight.':'Pan and zoom so the venue sits inside the orange frame.'}
+ function setRot(v){v=Math.max(-90,Math.min(90,parseFloat(v)||0));st.rot=v;$('#mprot').value=v;$('#mprotn').value=v;$('#mpnote').textContent=v?'Turn the orange frame until it lines up with your field or fence. What is inside the frame arrives on the plan upright; north arrow follows.':'Pan and zoom so the venue sits inside the orange frame.';map.invalidateSize();upd()}
  $('#mprot').oninput=function(){setRot(this.value)};$('#mprotn').onchange=function(){setRot(this.value)};
  $('#mpsz').oninput=function(){st.pct=+this.value;upd()};$('#mpshape').onchange=function(){st.shape=this.value;upd()};$('#mpq2').onchange=function(){st.q=+this.value;upd()};
  $('#mpprov').onchange=function(){prov=this.value;setTiles();upd()};
@@ -84,7 +84,10 @@ async function openMap(){
    if(fail)throw new Error(fail+' of '+jobs.length+' map tiles failed to download'+(prov==='mapbox'?'. Check the Mapbox token and your connection.':'. Check your connection and try again.'));
    try{cx.getImageData(0,0,1,1)}catch(e){throw new Error('The imagery provider blocked image export in this browser. Try the other imagery source.')}
    var geo={lat:pl.clat,lon:pl.clon,z:pl.zc,prov:prov,att:P.att,n:pl.bd.n,s:pl.bd.s,e:pl.bd.e,w:pl.bd.w,date:new Date().toISOString().slice(0,10)};
-   var rr=st.rot;close();addMapLayer(cn,pl.mpp,geo,-rr)
+   var rr=st.rot,out=cn;
+   if(rr){out=document.createElement('canvas');out.width=Math.max(2,Math.round(pl.fw*pl.sc));out.height=Math.max(2,Math.round(pl.fh*pl.sc));var ox2=out.getContext('2d');ox2.imageSmoothingQuality='high';ox2.fillStyle='#0b1620';ox2.fillRect(0,0,out.width,out.height);ox2.translate(out.width/2,out.height/2);ox2.rotate(-rr*Math.PI/180);ox2.drawImage(cn,-cn.width/2,-cn.height/2);geo.rot=rr}
+   close();addMapLayer(out,pl.mpp,geo,0);
+   if(rr||!S.layers.some(function(l){return l.kind==='sat'&&l.geo&&l.geo.rot&&l.geo!==geo})){S.meta.north=Math.round(-rr*10)/10;if(rr)toast('Venue inserted square to the sheet. North arrow set to '+S.meta.north+'°.',6000);renderPanel()}
   }catch(err){toast(err.message||'Could not build the image',7000)}
   finally{b.disabled=false;b.textContent=old}};
  setTimeout(function(){var q=$('#mpq');if(q)q.focus()},150);

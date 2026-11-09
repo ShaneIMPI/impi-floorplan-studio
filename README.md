@@ -292,3 +292,7 @@ With scale on Auto-fit the sheet now fits the drawn plan together with any clien
 ## Modern look (app and print)
 - App: navy/gold header, rounded cards and buttons, gold section markers, soft shadows (dark mode kept).
 - Printed sheet: gold frame strip, navy title band, banded CROWD & CAPACITY and LEGEND headings, zebra info rows, soft dividers. Layout maths unchanged, so the legend still auto-fits.
+
+## Straightened satellite selections, bigger plan on print
+- Satellite picker: the Straighten control now turns the orange capture frame. What is inside the frame is inserted upright as a normal rectangle (no tilted image), and the north arrow is set to match.
+- Export Auto-fit: scale is chosen in fine steps (e.g. 1 : 600, 1 : 625) and the scale bar and north arrow sit in the footer, so the plan uses the whole drawing area.
