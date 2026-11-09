@@ -144,7 +144,7 @@ function drawObj(c,o,ic){
  if(o.t==='rect'){c.translate(o.x,o.y);c.rotate(o.rot*D2R);drawItem(c,o,ic)}
  else if(o.t==='area'){drawArea(c,o,ic)}
  else if(o.t==='door'){drawDoor(c,o,ic)}
- else if(o.t==='sign'){c.translate(o.x,o.y);c.rotate(o.rot*D2R);drawSign(c,o.k,o.s)}
+ else if(o.t==='sign'){c.translate(o.x,o.y);c.rotate(o.rot*D2R);drawSign(c,o.k,R.exp?Math.max(o.s,px(19)):o.s)}
  else if(o.t==='line'){drawLineObj(c,o,ic)}
  else if(o.t==='text'){drawText(c,o)}
  else if(o.t==='poly'){drawPoly(c,o,ic)}

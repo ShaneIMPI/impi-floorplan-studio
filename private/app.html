@@ -1140,7 +1140,7 @@ function drawObj(c,o,ic){
  if(o.t==='rect'){c.translate(o.x,o.y);c.rotate(o.rot*D2R);drawItem(c,o,ic)}
  else if(o.t==='area'){drawArea(c,o,ic)}
  else if(o.t==='door'){drawDoor(c,o,ic)}
- else if(o.t==='sign'){c.translate(o.x,o.y);c.rotate(o.rot*D2R);drawSign(c,o.k,o.s)}
+ else if(o.t==='sign'){c.translate(o.x,o.y);c.rotate(o.rot*D2R);drawSign(c,o.k,R.exp?Math.max(o.s,px(19)):o.s)}
  else if(o.t==='line'){drawLineObj(c,o,ic)}
  else if(o.t==='text'){drawText(c,o)}
  else if(o.t==='poly'){drawPoly(c,o,ic)}
@@ -2409,7 +2409,7 @@ async function renderSheet(){
  if(m.scale==='auto'){var need=Math.max(bw*1000/aw,bh*1000/ah,1),stp=need<100?5:need<300?10:need<1000?25:need<2000?50:100;N=Math.max(10,Math.ceil(need/stp-1e-9)*stp)}else if(m.scale==='custom')N=Math.max(1,+m.scaleC||500);else N=+m.scale||500;
  var z=ppm*1000/N,ox=mm((A.x0+A.x1)/2)-((b.x0+b.x1)/2)*z,oy=mm((A.y0+A.y1)/2)-((b.y0+b.y1)/2)*z,u=ppm*0.2646*kk;
  c.save();c.beginPath();c.rect(mm(A.x0+1),mm(A.y0+1),mm(A.x1-A.x0-2),mm(A.y1-A.y0-2));c.clip();
- c.setTransform(z,0,0,z,ox,oy);var sv=R;R={z:z,u:u};
+ c.setTransform(z,0,0,z,ox,oy);var sv=R;R={z:z,u:u,exp:1};
  if(m.bg&&!m.only)S.layers.forEach(function(L){drawLayer(c,L)});
  var pvb={x0:(mm(A.x0+1)-ox)/z,y0:(mm(A.y0+1)-oy)/z,x1:(mm(A.x1-1)-ox)/z,y1:(mm(A.y1-1)-oy)/z},pgrid=m.scale!=='auto'&&m.gridPrint!==false&&(m.gridMod>0||m.gridShow!==false);
  if(pgrid)drawModuleGrid(c,pvb,m,'lines');
