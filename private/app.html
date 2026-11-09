@@ -155,6 +155,39 @@ input[type=range]{width:100%}
 }
 @media(min-width:821px){#bPanel{display:none}}
 @media(prefers-reduced-motion:reduce){#hint,#toast{transition:none}}
+
+/* ---- modern finish ---- */
+:root{--navy:#0f2a43;--gold:#f2b705;--sh2:0 1px 2px rgba(15,42,67,.06),0 4px 14px rgba(15,42,67,.08)}
+header{background:var(--navy);border-bottom:3px solid var(--gold);color:#fff;padding:9px 14px}
+header .brand span{color:#b9c9d8}
+header .brand b{letter-spacing:.6px;font-size:20px}
+header #saveChip{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25);color:#dbe6f0}
+header #saveChip.ok{border-color:#58c27d;color:#9be3b5}
+header #saveChip.warn{border-color:var(--gold);color:var(--gold)}
+.btn{border-radius:10px;transition:box-shadow .15s,border-color .15s,transform .05s}
+.btn:hover{box-shadow:var(--sh2)}
+.btn:active{transform:translateY(1px)}
+.btn.pri{background:var(--ac);border-color:var(--ac);box-shadow:0 1px 2px rgba(232,89,12,.35)}
+#tools{padding:7px 10px;gap:3px;box-shadow:0 1px 0 var(--ln)}
+.tool{border-radius:10px;font-weight:500}
+.tool.on{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:inset 0 -3px 0 var(--gold)}
+#panel{box-shadow:-6px 0 24px rgba(15,42,67,.06)}
+#tabs{background:var(--pn2)}
+#tabs button{font-weight:600;letter-spacing:.2px}
+#tabs button.on{background:var(--pn);color:var(--navy)}
+h4{display:flex;align-items:center;gap:8px;color:var(--navy);letter-spacing:.3px}
+h4::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--gold);flex:0 0 auto}
+.pal{border-radius:12px;background:var(--pn);box-shadow:var(--sh2);transition:transform .12s,box-shadow .12s,border-color .12s}
+.pal:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(15,42,67,.08),0 8px 20px rgba(15,42,67,.12)}
+.card{border-radius:12px;background:var(--pn);box-shadow:var(--sh2)}
+.mbox{border-radius:18px;padding:20px;box-shadow:0 24px 60px rgba(10,20,28,.35)}
+.mbox h3{color:var(--navy);padding-bottom:8px;margin-bottom:12px;border-bottom:2px solid var(--gold);display:inline-block}
+.mbox input,.mbox select{border-radius:10px}
+#selbar{border-radius:14px;box-shadow:0 8px 28px rgba(15,42,67,.25)}
+#hint{background:rgba(15,42,67,.94);border-radius:22px;box-shadow:0 4px 14px rgba(15,42,67,.3)}
+#status{border-radius:8px;box-shadow:var(--sh2)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) h4,:root:not([data-theme="light"]) .mbox h3{color:#e8eef2}:root:not([data-theme="light"]) #tabs button.on{color:#fff}}
+:root[data-theme="dark"] h4,:root[data-theme="dark"] .mbox h3{color:#e8eef2}
 </style>
 </head>
 <body>
@@ -1832,6 +1865,24 @@ function objBounds(){
  S.objs.forEach(function(o){if(!vo(o))return;if(o.t==='dim'){add(o.a);add(o.b)}else if(o.t==='line'||o.t==='poly'){o.pts.forEach(add)}else if(o.t==='text'){add(o)}else{corners(o).forEach(add)}});
  return b;
 }
+
+/* Bounds the sheet's Auto-fit should use: the drawn plan plus a client / venue plan underlay (never aerial tiles), with tiny stray
+   items far away from everything else (an old measure, a sign dropped off to the side) left out so they cannot shrink the plan. */
+function objBox(o){var P=[];if(o.t==='dim'){P=[o.a,o.b]}else if(o.t==='line'||o.t==='poly'){P=o.pts}else if(o.t==='text'){P=[o]}else{P=corners(o)}
+ if(!P||!P.length)return null;var x0=1e18,y0=1e18,x1=-1e18,y1=-1e18;P.forEach(function(p){if(p.x<x0)x0=p.x;if(p.y<y0)y0=p.y;if(p.x>x1)x1=p.x;if(p.y>y1)y1=p.y});return {x0:x0,y0:y0,x1:x1,y1:y1,o:o}}
+function planBounds(){
+ var E=[],i,j;S.objs.forEach(function(o){if(!vo(o))return;var b=objBox(o);if(b){b.w=b.x1-b.x0;b.h=b.y1-b.y0;b.wt=b.w*b.h+(b.w+b.h)*2+.01;E.push(b)}});
+ var left=0,res=null;
+ if(E.length){
+  var ax0=1e18,ay0=1e18,ax1=-1e18,ay1=-1e18;E.forEach(function(b){ax0=Math.min(ax0,b.x0);ay0=Math.min(ay0,b.y0);ax1=Math.max(ax1,b.x1);ay1=Math.max(ay1,b.y1)});
+  var G=Math.max(10,.15*Math.hypot(ax1-ax0,ay1-ay0)),cl=E.map(function(b,k){return k}),find=function(a){while(cl[a]!==a){cl[a]=cl[cl[a]];a=cl[a]}return a};
+  for(i=0;i<E.length;i++)for(j=i+1;j<E.length;j++){var A=E[i],B=E[j];if(A.x0-G<=B.x1&&B.x0-G<=A.x1&&A.y0-G<=B.y1&&B.y0-G<=A.y1){var ra=find(i),rb=find(j);if(ra!==rb)cl[ra]=rb}}
+  var gr={};E.forEach(function(b,k){var r=find(k);(gr[r]=gr[r]||[]).push(b)});
+  var keys=Object.keys(gr),W=keys.map(function(k){return gr[k].reduce(function(a,b){return a+b.wt},0)}),mx=Math.max.apply(null,W),kept=[];
+  keys.forEach(function(k,n){if(W[n]>=mx*.05)kept=kept.concat(gr[k]);else left+=gr[k].length});
+  kept.forEach(function(b){if(!res)res={x0:b.x0,y0:b.y0,x1:b.x1,y1:b.y1};else{res.x0=Math.min(res.x0,b.x0);res.y0=Math.min(res.y0,b.y0);res.x1=Math.max(res.x1,b.x1);res.y1=Math.max(res.y1,b.y1)}})}
+ if(S.meta.bg&&!S.meta.only)S.layers.forEach(function(L){if(!L.vis||L.kind==='sat'||!L.img)return;var w=L.img.width*L.mpp,h=L.img.height*L.mpp;[[0,0],[w,0],[w,h],[0,h]].forEach(function(q){var r=rotv(q[0],q[1],L.rot*D2R),x=L.x+r.x,y=L.y+r.y;if(!res)res={x0:x,y0:y,x1:x,y1:y};else{res.x0=Math.min(res.x0,x);res.y0=Math.min(res.y0,y);res.x1=Math.max(res.x1,x);res.y1=Math.max(res.y1,y)}})});
+ if(res)res.left=left;return res}
 function layerBounds(){
  var b=null;S.layers.forEach(function(L){if(!L.vis)return;var w=L.img.width*L.mpp,h=L.img.height*L.mpp;[[0,0],[w,0],[w,h],[0,h]].forEach(function(q){var r=rotv(q[0],q[1],L.rot*D2R),p={x:L.x+r.x,y:L.y+r.y};if(!b)b={x0:p.x,y0:p.y,x1:p.x,y1:p.y};else{b.x0=Math.min(b.x0,p.x);b.y0=Math.min(b.y0,p.y);b.x1=Math.max(b.x1,p.x);b.y1=Math.max(b.y1,p.y)}})});return b;
 }
@@ -2150,7 +2201,7 @@ function sheetHTML(){
  h+='<h4>Sheet</h4><div class="row2"><label class="fld">Paper<select id="m_paper">'+Object.keys(PAPER).concat(['Custom']).map(function(k){return '<option'+(m.paper===k?' selected':'')+'>'+k+'</option>'}).join('')+'</select></label><label class="fld">Scale<select id="m_scale"><option value="auto"'+(m.scale==='auto'?' selected':'')+'>Auto-fit (prints without grid)</option>'+SCALES.map(function(s){return '<option value="'+s+'"'+(String(m.scale)===String(s)?' selected':'')+'>1 : '+s+'</option>'}).join('')+'<option value="custom"'+(m.scale==='custom'?' selected':'')+'>Custom…</option></select></label></div>';
  if(m.paper==='Custom')h+='<div class="row2">'+fld('m_pw','Sheet width (mm)',m.pw||420,'number','min="60" step="1"')+fld('m_ph','Sheet height (mm)',m.ph||297,'number','min="60" step="1"')+'</div>';
  if(m.scale==='custom')h+=fld('m_scalec','Custom scale — 1 :',m.scaleC||500,'number','min="1" step="any"');
- h+='<div class="row2"><label class="fld">Plot area<select id="m_extent"><option value="content"'+(m.extent==='content'?' selected':'')+'>All drawn items</option><option value="view"'+(m.extent==='view'?' selected':'')+'>Current screen view</option></select></label>'+fld('m_north','North arrow (° clockwise)',m.north,'number','step="1"')+'</div>';
+ h+='<div class="row2"><label class="fld">Plot area<select id="m_extent"><option value="content"'+(m.extent==='content'?' selected':'')+'>All drawn items</option><option value="view"'+(m.extent==='view'?' selected':'')+'>Current screen view (fixed scales only)</option></select></label>'+fld('m_north','North arrow (° clockwise)',m.north,'number','step="1"')+'</div>';
  h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_wm"'+(m.watermark?' checked':'')+'> Add a diagonal draft watermark to the sheet (leave off for submissions)</label><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_bg"'+(m.bg?' checked':'')+'> Include aerial / client plan underlay</label>';
  h+='<h4>Emergency evacuation</h4><p class="note">Place your exits (Doors), assembly point and zones/tents/stands, then press Generate. Green routes run from each area to the nearest exit, around structures and fences, and on to the assembly point. It is a separate plan: toggle it with the Evacuation button, and it exports as its own sheet.</p><div class="btns"><button class="btn sm pri" data-act="evgen">Generate evacuation routes</button><button class="btn sm" data-act="evac">'+(m.evac?'Back to operational plan':'Show evacuation plan')+'</button></div>';
  h+='<h4>Internal layouts (tent, VIP area…)</h4><p class="note">Click a tent, zone or closed outline on the plan and press <b>Internal layout</b> in the bar that appears. Each structure gets its own layout (its own view, grid from its corner, legend, scale and sheet). Switch to that layout to see and draw its internals only, with its own legend, scale and sheet. Switch back to Whole plan to see everything together.</p>';
@@ -2352,7 +2403,7 @@ async function renderSheet(){
    if(!dup)flogos.push(fim)}
   var flines=(brand.lines||[]).filter(Boolean);var gat={};S.layers.forEach(function(L){if(L.vis!==false&&L.geo&&L.geo.att)gat[L.geo.att]=1});if(Object.keys(gat).length)flines=flines.concat(['Aerial imagery: '+Object.keys(gat).join('; ')]);var FH=(flogos.length||flines.length)?20*kk:0;
   var M=8,panW=Math.round(88*kk),A={x0:M,y0:M,x1:P.w-M-panW,y1:P.h-M-FH};
- var b=(m.extent==='view'&&!m.only)?viewBounds():(objBounds()||layerBounds()||viewBounds());
+ var b=(m.scale==='auto')?(planBounds()||layerBounds()||viewBounds()):((m.extent==='view'&&!m.only)?viewBounds():(objBounds()||layerBounds()||viewBounds()));if(b&&b.left)toast(b.left+' small item'+(b.left===1?'':'s')+' far from the plan '+(b.left===1?'was':'were')+' left off the sheet so the plan fills the page',6000);
  var bw=Math.max(b.x1-b.x0,1),bh=Math.max(b.y1-b.y0,1),aw=(A.x1-A.x0)-4-30*kk,ah=(A.y1-A.y0)-4-30*kk,N;
  if(m.scale==='auto'){N=SCALES.filter(function(n){return bw*1000/n<=aw&&bh*1000/n<=ah})[0]||SCALES[SCALES.length-1]}else if(m.scale==='custom')N=Math.max(1,+m.scaleC||500);else N=+m.scale||500;
  var z=ppm*1000/N,ox=mm((A.x0+A.x1)/2)-((b.x0+b.x1)/2)*z,oy=mm((A.y0+A.y1)/2)-((b.y0+b.y1)/2)*z,u=ppm*0.2646*kk;
@@ -2365,9 +2416,9 @@ async function renderSheet(){
  if(pgrid)drawModuleGrid(c,pvb,m,'labels');
  R=sv;c.restore();
  c.setTransform(1,0,0,1,0,0);
- var ink='#12202b';c.strokeStyle=ink;c.lineWidth=mm(.7);c.strokeRect(mm(M-3),mm(M-3),mm(P.w-2*M+6),mm(P.h-2*M+6));c.lineWidth=mm(.4);c.strokeRect(mm(A.x0),mm(A.y0),mm(A.x1-A.x0),mm(A.y1-A.y0));
+ var ink='#0f2a43',GOLD='#f2b705',SOFT='#d9e0e6',BAND='#eef2f6',GREEN='#12804a';c.strokeStyle=ink;c.lineWidth=mm(.6);c.strokeRect(mm(M-3),mm(M-3),mm(P.w-2*M+6),mm(P.h-2*M+6));c.fillStyle=GOLD;c.fillRect(mm(M-3),mm(M-3),mm(P.w-2*M+6),mm(1.6*kk));c.strokeStyle='#8795a3';c.lineWidth=mm(.3);c.strokeRect(mm(A.x0),mm(A.y0),mm(A.x1-A.x0),mm(A.y1-A.y0));
  function T(s,x,y,sz,o){o=o||{};c.font=fontStr(mm(sz),o.bold);c.fillStyle=o.col||ink;c.textAlign=o.align||'left';c.textBaseline=o.base||'alphabetic';c.fillText(s,mm(x),mm(y))}
- function line(x0,y0,x1,y1,w){c.lineWidth=mm(w||.3);c.strokeStyle=ink;c.beginPath();c.moveTo(mm(x0),mm(y0));c.lineTo(mm(x1),mm(y1));c.stroke()}
+ function line(x0,y0,x1,y1,w,col){c.lineWidth=mm(w||.3);c.strokeStyle=col||ink;c.beginPath();c.moveTo(mm(x0),mm(y0));c.lineTo(mm(x1),mm(y1));c.stroke()}
  /* scale bar */
  var nice=[1,2,5,10,20,25,50,100,200,250,500,1000,2000],L0=nice[0];nice.forEach(function(n){if(n*1000/N<=62*kk)L0=n});
  var sbx=A.x0+7*kk,sby=A.y1-12*kk,sbw=L0*1000/N;
@@ -2385,17 +2436,20 @@ async function renderSheet(){
  c.lineWidth=mm(.4);c.strokeStyle=ink;c.strokeRect(mm(px0),mm(M),mm(pw),mm(P.h-2*M-FH));
  var elog=await loadImgCached(m.eventLogo),lh=elog?34*kk:0;
  if(elog){var sc=Math.min((pw-10)/elog.width,(lh-6)/elog.height),lw2=elog.width*sc,lh2=elog.height*sc;c.drawImage(elog,mm(px0+pw/2-lw2/2),mm(y+lh/2-lh2/2),mm(lw2),mm(lh2));y+=lh;line(px0,y,px1,y,.4)}
- T((m.evac?((m.only&&layoutOf(m.only))?'EMERGENCY EVACUATION – '+layoutOf(m.only).name:'EMERGENCY EVACUATION PLAN'):((m.only&&layoutOf(m.only))?layoutOf(m.only).name+' – internal layout':(m.title||'SITE & FLOOR PLAN'))),px0+4,y+6.2*kk,3*kk,{col:'#5b6b78',bold:true});
- c.font=fontStr(mm(6.4*kk),true);var el=wrapText(c,m.event||'',mm(pw-8)).slice(0,3);el.forEach(function(s,i){T(s,px0+4,y+14*kk+i*7.4*kk,6.4*kk,{bold:true})});
- y+=14*kk+Math.max(1,el.length)*7.4*kk+1*kk;line(px0,y,px1,y,.4);
+ var tbY=y,tbTitle=(m.evac?((m.only&&layoutOf(m.only))?'EMERGENCY EVACUATION – '+layoutOf(m.only).name:'EMERGENCY EVACUATION PLAN'):((m.only&&layoutOf(m.only))?layoutOf(m.only).name+' – internal layout':(m.title||'SITE & FLOOR PLAN')));
+ c.font=fontStr(mm(6.4*kk),true);var tbEl=wrapText(c,m.event||'',mm(pw-8)).slice(0,3),tbH=14*kk+Math.max(1,tbEl.length)*7.4*kk+1*kk;
+ c.fillStyle=ink;c.fillRect(mm(px0),mm(tbY),mm(pw),mm(tbH));c.fillStyle=GOLD;c.fillRect(mm(px0),mm(tbY),mm(1.8*kk),mm(tbH));
+ T((m.evac?((m.only&&layoutOf(m.only))?'EMERGENCY EVACUATION – '+layoutOf(m.only).name:'EMERGENCY EVACUATION PLAN'):((m.only&&layoutOf(m.only))?layoutOf(m.only).name+' – internal layout':(m.title||'SITE & FLOOR PLAN'))),px0+5.5*kk,y+6.2*kk,3*kk,{col:GOLD,bold:true});
+ c.font=fontStr(mm(6.4*kk),true);var el=wrapText(c,m.event||'',mm(pw-8)).slice(0,3);el.forEach(function(s,i){T(s,px0+5.5*kk,y+14*kk+i*7.4*kk,6.4*kk,{bold:true,col:'#ffffff'})});
+ y+=14*kk+Math.max(1,el.length)*7.4*kk+1*kk;
  var tmS=(m.tstart||m.tend)?((m.tstart||'')+(m.tend?' – '+m.tend:'')):'',attS=(+m.attend>0)?Math.round(+m.attend).toLocaleString('en-ZA'):'',rows=[['Venue',m.venue],['Client',m.client],['Date',m.date]].concat(tmS?[['Event times',tmS]]:[]).concat(attS?[['Exp. attendance',attS]]:[]).concat([['Revision',m.rev],['Drawn by',m.drawn],['Ref no.',m.ref],['Sheet',m.paper+'  ·  1 : '+N]]).concat(pgrid&&(m.gridMod>0||m.gridShow!==false)?[['Grid',(m.gridMod>0?m.gridMod+' m module':'')+((m.gridMinor===undefined?1:m.gridMinor)>0&&m.gridShow!==false?(m.gridMod>0?' · ':'')+(m.gridMinor===undefined?1:m.gridMinor)+' m lines':'')]]:[]),rh=5.3*kk;
- rows.forEach(function(r,i){T(r[0],px0+4,y+rh*.68,2.3*kk,{col:'#5b6b78'});c.font=fontStr(mm(3*kk),true);var v=String(r[1]||''),sz=3*kk;while(c.measureText(v).width>mm(pw-30*kk)&&sz>1.8*kk){sz-=.2*kk;c.font=fontStr(mm(sz),true)}T(v,px0+26*kk,y+rh*.68,sz,{bold:true});y+=rh;line(px0,y,px1,y,.18)});
+ rows.forEach(function(r,i){if(i%2===0){c.fillStyle='#f7f9fb';c.fillRect(mm(px0+.2),mm(y),mm(pw-.4),mm(rh))}T(r[0],px0+4,y+rh*.68,2.3*kk,{col:'#5b6b78'});c.font=fontStr(mm(3*kk),true);var v=String(r[1]||''),sz=3*kk;while(c.measureText(v).width>mm(pw-30*kk)&&sz>1.8*kk){sz-=.2*kk;c.font=fontStr(mm(sz),true)}T(v,px0+26*kk,y+rh*.68,sz,{bold:true});y+=rh;line(px0,y,px1,y,.12,SOFT)});
  var CL=m.crowd===false?[]:crowdLines();if(!m.only&&legendData().length>20)CL=CL.filter(function(r){return !(/^ {3}/.test(r[0])&&r[0].indexOf('Open ground')<0&&r[0].indexOf('Calculated')<0)});
- if(CL.length){y+=1;T(m.only?'CAPACITY OF THIS STRUCTURE':'CROWD & CAPACITY',px0+4,y+4.6*kk,3.2*kk,{bold:true});y+=6.4*kk;var crh=4.6*kk;
+ if(CL.length){y+=1;c.fillStyle=BAND;c.fillRect(mm(px0+.2),mm(y),mm(pw-.4),mm(7*kk));c.fillStyle=GOLD;c.fillRect(mm(px0+.2),mm(y),mm(1.8*kk),mm(7*kk));T(m.only?'CAPACITY OF THIS STRUCTURE':'CROWD & CAPACITY',px0+5.5*kk,y+4.9*kk,3.2*kk,{bold:true});y+=8.4*kk;var crh=4.6*kk;
   CL.forEach(function(r){var sz=2.5*kk;c.font=fontStr(mm(sz),false);var nm2=r[0];var cmx=(r[1]===''?pw-8:pw-34*kk);while(c.measureText(nm2).width>mm(cmx)&&nm2.length>6)nm2=nm2.slice(0,-2);
-   T(nm2,px0+4,y+crh*.68,sz,{col:'#33444f'});if(r[1]!==''){c.font=fontStr(mm(2.7*kk),true);var vv=String(r[1]),vs=2.7*kk;while(c.measureText(vv).width>mm(pw*.52)&&vs>1.5*kk){vs-=.1*kk;c.font=fontStr(mm(vs),true)}T(vv,px1-4,y+crh*.68,vs,{bold:true,align:'right',col:r[2]||ink})}y+=crh});
-  line(px0,y,px1,y,.18)}
- y+=1;T('LEGEND',px0+4,y+4.8*kk,3.6*kk,{bold:true});y+=7.4*kk;
+   T(nm2,px0+4,y+crh*.68,sz,{col:'#33444f'});if(r[1]!==''){c.font=fontStr(mm(2.7*kk),true);var vv=String(r[1]),vs=2.7*kk;while(c.measureText(vv).width>mm(pw*.52)&&vs>1.5*kk){vs-=.1*kk;c.font=fontStr(mm(vs),true)}T(vv,px1-4,y+crh*.68,vs,{bold:true,align:'right',col:r[2]||(/\bOK$/.test(vv)?GREEN:ink)})}y+=crh});
+  line(px0,y,px1,y,.12,SOFT)}
+ y+=1.5;c.fillStyle=BAND;c.fillRect(mm(px0+.2),mm(y),mm(pw-.4),mm(7.4*kk));c.fillStyle=GOLD;c.fillRect(mm(px0+.2),mm(y),mm(1.8*kk),mm(7.4*kk));T('LEGEND',px0+5.5*kk,y+5.1*kk,3.4*kk,{bold:true});y+=9*kk;
  var sat=S.layers.some(function(l){return l.vis&&l.kind==='sat'})&&m.bg;
  var note='All dimensions in metres. Scale applies only when printed at '+m.paper+' at 100%; otherwise use the scale bar. Indicative layout for approval purposes: verify on site before setting out.'+(m.showFront!==false?' Orange edge = front of the structure.':'')+(m.evac?' Evacuation routes are indicative (shortest clear walking path to the nearest exit): confirm exit widths, travel distances and capacity against the approved event safety plan.':'')+(sat?' Aerial imagery © Google and/or third parties.':'');
  c.font=fontStr(mm(2.2*kk),false);var noteL=wrapText(c,note,mm(pw-8)).slice(0,7);
@@ -2416,7 +2470,7 @@ async function renderSheet(){
    var sv2=R;iconDraw(c,e,mm(ex+ibL/2+.5),mm(mid),mm(ib),ppm*0.2646*kk*.7);R=sv2;
    var ln=lay.ls[i],nl2=ln.length;ln.forEach(function(s,j){T(s,ex+ibL+2.5,mid+(j-(nl2-1)/2)*lay.nsz*1.2+lay.nsz*.34,lay.nsz)});
    T(e.q,ex+lay.cw-2,mid+lay.nsz*.34,lay.nsz,{align:'right',bold:true,col:'#22313d'});
-   var nxt=lay.cc===2&&i===lay.split-1?false:(i<LD.length-1);if(nxt)line(ex,ey+h,ex+lay.cw-3,ey+h,.1)})}
+   var nxt=lay.cc===2&&i===lay.split-1?false:(i<LD.length-1);if(nxt)line(ex,ey+h,ex+lay.cw-3,ey+h,.1,SOFT)})}
  var by=P.h-M-FH-bottomH;line(px0,by,px1,by,.4);
  c.font=fontStr(mm(2.2*kk),false);
  c.fillStyle='#33444f';noteL.forEach(function(s,i){c.textAlign='left';c.textBaseline='alphabetic';c.fillText(s,mm(px0+4),mm(by+5*kk+i*3.1*kk))});

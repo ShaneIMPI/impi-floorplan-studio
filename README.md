@@ -285,3 +285,10 @@ The sheet footer shows each distinct logo once. If the project logo is the same 
 
 ## Export
 Scale "Auto-fit" prints the sheet without any grid or A/B/C, 1/2/3 labels. A fixed scale still prints the grid when "Print the grid on the sheet" is ticked.
+
+## Auto-fit fills the page
+With scale on Auto-fit the sheet now fits the drawn plan together with any client / venue plan underlay (never aerial tiles), so a plan on a small drawing no longer ends up as a thumbnail in the middle of the page. "Plot area: current screen view" applies to fixed scales only. Tiny stray items (an old measurement, a sign dropped far to the side) are left off the sheet so they cannot shrink the plan; the app says how many were left out. Large far-off areas such as a distant car park are always kept.
+
+## Modern look (app and print)
+- App: navy/gold header, rounded cards and buttons, gold section markers, soft shadows (dark mode kept).
+- Printed sheet: gold frame strip, navy title band, banded CROWD & CAPACITY and LEGEND headings, zebra info rows, soft dividers. Layout maths unchanged, so the legend still auto-fits.

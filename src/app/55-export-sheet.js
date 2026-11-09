@@ -16,7 +16,7 @@ async function renderSheet(){
    if(!dup)flogos.push(fim)}
   var flines=(brand.lines||[]).filter(Boolean);var gat={};S.layers.forEach(function(L){if(L.vis!==false&&L.geo&&L.geo.att)gat[L.geo.att]=1});if(Object.keys(gat).length)flines=flines.concat(['Aerial imagery: '+Object.keys(gat).join('; ')]);var FH=(flogos.length||flines.length)?20*kk:0;
   var M=8,panW=Math.round(88*kk),A={x0:M,y0:M,x1:P.w-M-panW,y1:P.h-M-FH};
- var b=(m.extent==='view'&&!m.only)?viewBounds():(objBounds()||layerBounds()||viewBounds());
+ var b=(m.scale==='auto')?(planBounds()||layerBounds()||viewBounds()):((m.extent==='view'&&!m.only)?viewBounds():(objBounds()||layerBounds()||viewBounds()));if(b&&b.left)toast(b.left+' small item'+(b.left===1?'':'s')+' far from the plan '+(b.left===1?'was':'were')+' left off the sheet so the plan fills the page',6000);
  var bw=Math.max(b.x1-b.x0,1),bh=Math.max(b.y1-b.y0,1),aw=(A.x1-A.x0)-4-30*kk,ah=(A.y1-A.y0)-4-30*kk,N;
  if(m.scale==='auto'){N=SCALES.filter(function(n){return bw*1000/n<=aw&&bh*1000/n<=ah})[0]||SCALES[SCALES.length-1]}else if(m.scale==='custom')N=Math.max(1,+m.scaleC||500);else N=+m.scale||500;
  var z=ppm*1000/N,ox=mm((A.x0+A.x1)/2)-((b.x0+b.x1)/2)*z,oy=mm((A.y0+A.y1)/2)-((b.y0+b.y1)/2)*z,u=ppm*0.2646*kk;
@@ -29,9 +29,9 @@ async function renderSheet(){
  if(pgrid)drawModuleGrid(c,pvb,m,'labels');
  R=sv;c.restore();
  c.setTransform(1,0,0,1,0,0);
- var ink='#12202b';c.strokeStyle=ink;c.lineWidth=mm(.7);c.strokeRect(mm(M-3),mm(M-3),mm(P.w-2*M+6),mm(P.h-2*M+6));c.lineWidth=mm(.4);c.strokeRect(mm(A.x0),mm(A.y0),mm(A.x1-A.x0),mm(A.y1-A.y0));
+ var ink='#0f2a43',GOLD='#f2b705',SOFT='#d9e0e6',BAND='#eef2f6',GREEN='#12804a';c.strokeStyle=ink;c.lineWidth=mm(.6);c.strokeRect(mm(M-3),mm(M-3),mm(P.w-2*M+6),mm(P.h-2*M+6));c.fillStyle=GOLD;c.fillRect(mm(M-3),mm(M-3),mm(P.w-2*M+6),mm(1.6*kk));c.strokeStyle='#8795a3';c.lineWidth=mm(.3);c.strokeRect(mm(A.x0),mm(A.y0),mm(A.x1-A.x0),mm(A.y1-A.y0));
  function T(s,x,y,sz,o){o=o||{};c.font=fontStr(mm(sz),o.bold);c.fillStyle=o.col||ink;c.textAlign=o.align||'left';c.textBaseline=o.base||'alphabetic';c.fillText(s,mm(x),mm(y))}
- function line(x0,y0,x1,y1,w){c.lineWidth=mm(w||.3);c.strokeStyle=ink;c.beginPath();c.moveTo(mm(x0),mm(y0));c.lineTo(mm(x1),mm(y1));c.stroke()}
+ function line(x0,y0,x1,y1,w,col){c.lineWidth=mm(w||.3);c.strokeStyle=col||ink;c.beginPath();c.moveTo(mm(x0),mm(y0));c.lineTo(mm(x1),mm(y1));c.stroke()}
  /* scale bar */
  var nice=[1,2,5,10,20,25,50,100,200,250,500,1000,2000],L0=nice[0];nice.forEach(function(n){if(n*1000/N<=62*kk)L0=n});
  var sbx=A.x0+7*kk,sby=A.y1-12*kk,sbw=L0*1000/N;
@@ -49,17 +49,20 @@ async function renderSheet(){
  c.lineWidth=mm(.4);c.strokeStyle=ink;c.strokeRect(mm(px0),mm(M),mm(pw),mm(P.h-2*M-FH));
  var elog=await loadImgCached(m.eventLogo),lh=elog?34*kk:0;
  if(elog){var sc=Math.min((pw-10)/elog.width,(lh-6)/elog.height),lw2=elog.width*sc,lh2=elog.height*sc;c.drawImage(elog,mm(px0+pw/2-lw2/2),mm(y+lh/2-lh2/2),mm(lw2),mm(lh2));y+=lh;line(px0,y,px1,y,.4)}
- T((m.evac?((m.only&&layoutOf(m.only))?'EMERGENCY EVACUATION – '+layoutOf(m.only).name:'EMERGENCY EVACUATION PLAN'):((m.only&&layoutOf(m.only))?layoutOf(m.only).name+' – internal layout':(m.title||'SITE & FLOOR PLAN'))),px0+4,y+6.2*kk,3*kk,{col:'#5b6b78',bold:true});
- c.font=fontStr(mm(6.4*kk),true);var el=wrapText(c,m.event||'',mm(pw-8)).slice(0,3);el.forEach(function(s,i){T(s,px0+4,y+14*kk+i*7.4*kk,6.4*kk,{bold:true})});
- y+=14*kk+Math.max(1,el.length)*7.4*kk+1*kk;line(px0,y,px1,y,.4);
+ var tbY=y,tbTitle=(m.evac?((m.only&&layoutOf(m.only))?'EMERGENCY EVACUATION – '+layoutOf(m.only).name:'EMERGENCY EVACUATION PLAN'):((m.only&&layoutOf(m.only))?layoutOf(m.only).name+' – internal layout':(m.title||'SITE & FLOOR PLAN')));
+ c.font=fontStr(mm(6.4*kk),true);var tbEl=wrapText(c,m.event||'',mm(pw-8)).slice(0,3),tbH=14*kk+Math.max(1,tbEl.length)*7.4*kk+1*kk;
+ c.fillStyle=ink;c.fillRect(mm(px0),mm(tbY),mm(pw),mm(tbH));c.fillStyle=GOLD;c.fillRect(mm(px0),mm(tbY),mm(1.8*kk),mm(tbH));
+ T((m.evac?((m.only&&layoutOf(m.only))?'EMERGENCY EVACUATION – '+layoutOf(m.only).name:'EMERGENCY EVACUATION PLAN'):((m.only&&layoutOf(m.only))?layoutOf(m.only).name+' – internal layout':(m.title||'SITE & FLOOR PLAN'))),px0+5.5*kk,y+6.2*kk,3*kk,{col:GOLD,bold:true});
+ c.font=fontStr(mm(6.4*kk),true);var el=wrapText(c,m.event||'',mm(pw-8)).slice(0,3);el.forEach(function(s,i){T(s,px0+5.5*kk,y+14*kk+i*7.4*kk,6.4*kk,{bold:true,col:'#ffffff'})});
+ y+=14*kk+Math.max(1,el.length)*7.4*kk+1*kk;
  var tmS=(m.tstart||m.tend)?((m.tstart||'')+(m.tend?' – '+m.tend:'')):'',attS=(+m.attend>0)?Math.round(+m.attend).toLocaleString('en-ZA'):'',rows=[['Venue',m.venue],['Client',m.client],['Date',m.date]].concat(tmS?[['Event times',tmS]]:[]).concat(attS?[['Exp. attendance',attS]]:[]).concat([['Revision',m.rev],['Drawn by',m.drawn],['Ref no.',m.ref],['Sheet',m.paper+'  ·  1 : '+N]]).concat(pgrid&&(m.gridMod>0||m.gridShow!==false)?[['Grid',(m.gridMod>0?m.gridMod+' m module':'')+((m.gridMinor===undefined?1:m.gridMinor)>0&&m.gridShow!==false?(m.gridMod>0?' · ':'')+(m.gridMinor===undefined?1:m.gridMinor)+' m lines':'')]]:[]),rh=5.3*kk;
- rows.forEach(function(r,i){T(r[0],px0+4,y+rh*.68,2.3*kk,{col:'#5b6b78'});c.font=fontStr(mm(3*kk),true);var v=String(r[1]||''),sz=3*kk;while(c.measureText(v).width>mm(pw-30*kk)&&sz>1.8*kk){sz-=.2*kk;c.font=fontStr(mm(sz),true)}T(v,px0+26*kk,y+rh*.68,sz,{bold:true});y+=rh;line(px0,y,px1,y,.18)});
+ rows.forEach(function(r,i){if(i%2===0){c.fillStyle='#f7f9fb';c.fillRect(mm(px0+.2),mm(y),mm(pw-.4),mm(rh))}T(r[0],px0+4,y+rh*.68,2.3*kk,{col:'#5b6b78'});c.font=fontStr(mm(3*kk),true);var v=String(r[1]||''),sz=3*kk;while(c.measureText(v).width>mm(pw-30*kk)&&sz>1.8*kk){sz-=.2*kk;c.font=fontStr(mm(sz),true)}T(v,px0+26*kk,y+rh*.68,sz,{bold:true});y+=rh;line(px0,y,px1,y,.12,SOFT)});
  var CL=m.crowd===false?[]:crowdLines();if(!m.only&&legendData().length>20)CL=CL.filter(function(r){return !(/^ {3}/.test(r[0])&&r[0].indexOf('Open ground')<0&&r[0].indexOf('Calculated')<0)});
- if(CL.length){y+=1;T(m.only?'CAPACITY OF THIS STRUCTURE':'CROWD & CAPACITY',px0+4,y+4.6*kk,3.2*kk,{bold:true});y+=6.4*kk;var crh=4.6*kk;
+ if(CL.length){y+=1;c.fillStyle=BAND;c.fillRect(mm(px0+.2),mm(y),mm(pw-.4),mm(7*kk));c.fillStyle=GOLD;c.fillRect(mm(px0+.2),mm(y),mm(1.8*kk),mm(7*kk));T(m.only?'CAPACITY OF THIS STRUCTURE':'CROWD & CAPACITY',px0+5.5*kk,y+4.9*kk,3.2*kk,{bold:true});y+=8.4*kk;var crh=4.6*kk;
   CL.forEach(function(r){var sz=2.5*kk;c.font=fontStr(mm(sz),false);var nm2=r[0];var cmx=(r[1]===''?pw-8:pw-34*kk);while(c.measureText(nm2).width>mm(cmx)&&nm2.length>6)nm2=nm2.slice(0,-2);
-   T(nm2,px0+4,y+crh*.68,sz,{col:'#33444f'});if(r[1]!==''){c.font=fontStr(mm(2.7*kk),true);var vv=String(r[1]),vs=2.7*kk;while(c.measureText(vv).width>mm(pw*.52)&&vs>1.5*kk){vs-=.1*kk;c.font=fontStr(mm(vs),true)}T(vv,px1-4,y+crh*.68,vs,{bold:true,align:'right',col:r[2]||ink})}y+=crh});
-  line(px0,y,px1,y,.18)}
- y+=1;T('LEGEND',px0+4,y+4.8*kk,3.6*kk,{bold:true});y+=7.4*kk;
+   T(nm2,px0+4,y+crh*.68,sz,{col:'#33444f'});if(r[1]!==''){c.font=fontStr(mm(2.7*kk),true);var vv=String(r[1]),vs=2.7*kk;while(c.measureText(vv).width>mm(pw*.52)&&vs>1.5*kk){vs-=.1*kk;c.font=fontStr(mm(vs),true)}T(vv,px1-4,y+crh*.68,vs,{bold:true,align:'right',col:r[2]||(/\bOK$/.test(vv)?GREEN:ink)})}y+=crh});
+  line(px0,y,px1,y,.12,SOFT)}
+ y+=1.5;c.fillStyle=BAND;c.fillRect(mm(px0+.2),mm(y),mm(pw-.4),mm(7.4*kk));c.fillStyle=GOLD;c.fillRect(mm(px0+.2),mm(y),mm(1.8*kk),mm(7.4*kk));T('LEGEND',px0+5.5*kk,y+5.1*kk,3.4*kk,{bold:true});y+=9*kk;
  var sat=S.layers.some(function(l){return l.vis&&l.kind==='sat'})&&m.bg;
  var note='All dimensions in metres. Scale applies only when printed at '+m.paper+' at 100%; otherwise use the scale bar. Indicative layout for approval purposes: verify on site before setting out.'+(m.showFront!==false?' Orange edge = front of the structure.':'')+(m.evac?' Evacuation routes are indicative (shortest clear walking path to the nearest exit): confirm exit widths, travel distances and capacity against the approved event safety plan.':'')+(sat?' Aerial imagery © Google and/or third parties.':'');
  c.font=fontStr(mm(2.2*kk),false);var noteL=wrapText(c,note,mm(pw-8)).slice(0,7);
@@ -80,7 +83,7 @@ async function renderSheet(){
    var sv2=R;iconDraw(c,e,mm(ex+ibL/2+.5),mm(mid),mm(ib),ppm*0.2646*kk*.7);R=sv2;
    var ln=lay.ls[i],nl2=ln.length;ln.forEach(function(s,j){T(s,ex+ibL+2.5,mid+(j-(nl2-1)/2)*lay.nsz*1.2+lay.nsz*.34,lay.nsz)});
    T(e.q,ex+lay.cw-2,mid+lay.nsz*.34,lay.nsz,{align:'right',bold:true,col:'#22313d'});
-   var nxt=lay.cc===2&&i===lay.split-1?false:(i<LD.length-1);if(nxt)line(ex,ey+h,ex+lay.cw-3,ey+h,.1)})}
+   var nxt=lay.cc===2&&i===lay.split-1?false:(i<LD.length-1);if(nxt)line(ex,ey+h,ex+lay.cw-3,ey+h,.1,SOFT)})}
  var by=P.h-M-FH-bottomH;line(px0,by,px1,by,.4);
  c.font=fontStr(mm(2.2*kk),false);
  c.fillStyle='#33444f';noteL.forEach(function(s,i){c.textAlign='left';c.textBaseline='alphabetic';c.fillText(s,mm(px0+4),mm(by+5*kk+i*3.1*kk))});

@@ -206,6 +206,17 @@ await test('export: Auto-fit leaves the grid off the sheet, a fixed scale still 
   ok(r.autoSame, 'Auto-fit sheet is identical with the grid on or off');
   ok(r.fixedDiffers, 'a fixed scale still prints the grid');
 });
+await test('export: Auto-fit fills the page with the plan and underlay, ignoring a tiny stray item far away', async () => {
+  const r = await page.evaluate(async () => { const T = __T; T.S.objs = []; T.S.layers = []; T.S.meta.evac = false; T.S.meta.only = null; T.S.meta.scale = 'auto'; T.S.meta.extent = 'view'; T.S.meta.bg = true; T.S.meta.attend = 0;
+    const cn = document.createElement('canvas'); cn.width = 200; cn.height = 100; cn.getContext('2d').fillRect(0, 0, 200, 100); const im = await T.loadImgSrc(cn.toDataURL());
+    T.S.layers.push({ id: 1, name: 'client plan', kind: 'plan', img: im, mpp: 0.5, x: 0, y: 0, rot: 0, op: 1, vis: true });
+    T.addObj({ t: 'poly', pts: [{ x: 20, y: 10 }, { x: 80, y: 10 }, { x: 80, y: 40 }, { x: 20, y: 40 }], site: 1, label: 'Event site' });
+    const a = await T.renderSheet(); const na = a.N;
+    T.addObj(Object.assign(T.makeAt('sign:assembly', { x: 900, y: 700 }), {})); const pb = T.planBounds(); const b = await T.renderSheet();
+    T.S.meta.extent = 'content'; T.S.layers = []; T.S.meta.bg = false; return { na, nb: b.N, left: pb.left, w: pb.x1 - pb.x0 }; });
+  ok(r.na <= 500, 'underlay + plan fits at a readable scale: 1:' + r.na);
+  ok(r.left === 1 && r.w < 120 && r.nb === r.na, 'stray sign 1 km away is left out: ' + JSON.stringify(r));
+});
 await test('crowd window: the Set button and the Sheet-tab fields really change the crowd figure', async () => {
   await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.siteArea = 0; T.S.meta.certCap = 0; T.S.meta.attend = 7000; T.addObj(T.makeAt('item:marq10', { x: 10, y: 10 })); });
   await page.click('#tabs button[data-tab="sheet"]');
