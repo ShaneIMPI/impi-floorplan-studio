@@ -23,7 +23,7 @@ async function renderSheet(){
  c.save();c.beginPath();c.rect(mm(A.x0+1),mm(A.y0+1),mm(A.x1-A.x0-2),mm(A.y1-A.y0-2));c.clip();
  c.setTransform(z,0,0,z,ox,oy);var sv=R;R={z:z,u:u};
  if(m.bg&&!m.only)S.layers.forEach(function(L){drawLayer(c,L)});
- var pvb={x0:(mm(A.x0+1)-ox)/z,y0:(mm(A.y0+1)-oy)/z,x1:(mm(A.x1-1)-ox)/z,y1:(mm(A.y1-1)-oy)/z},pgrid=m.gridPrint!==false&&(m.gridMod>0||m.gridShow!==false);
+ var pvb={x0:(mm(A.x0+1)-ox)/z,y0:(mm(A.y0+1)-oy)/z,x1:(mm(A.x1-1)-ox)/z,y1:(mm(A.y1-1)-oy)/z},pgrid=m.scale!=='auto'&&m.gridPrint!==false&&(m.gridMod>0||m.gridShow!==false);
  if(pgrid)drawModuleGrid(c,pvb,m,'lines');
  drawObjs(c);
  if(pgrid)drawModuleGrid(c,pvb,m,'labels');

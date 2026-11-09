@@ -275,3 +275,13 @@ Zone names and sizes are now drawn after everything else and placed in the frees
 
 ## Footer logos
 The sheet footer shows each distinct logo once. If the project logo is the same artwork as the standard IMPI footer logo (for example the same logo uploaded again in Project settings), the duplicate is skipped.
+
+## Crowd calculation (SASREA)
+- Floor space is now exact: every structure and every piece of furniture or equipment on the plan is taken off the floor, whether or not it was placed through an internal layout. Footprints are merged before measuring, so items that overlap (a tent on a zone, a stage on a deck) are subtracted once. This applies to each zone's usable floor and to the open ground. Decks, truss, ground cover, netting and walk-through items (gates, stairs) are not subtracted, as before.
+- Seats on any table or seating item inside a zone are counted when the zone is set to "seated at tables".
+- Staff, crew and artists can be entered; they are added to the attendance (SASREA Reg 3(5)(i): safe capacity includes staff).
+- A SASREA regulation check is shown in the Crowd & capacity window, with two lines on the printed sheet: exit width 1 m per 1,000 (Reg 4(1)(a)(iv)), full evacuation within 15 minutes (Reg 3(12)), 1 turnstile per 1,000 (Reg 3(9)), 10 toilets per 1,000 (Reg 12(t)) and the Reg 13 medical minimums. Toilets are counted from the toilet and ablution trailer items, or type the number in Sheet > Event times & crowd.
+- m² per person is not set by SASREA. Reg 3(5) says capacity may not exceed what SANS 10400 allows and is fixed in the venue's safety certificate, so the densities stay editable and the certified capacity caps the total.
+
+## Export
+Scale "Auto-fit" prints the sheet without any grid or A/B/C, 1/2/3 labels. A fixed scale still prints the grid when "Print the grid on the sheet" is ticked.

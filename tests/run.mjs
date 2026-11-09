@@ -169,6 +169,43 @@ await test('crowd: total never exceeds the venue certified capacity', async () =
   const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.siteArea = 9000; T.S.meta.attend = 7000; T.S.meta.certCap = 0; const a = T.crowdAll(); T.S.meta.certCap = 6000; const b = T.crowdAll(); T.S.meta.certCap = 0; T.S.meta.siteArea = 0; return { a: a.total, b: b.total, c: b.capped, o: b.over }; });
   ok(r.a === 9000 && r.b === 6000 && r.c && r.o, JSON.stringify(r));
 });
+await test('crowd: furniture and structures inside a zone are taken off its usable floor, overlaps counted once', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.layouts = []; T.S.meta.attend = 0; T.S.meta.siteArea = 0; T.S.meta.certCap = 0; T.S.meta.staff = 0;
+    const z = T.addObj({ t: 'area', x: 0, y: 0, w: 20, h: 20, rot: 0, label: 'Hall', use: 'sgen' }); const a = T.crowdAll().units[0];
+    const mk = (x, y, w, h) => T.addObj(Object.assign(T.makeAt('item:runway', { x, y }), { w, h }));
+    mk(-5, -5, 4, 4); const b = T.crowdAll().units[0]; mk(-5, -5, 4, 4); const c = T.crowdAll().units[0]; mk(40, 40, 4, 4); const d = T.crowdAll().units[0];
+    return { a: [a.gross, a.fp, a.cap], b: [b.fp, b.cap], c: [c.fp, c.cap], d: [d.fp] }; });
+  ok(Math.abs(r.a[0] - 400) < 1e-6 && r.a[1] === 0 && r.a[2] === 400, 'empty zone: ' + JSON.stringify(r.a));
+  ok(Math.abs(r.b[0] - 16) < 0.6 && r.b[1] === 384, 'one 4x4 item: ' + JSON.stringify(r.b));
+  ok(Math.abs(r.c[0] - 16) < 0.6, 'a second item on the same spot is not subtracted twice: ' + JSON.stringify(r.c));
+  ok(Math.abs(r.d[0] - 16) < 0.6, 'an item outside the zone is ignored: ' + JSON.stringify(r.d));
+});
+await test('crowd: open ground takes off structures once, even when they overlap', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.siteArea = 1000; T.S.meta.attend = 0;
+    T.addObj(Object.assign(T.makeAt('item:marq10', { x: 10, y: 10 }), { w: 10, h: 10, nc: 1 })); const base = T.crowdAll().open;
+    const z = T.addObj({ t: 'area', x: 100, y: 100, w: 10, h: 10, rot: 0, label: 'Zone', use: 'sgen' });
+    T.addObj(Object.assign(T.makeAt('item:marq10', { x: 100, y: 100 }), { w: 10, h: 10 })); const c = T.crowdAll().open; T.S.meta.siteArea = 0; return { base: base.occ, occ: c.occ }; });
+  ok(Math.abs(r.occ - 100) < 1.5, 'zone + a tent on it count as one 100 m2: ' + JSON.stringify(r));
+});
+await test('SASREA checks: 1 m of exit per 1,000, 15 minutes, toilets and medical from the attendance', async () => {
+  const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.siteArea = 5000; T.S.meta.attend = 3000; T.S.meta.staff = 500; T.S.meta.toilets = 0;
+    const d = T.addObj({ t: 'door', k: 'eexit', x: 0, y: 0, w: 3, rot: 0 }); const a = T.sasrea(T.crowdAll());
+    T.addObj({ t: 'door', k: 'eexit', x: 5, y: 0, w: 1, rot: 0 }); const b = T.sasrea(T.crowdAll()); T.S.meta.staff = 0; T.S.meta.attend = 0; T.S.meta.siteArea = 0; return { a: a.map(x => [x.reg, x.need, x.ok]), b: b.map(x => [x.reg, x.ok]) }; });
+  const ex = r.a.find(x => x[0] === 'Reg 4(1)(a)(iv)'), t12 = r.a.find(x => x[0] === 'Reg 3(12)'), toi = r.a.find(x => x[0] === 'Reg 12(t)');
+  ok(ex[1] === '3.5 m' && ex[2] === false, 'exit width for 3,500 people with 3 m: ' + JSON.stringify(ex));
+  ok(t12[2] === true, '3,500 / (3 m x 82) = 14.2 min is inside 15: ' + JSON.stringify(t12));
+  ok(toi[1] === '35' && toi[2] === false, 'toilets for 3,500 people: ' + JSON.stringify(toi));
+  ok(r.b.find(x => x[0] === 'Reg 4(1)(a)(iv)')[1] === true, 'with 4 m of exits the width check passes');
+});
+await test('export: Auto-fit leaves the grid off the sheet, a fixed scale still prints it', async () => {
+  const r = await page.evaluate(async () => { const T = __T; T.S.objs = []; T.S.layers = []; T.S.meta.evac = false; T.S.meta.only = null; T.S.meta.attend = 0;
+    T.addObj(Object.assign(T.makeAt('item:marq10', { x: 10, y: 10 }), { w: 10, h: 10 }));
+    const s = (sc, g) => { T.S.meta.scale = sc; T.S.meta.gridMod = g; T.S.meta.gridShow = true; T.S.meta.gridPrint = true; return T.renderSheet().then(x => x.canvas.toDataURL()); };
+    const a0 = await s('auto', 0), a3 = await s('auto', 3), f0 = await s(200, 0), f3 = await s(200, 3); T.S.meta.scale = 'auto'; T.S.meta.gridMod = 0;
+    return { autoSame: a0 === a3, fixedDiffers: f0 !== f3 }; });
+  ok(r.autoSame, 'Auto-fit sheet is identical with the grid on or off');
+  ok(r.fixedDiffers, 'a fixed scale still prints the grid');
+});
 await test('crowd window: the Set button and the Sheet-tab fields really change the crowd figure', async () => {
   await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.siteArea = 0; T.S.meta.certCap = 0; T.S.meta.attend = 7000; T.addObj(T.makeAt('item:marq10', { x: 10, y: 10 })); });
   await page.click('#tabs button[data-tab="sheet"]');
@@ -176,7 +213,7 @@ await test('crowd window: the Set button and the Sheet-tab fields really change 
   const a = await page.evaluate(() => __T.crowdAll().total); ok(a === 9000, 'Sheet-tab area gave ' + a);
   await page.click('[data-act="crowd"]'); await page.fill('#cm_sitearea', '12000'); await page.fill('#cm_cert', '5500'); await page.click('#modal [data-act="sitearea"]');
   const b = await page.evaluate(() => ({ t: __T.crowdAll().total, m: __T.S.meta.siteArea, txt: document.getElementById('modal').innerText }));
-  ok(b.t === 5500 && b.m === 12000 && /certified 5,500/.test(b.txt), 'modal Set gave ' + JSON.stringify([b.t, b.m]));
+  ok(b.t === 5500 && b.m === 12000 && /certified 5[ ,\u00a0\u202f]?500/.test(b.txt), 'modal Set gave ' + JSON.stringify([b.t, b.m]));
   await page.click('#modal #mc'); await page.evaluate(() => { __T.S.meta.siteArea = 0; __T.S.meta.certCap = 0; });
 });
 await test('crowd: an event area smaller than the structures is flagged, not silently zero', async () => {
