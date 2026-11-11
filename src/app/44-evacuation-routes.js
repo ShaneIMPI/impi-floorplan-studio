@@ -24,7 +24,7 @@ function genEvac(){
  vis.forEach(function(o){
   if(o.t==='rect'&&!(LIBM[o.k]||{}).ps&&!/^netting/.test(o.k)&&o.k.indexOf('deck')!==0&&(LIBM[o.k]||{}).s!=='truss'){var d=dimsOf(o),cr=corners(o),xa=Infinity,xb=-Infinity,ya=Infinity,yb=-Infinity;cr.forEach(function(p){xa=Math.min(xa,p.x);xb=Math.max(xb,p.x);ya=Math.min(ya,p.y);yb=Math.max(yb,p.y)});
    for(j=cy(ya);j<=cy(yb);j++)for(i=cx(xa);i<=cx(xb);i++){var l=toLocal(o,{x:wx(i),y:wy(j)});if(Math.abs(l.x)<=d.w/2+.15&&Math.abs(l.y)<=d.h/2+.15)blk[j*nx+i]=1}}
-  else if(o.t==='line'&&['fence','wall','barrier','shade','shadeb','drape','plain','thin','brick','shell'].indexOf(o.style||'fence')>=0){
+  else if(o.t==='line'&&['fence','wall','barrier','shade','shadeb','drape','plain','thin','vthin','brick','shell'].indexOf(o.style||'fence')>=0){
    var P=o.closed?o.pts.concat([o.pts[0]]):o.pts;
    for(var k=0;k<P.length-1;k++){if(o.gaps&&o.gaps.indexOf(k)>=0)continue;var L2=Math.hypot(P[k+1].x-P[k].x,P[k+1].y-P[k].y),n=Math.max(1,Math.ceil(L2/(cs*.3)));for(var q=0;q<=n;q++){var t=q/n;blk[cy(P[k].y+(P[k+1].y-P[k].y)*t)*nx+cx(P[k].x+(P[k+1].x-P[k].x)*t)]=1}}}
  });

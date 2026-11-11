@@ -382,6 +382,32 @@ await test('Stand names dialog: names added after numbering, saved, and cleared 
   r = await page.evaluate(() => __T.S.objs.map(o => o.label + ':' + (o.sname || '')).join('|'));
   ok(r === 'A1:|A2:|A10:Acme', r);
 });
+await test('arena chairs snap flush side by side and to the next row', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = S.objs; S.objs = [];
+    const a = { t: 'rect', k: 'chair10', x: 0, y: 0, w: 5, h: .5, rot: 0, label: '', id: 9001 }, b = { t: 'rect', k: 'chair5', x: 3.9, y: .1, w: 2.5, h: .5, rot: 0, label: '', id: 9002 }, c = { t: 'rect', k: 'chair10', x: .2, y: 1.1, w: 5, h: .5, rot: 0, label: '', id: 9003 };
+    S.objs.push(a, b); const s1 = T.seatSnap(b); S.objs.push(c); const s2 = T.seatSnap(c); S.objs = keep; return { s1, s2, bx: b.x, by: b.y, cx: c.x, cy: c.y, n: T.seatN(a), lib: !!T.LIBM.chair1 }; });
+  ok(r.s1 && r.s2 && Math.abs(r.bx - 3.75) < 1e-6 && Math.abs(r.by) < 1e-6 && Math.abs(r.cx) < 1e-6 && Math.abs(r.cy - .95) < 1e-6 && r.n === 10 && r.lib, JSON.stringify(r));
+});
+await test('auto-trace: a brochure plan (white building on a dark page) gives the building outline and its open floor, as very thin lines', async () => {
+  const r = await page.evaluate(async () => { const T = __T, S = T.S, keep = S.objs; S.objs = [];
+    const cn = document.createElement('canvas'); cn.width = 900; cn.height = 600; const c = cn.getContext('2d');
+    c.fillStyle = '#1d304e'; c.fillRect(0, 0, 900, 600); c.fillStyle = '#f4f4f4'; c.fillRect(150, 100, 600, 400); c.fillStyle = '#fff'; c.fillRect(190, 140, 400, 320); c.fillStyle = '#18a050'; c.fillRect(610, 140, 110, 150);
+    const L = { id: 1, name: 'b', kind: 'plan', img: cn, mpp: .1, x: 0, y: 0, rot: 0, op: .9, blend: 'multiply', cal: true, vis: true };
+    const res = T.traceVenue(L, { outline: true, walls: true, minWall: 3, close: 1.2, smooth: 6, heavy: .2, mode: 'shell' });
+    const n = T.applyTrace(L, res, { ls: 'vthin', vn: true });
+    const bb = P => { let x0 = 1e9, x1 = -1e9; P.forEach(q => { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); }); return [Math.round(x0), Math.round(x1)]; };
+    const st = S.objs.map(x => x.style).filter((v, i, a) => a.indexOf(v) === i); S.objs = keep; return { br: res.stats.brochure, o: res.outlines.length, ob: res.outlines[0] ? bb(res.outlines[0].pts) : null, w: res.walls.map(x => bb(x.pts)), n, st, thin: T.LINES.some(l => l.k === 'vthin') }; });
+  ok(r.br === 1 && r.o === 1 && Math.abs(r.ob[0] - 15) <= 1 && Math.abs(r.ob[1] - 75) <= 1 && r.w.some(b => Math.abs(b[0] - 19) <= 1 && Math.abs(b[1] - 59) <= 1) && r.w.some(b => Math.abs(b[0] - 61) <= 1 && Math.abs(b[1] - 72) <= 1) && r.st.length === 1 && r.st[0] === 'vthin' && r.thin, JSON.stringify(r));
+});
+await test('auto-trace: a thick curved wall on a white plan is traced as its own outline', async () => {
+  const r = await page.evaluate(async () => { const T = __T;
+    const cn = document.createElement('canvas'); cn.width = 900; cn.height = 600; const c = cn.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 900, 600); c.strokeStyle = '#000'; c.lineWidth = 2; c.strokeRect(100, 80, 700, 440); c.lineWidth = 8; c.beginPath(); c.arc(450, 80, 120, 0, Math.PI); c.stroke();
+    const L = { id: 1, name: 'b', kind: 'plan', img: cn, mpp: .1, x: 0, y: 0, rot: 0, op: .9, blend: 'multiply', cal: true, vis: true };
+    const res = T.traceVenue(L, { outline: true, walls: true, minWall: 3, close: 1.2, smooth: 6, heavy: .2, mode: 'shell' });
+    let low = 0; res.walls.forEach(w => (w.pts || []).forEach(q => { low = Math.max(low, q.y); })); return { o: res.outlines.length, w: res.walls.length, low: Math.round(low * 10) / 10, many: res.walls.some(w => w.pts && w.pts.length > 8) }; });
+  ok(r.o === 1 && r.w >= 1 && r.many && r.low > 19 && r.low < 21.5, JSON.stringify(r));
+});
 await test('auto-trace: outline and walls come out of a synthetic plan at the right size', async () => {
   const r = await page.evaluate(() => { const T = __T;
     const cn = document.createElement('canvas'); cn.width = 1200; cn.height = 800; const c = cn.getContext('2d');

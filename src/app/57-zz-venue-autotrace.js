@@ -68,22 +68,75 @@ function atRuns(m,w,h,minLen,horiz){
  else{for(a=0;a<w;a++){b=0;while(b<h){if(m[b*w+a]){s=b;while(b<h&&m[b*w+a])b++;if(b-s>=minLen)for(k=s;k<b;k++)o[k*w+a]=1}else b++}}}
  return o}
 function atDistPoly(P,x,y){var d=Infinity,i;for(i=0;i<P.length;i++){var a=P[i],b=P[(i+1)%P.length],dx=b[0]-a[0],dy=b[1]-a[1],L2=dx*dx+dy*dy,t=L2<1e-9?0:Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/L2)),q=Math.hypot(x-(a[0]+dx*t),y-(a[1]+dy*t));if(q<d)d=q}return d}
+/* closed contours of every solid blob in a mask (outer edge, plus the edge of each enclosed hole), simplified */
+function atContours(mask,w,h,o){
+ var out=[],K=atLabel(mask,w,h,true),k,x,b;
+ function fin(path){if(path.length<6)return;var S2=atRdp(path,o.eps,true),Q=atOrtho(S2,o.ortho||2.5);if(Q.length>=3)out.push(Q)}
+ for(k=1;k<=K.n;k++){b=K.bb[k];if(Math.max(b[2]-b[0],b[3]-b[1])+1<o.minDim||b[4]<o.minArea)continue;
+  var sx=-1;for(x=b[0];x<=b[2];x++)if(K.lab[b[1]*w+x]===k){sx=x;break}
+  if(sx>=0)fin(atTrace(K.lab,k,w,h,sx,b[1]))}
+ if(o.holes!==false){
+  var inv=new Uint8Array(w*h),i;for(i=0;i<inv.length;i++)inv[i]=mask[i]?0:1;
+  var Hn=atLabel(inv,w,h,false);
+  for(k=1;k<=Hn.n;k++){b=Hn.bb[k];if(b[0]<=0||b[1]<=0||b[2]>=w-1||b[3]>=h-1)continue;
+   if(b[4]<o.minHole||Math.max(b[2]-b[0],b[3]-b[1])+1<o.minDim)continue;
+   var hx=-1;for(x=b[0];x<=b[2];x++)if(Hn.lab[b[1]*w+x]===k){hx=x;break}
+   if(hx>=0)fin(atTrace(Hn.lab,k,w,h,hx,b[1]))}}
+ return out}
+/* drop the parts of a closed contour that just repeat an outline already traced; what is left comes back as runs */
+function atCutNear(Q,polys,tol){
+ var n=Q.length,near=[],i,any=false,all=true;
+ for(i=0;i<n;i++){var a=Q[i],b=Q[(i+1)%n],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,nr=false;
+  for(var j=0;j<polys.length&&!nr;j++){var P=polys[j];if(atDistPoly(P,a[0],a[1])<=tol&&atDistPoly(P,b[0],b[1])<=tol&&atDistPoly(P,mx,my)<=tol)nr=true}
+  near.push(nr);if(nr)any=true;else all=false}
+ if(!any)return [{pts:Q,closed:true}];if(all)return [];
+ var runs=[],s=0;while(!near[s])s++;      /* start just after a dropped edge */
+ var cur=null;for(i=1;i<=n;i++){var e=(s+i)%n;if(!near[e]){if(!cur)cur=[Q[e]];cur.push(Q[(e+1)%n])}else if(cur){runs.push({pts:cur,closed:false});cur=null}}
+ if(cur)runs.push({pts:cur,closed:false});return runs}
+/* a brochure-style plan (white building on a dark or coloured page): how far each grid cell is from white paper */
+function atPaperDiff(L,w,h){
+ var cn=document.createElement('canvas');cn.width=w;cn.height=h;var c=cn.getContext('2d',{willReadFrequently:true});c.fillStyle='#fff';c.fillRect(0,0,w,h);c.imageSmoothingQuality='high';c.drawImage(L.img,0,0,w,h);
+ var d;try{d=c.getImageData(0,0,w,h).data}catch(e){return null}
+ var o=new Uint8Array(w*h),i,j;for(i=0,j=0;i<o.length;i++,j+=4)o[i]=255-Math.min(d[j],d[j+1],d[j+2]);return o}
 /* the whole job. Everything is worked out in grid pixels, then converted to world metres. */
 function traceVenue(L,o){
  o=o||{};var G=atGrid(L);if(!G)return null;
  var w=G.w,h=G.h,ps=G.ps,m=new Uint8Array(G.m),i,j,res={outlines:[],walls:[],stats:{}};
  var perM=1/ps;
  /* 1. drop specks, text and the page frame */
- var C=atLabel(m,w,h,true),minComp=Math.max(3,1.2*perM),dropped=0;
+ var C=atLabel(m,w,h,true),minComp=Math.max(3,1.2*perM),dropped=0,bgComp=0,bg=null;
  var keepC=new Uint8Array(C.n+1);
  for(i=1;i<=C.n;i++){var b=C.bb[i],bw=b[2]-b[0]+1,bh=b[3]-b[1]+1;
   if(Math.max(bw,bh)<minComp){dropped++;continue}
-  if(bw>=w*.85&&bh>=h*.85){continue}
+  if(bw>=w*.85&&bh>=h*.85){if(b[4]>bw*bh*.3)bgComp=i;continue}
   keepC[i]=1}
+ if(bgComp){bg=new Uint8Array(w*h);for(i=0;i<bg.length;i++)if(C.lab[i]===bgComp)bg[i]=1}
  for(i=0;i<m.length;i++)if(m[i]&&!keepC[C.lab[i]])m[i]=0;
  C=null;
  var W=function(px,py){var v=rotv((px+.5)*ps,(py+.5)*ps,L.rot*D2R);return {x:L.x+v.x,y:L.y+v.y}};
- var polys=[];
+ var polys=[],cEps=Math.max(1.2,.08*perM),thin=o.mode==='shell';
+ /* 1b. brochure plan: the page itself is filled with colour, so the building is whatever is not page */
+ if(bg){
+  res.stats.brochure=1;
+  var Sil=new Uint8Array(w*h);for(i=0;i<Sil.length;i++)Sil[i]=bg[i]?0:1;
+  var rs=Math.max(1,Math.round(.25*perM));Sil=atMorph(atMorph(Sil,w,h,rs,false),w,h,rs,true);   /* lose captions and thin connectors */
+  var SL=atLabel(Sil,w,h,true),bigS=0;for(i=1;i<=SL.n;i++)if(SL.bb[i][4]>bigS)bigS=SL.bb[i][4];
+  for(i=0;i<Sil.length;i++)if(Sil[i]&&SL.bb[SL.lab[i]][4]<bigS*.12)Sil[i]=0;SL=null;
+  if(o.outline!==false)atContours(Sil,w,h,{eps:cEps,minDim:3*perM,minArea:20*perM*perM,holes:false}).forEach(function(Q){polys.push(Q);res.outlines.push({pts:Q.map(function(q){return W(q[0],q[1])})})});
+  if(o.walls!==false){
+   var PD=atPaperDiff(L,w,h);
+   if(PD){
+    var tolP=Math.max(2,.3*perM),minR=Math.max(4,(o.minWall>0?o.minWall:3)*.7*perM),A1=new Uint8Array(w*h),A2=new Uint8Array(w*h);
+    for(i=0;i<A1.length;i++)if(Sil[i]){if(PD[i]>6)A1[i]=1;if(PD[i]>70)A2[i]=1}
+    /* open floors: the white areas enclosed by the building slab */
+    var ro1=Math.max(1,Math.round(.15*perM));A1=atMorph(atMorph(A1,w,h,ro1,true),w,h,ro1,false);
+    var add=function(Q){atCutNear(Q,polys,tolP).forEach(function(rn){if(rn.pts.length>=2)res.walls.push({pts:rn.pts.map(function(q){return W(q[0],q[1])}),closed:rn.closed})})};
+    var inv1=new Uint8Array(w*h);for(i=0;i<inv1.length;i++)inv1[i]=(Sil[i]&&!A1[i])?1:0;
+    atContours(inv1,w,h,{eps:cEps,minDim:minR,minArea:6*perM*perM,holes:false}).forEach(add);
+    /* coloured rooms */
+    var ro2=Math.max(1,Math.round(.3*perM));A2=atMorph(atMorph(A2,w,h,ro2,false),w,h,ro2,true);
+    atContours(A2,w,h,{eps:cEps,minDim:minR,minArea:6*perM*perM,holes:false}).forEach(add)}}
+  res.stats.dropped=dropped;res.stats.px=w+'x'+h;return res}
  /* 2. the outline: close doorways, fill the inside, give the closing back */
  if(o.outline!==false){
   var r=Math.max(1,Math.round((o.close>0?o.close:1.2)/2*perM));
@@ -101,8 +154,20 @@ function traceVenue(L,o){
    var S=atRdp(path,Math.max(1.5,.12*perM),true),Q=atOrtho(S,4);if(Q.length<3)return;
    polys.push(Q);res.outlines.push({pts:Q.map(function(p){return W(p[0],p[1])})})});
   R=null;E=null}
+ /* 3a. thick walls drawn as their own outlines, so curves and angled walls are kept */
+ var didHeavy=false;
+ if(o.walls!==false&&thin){
+  var hv=o.heavy>0?o.heavy:.2,rh=Math.max(1,Math.floor(hv*perM/2)),Hm=atMorph(atMorph(m,w,h,rh,false),w,h,rh,true);
+  var cs2=atContours(Hm,w,h,{eps:cEps,minDim:Math.max(4,(o.minWall>0?o.minWall:3)*.7*perM),minArea:0,minHole:2*perM*perM});Hm=null;
+  if(polys.length){var hx0=1e9,hy0=1e9,hx1=-1e9,hy1=-1e9,hm=2*perM;polys.forEach(function(P){P.forEach(function(q){hx0=Math.min(hx0,q[0]);hy0=Math.min(hy0,q[1]);hx1=Math.max(hx1,q[0]);hy1=Math.max(hy1,q[1])})});
+   cs2=cs2.filter(function(Q){var ax=0,ay=0;Q.forEach(function(q){ax+=q[0];ay+=q[1]});ax/=Q.length;ay/=Q.length;return ax>=hx0-hm&&ax<=hx1+hm&&ay>=hy0-hm&&ay<=hy1+hm})}
+  var tolH=Math.max(3,.45*perM);
+  cs2.forEach(function(Q){atCutNear(Q,polys,tolH).forEach(function(rn){
+   var len=0,k2;for(k2=1;k2<rn.pts.length;k2++)len+=Math.hypot(rn.pts[k2][0]-rn.pts[k2-1][0],rn.pts[k2][1]-rn.pts[k2-1][1]);
+   if(len<.8*perM)return;res.walls.push({pts:rn.pts.map(function(q){return W(q[0],q[1])}),closed:rn.closed});didHeavy=true})});
+  res.stats.heavy=res.walls.length}
  /* 3. internal walls: long straight runs, thin enough to be a line */
- if(o.walls!==false){
+ if(o.walls!==false&&!didHeavy){
   var minLen=Math.max(4,(o.minWall>0?o.minWall:3)*perM),maxThick=Math.max(3,.7*perM),segs=[];
   [true,false].forEach(function(hz){
    var mk=atRuns(m,w,h,minLen,hz),K=atLabel(mk,w,h,true);
@@ -157,10 +222,11 @@ function traceVenue(L,o){
 function autoTraceModal(L){
  if(L.cal!==true){toast('Calibrate this plan first so the shell is traced to scale.',5000);return}
  var sx='style="border:1px solid var(--ln);background:var(--pn2);border-radius:8px;padding:8px;color:var(--ink);width:100%;min-height:38px"',m=$('#modal');
- m.innerHTML='<div class="mbox" role="dialog" aria-label="Auto-trace the venue"><h3>Auto-trace the venue</h3><p class="note">Builds the bare venue from this plan: the outer outline and the long straight walls, as editable venue lines. Furniture, text and small symbols are ignored. Nothing is lost: it is one Undo. Works best on clean plans. If the outline grabs too much, raise &ldquo;Ignore attachments&rdquo; or lower &ldquo;Bridge openings&rdquo;, then drag any corner to fine-tune. On a scanned plan, untick Internal walls.</p>'
+ m.innerHTML='<div class="mbox" role="dialog" aria-label="Auto-trace the venue"><h3>Auto-trace the venue</h3><p class="note">Builds the bare venue from this plan as editable thin lines: the outer outline, and the outline of every thick wall, curved ones included. Brochure-style plans (white building on a coloured page) are traced by the building shape, its open floors and its coloured rooms. Furniture, text and small symbols are ignored. Nothing is lost: it is one Undo. Works best on clean plans. If the outline grabs too much, raise &ldquo;Ignore attachments&rdquo; or lower &ldquo;Bridge openings&rdquo;, then drag any corner to fine-tune. On a scanned plan, untick Internal walls.</p>'
   +'<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="at_o" checked style="min-height:0"> Outer outline of the building(s)</label>'
   +'<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="at_w" checked style="min-height:0"> Internal walls (long straight lines)</label>'
   +'<div style="display:flex;gap:8px"><label style="flex:1">Ignore attachments narrower than (m)<input id="at_sm" type="number" value="6" min="0" step="0.5" '+sx+'></label></div><div style="display:flex;gap:8px"><label style="flex:1">Shortest wall to keep (m)<input id="at_ml" type="number" value="3" min="0.5" step="0.5" '+sx+'></label><label style="flex:1">Bridge openings up to (m)<input id="at_cl" type="number" value="1.2" min="0.2" step="0.1" '+sx+'></label></div>'
+  +'<div style="display:flex;gap:8px"><label style="flex:1">Draw walls as<select id="at_md" '+sx+'><option value="shell">Outlines of the walls (follows curves)</option><option value="centre">Centre lines (straight walls only)</option></select></label><label style="flex:1">Line weight<select id="at_ls" '+sx+'><option value="vthin">Very thin (venue shell)</option><option value="thin">Thin</option><option value="wall">Thick wall</option></select></label></div>'
   +'<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="at_h" checked style="min-height:0"> Heavy lines only for walls (skips event stands and furniture drawn in thin lines)</label>'
   +'<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="at_f" checked style="min-height:0"> Fade the plan afterwards so the traced shell stands out</label>'
   +'<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="at_v" checked style="min-height:0"> Mark it as the venue (permanent, kept when you clear the event)</label>'
@@ -168,7 +234,7 @@ function autoTraceModal(L){
  m.classList.add('on');
  $('#mc').onclick=function(){m.classList.remove('on');m.innerHTML=''};
  $('#mo').onclick=function(){
-  var op={outline:$('#at_o').checked,walls:$('#at_w').checked,minWall:parseFloat($('#at_ml').value)||3,close:parseFloat($('#at_cl').value)||1.2,smooth:parseFloat($('#at_sm').value),heavy:$('#at_h').checked?0.2:0,fade:$('#at_f').checked,vn:$('#at_v').checked};
+  var op={outline:$('#at_o').checked,walls:$('#at_w').checked,minWall:parseFloat($('#at_ml').value)||3,close:parseFloat($('#at_cl').value)||1.2,smooth:parseFloat($('#at_sm').value),heavy:$('#at_h').checked?0.2:0,mode:$('#at_md').value,ls:$('#at_ls').value,fade:$('#at_f').checked,vn:$('#at_v').checked};
   m.classList.remove('on');m.innerHTML='';toast('Tracing the plan…',4000);
   setTimeout(function(){var r;try{r=traceVenue(L,op)}catch(e){toast('The plan could not be traced: '+e.message,7000);return}
    if(!r){toast('This image cannot be read in this browser.',6000);return}
@@ -177,7 +243,8 @@ function autoTraceModal(L){
    else toast('Traced '+r.outlines.length+' outline'+(r.outlines.length===1?'':'s')+' and '+r.walls.length+' wall'+(r.walls.length===1?'':'s')+'. Check it, then edit like any lines. Undo removes it all.'+(r.stats.tooMany?' (Kept the longest 800 of '+r.stats.tooMany+' wall pieces.)':''),9000)},60)}}
 function applyTrace(L,r,op){
  var n=0;snapH();
- r.outlines.forEach(function(p){var ob={t:'line',style:'wall',pts:p.pts,closed:true,id:newId()};if(op.vn)ob.vn=1;S.objs.push(ob);n++});
- r.walls.forEach(function(s){var ob={t:'line',style:'wall',pts:[s.a,s.b],closed:false,id:newId()};if(op.vn)ob.vn=1;S.objs.push(ob);n++});
+ var ls=op.ls||'wall';
+ r.outlines.forEach(function(p){var ob={t:'line',style:ls,pts:p.pts,closed:true,id:newId()};if(op.vn)ob.vn=1;S.objs.push(ob);n++});
+ r.walls.forEach(function(s){var ob={t:'line',style:ls,pts:s.pts||[s.a,s.b],closed:!!s.closed,id:newId()};if(op.vn)ob.vn=1;S.objs.push(ob);n++});
  if(n&&op.fade)L.op=Math.min(L.op,.3);
  changed(true);renderSelbar();draw();return n}

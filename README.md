@@ -299,3 +299,7 @@ With scale on Auto-fit the sheet now fits the drawn plan together with any clien
 
 ## Safety signs on print
 - Signs (extinguishers, toilets, exits, assembly points) print at least 5 mm wide on the sheet, whatever the scale. Structures and furniture stay true to scale.
+
+## Arena seating, ringside tables, and the venue shell tracer
+- Library (Furniture): Arena chair (single), row of 5, row of 10, and a 6-seat ringside table. A chair item dragged close to another snaps flush beside it, or into the next row at a 0.95 m row pitch. The sheet shows "Seats drawn on plan".
+- Auto-trace the venue: walls can now be drawn as the outlines of the thick walls (curved walls included) instead of straight centre lines only, and brochure-style plans (white building on a coloured page) are traced by the building shape, its open floors and coloured rooms. New line weight "Very thin (venue shell)" is the default for traced shells; it is also in the line styles list.

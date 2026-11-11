@@ -46,6 +46,8 @@ function drawItem(c,o,ic){
  function bx(fill){c.fillStyle=o.fc||fill;c.beginPath();c.rect(-w/2,-h/2,w,h);c.fill();c.stroke()}
  if(s==='table'){var bh=h*.17,g=h*.11,th=h-2*(bh+g);c.fillStyle='#b99d7a';c.fillRect(-w/2,-h/2,w,bh);c.strokeRect(-w/2,-h/2,w,bh);c.fillRect(-w/2,h/2-bh,w,bh);c.strokeRect(-w/2,h/2-bh,w,bh);c.fillStyle='#e0cfb4';c.fillRect(-w/2,-th/2,w,th);c.strokeRect(-w/2,-th/2,w,th)}
  else if(s==='round'){var r=m/2,n=L.seats||10,ring=r*.82,cr=r*.14;c.fillStyle='#b99d7a';for(i=0;i<n;i++){var a=i/n*TAU;c.beginPath();c.arc(Math.cos(a)*ring,Math.sin(a)*ring,cr,0,TAU);c.fill();c.stroke()}c.fillStyle='#e0cfb4';c.beginPath();c.arc(0,0,r*.62,0,TAU);c.fill();c.stroke()}
+ else if(s==='chairs'){var cn=seatN(o),cw=w/cn,cg=cw*.07;c.lineWidth=lw*.45;c.strokeStyle='#1f2c3d';
+  for(i=0;i<cn;i++){var cx0=-w/2+i*cw+cg,sw2=cw-2*cg;c.fillStyle=o.fc||'#7d93b2';c.beginPath();c.rect(cx0,-h/2+h*.2,sw2,h*.76);c.fill();c.stroke();c.fillStyle='#2c3e57';c.beginPath();c.rect(cx0,-h/2+h*.02,sw2,h*.2);c.fill();c.stroke()}}
  else if(s==='cocktail'){var r2=m/2;c.fillStyle='#e0cfb4';c.beginPath();c.arc(0,0,r2,0,TAU);c.fill();c.stroke();c.lineWidth=lw*.6;c.beginPath();c.moveTo(-r2*.5,0);c.lineTo(r2*.5,0);c.moveTo(0,-r2*.5);c.lineTo(0,r2*.5);c.stroke()}
  else if(s==='umbrella'){var r3=m/2;c.fillStyle='rgba(247,226,170,.88)';c.beginPath();c.arc(0,0,r3,0,TAU);c.fill();c.stroke();c.lineWidth=lw*.6;c.beginPath();for(i=0;i<8;i++){var a2=i/8*TAU;c.moveTo(0,0);c.lineTo(Math.cos(a2)*r3,Math.sin(a2)*r3)}c.stroke();c.fillStyle='#fff';c.beginPath();c.arc(0,0,Math.max(r3*.08,px(1.5)),0,TAU);c.fill();c.stroke()}
  else if(s==='truss'){var tw=Math.min(.3,m/2),lp;if(m<=.5){lp=[{x:-w/2+tw/2,y:0},{x:w/2-tw/2,y:0}]}else{var ix=w/2-tw/2,iy=h/2-tw/2;lp=[{x:-ix,y:-iy},{x:ix,y:-iy},{x:ix,y:iy},{x:-ix,y:iy},{x:-ix,y:-iy}]}trussDraw(c,lp,tw,o.fc?o.fc:INK,o.legs!==false)}
@@ -173,6 +175,7 @@ function drawLineObj0(c,o,ic){
  else if(st==='shade'){c.strokeStyle=hexA(o.col||sdef,.32);c.lineWidth=px(9*wt)}
  else if(st==='plain'){c.strokeStyle=o.col||'#000';c.lineWidth=px(1.6*wt)}
  else if(st==='thin'){c.strokeStyle=o.col||'#000';c.lineWidth=px(.6*wt)}
+ else if(st==='vthin'){c.strokeStyle=o.col||'#1b2733';c.lineWidth=px(.38*wt);c.lineJoin='miter'}
  else if(st==='brick'){c.strokeStyle=o.col||INK;c.lineWidth=px(5.2*wt);c.lineJoin='miter';c.lineCap='square'}
  else if(st==='shell'){c.strokeStyle=o.col||INK;c.lineWidth=px(3.4*wt);c.lineJoin='miter';c.lineCap='butt'}
  else if(st==='evac'){c.strokeStyle=o.col||EVC;c.lineWidth=px(3*wt);c.lineCap='round';if(o.alt)c.setLineDash([px(9),px(6)])}

@@ -4,6 +4,10 @@ var LIB=[
  {k:'round10',n:'Round table (10 seat)',w:2.7,h:2.7,c:'Furniture',s:'round',seats:10,lab:''},
  {k:'round8',n:'Round table (8 seat)',w:2.4,h:2.4,c:'Furniture',s:'round',seats:8,lab:''},
  {k:'cocktail',n:'Cocktail table',w:0.8,h:0.8,c:'Furniture',s:'cocktail',lab:''},
+ {k:'chair1',n:'Arena chair (single)',w:0.5,h:0.5,c:'Furniture',s:'chairs',seats:1,lab:''},
+ {k:'chair5',n:'Arena chairs, row of 5',w:2.5,h:0.5,c:'Furniture',s:'chairs',seats:5,lab:''},
+ {k:'chair10',n:'Arena chairs, row of 10',w:5,h:0.5,c:'Furniture',s:'chairs',seats:10,lab:''},
+ {k:'round6',n:'Ringside table (6 seat)',w:2,h:2,c:'Furniture',s:'round',seats:6,lab:''},
  {k:'umbrella',n:'Umbrella (3 m)',w:3,h:3,c:'Furniture',s:'umbrella',lab:''},
  {k:'vip_a',n:'VIP rope enclosure 4 × 4 (velvet)',w:4,h:4,c:'Exhibition',s:'ropebox',rp:'velvet',lab:'VIP'},
  {k:'vip_b',n:'VIP rope enclosure 8 × 5 (velvet)',w:8,h:5,c:'Exhibition',s:'ropebox',rp:'velvet',lab:'VIP'},
@@ -91,7 +95,7 @@ var DOORS=[
  {k:'gate',n:'Vehicle / service gate',col:'#7a4b2a',w:5,lab:'GATE'}
 ];
 var DOORM={}; DOORS.forEach(function(d){DOORM[d.k]=d});
-var LINES=[{k:'fence',n:'Perimeter fence'},{k:'barrier',n:'Crowd barrier'},{k:'wall',n:'Wall / solid structure'},{k:'tape',n:'Tape / rope line'},{k:'shade',n:'Shade cloth fencing (green)'},{k:'shadeb',n:'Shade cloth fencing (black)'},{k:'drape',n:'Black draping'},{k:'truss',n:'Truss (draw any run or frame)'},{k:'stanchion',n:'Stanchion & rope (chrome posts, red rope)'},{k:'velvet',n:'VIP velvet rope (gold posts, red rope)'},{k:'belt',n:'Retractable belt barrier (black posts)'},{k:'ropepole',n:'Rope & timber poles (outdoor / VIP)'},{k:'plain',n:'Plain black line'},{k:'thin',n:'Thin line (hairline)'},{k:'brick',n:'Brick wall (hatched)'},{k:'shell',n:'Shell scheme wall'},{k:'evac',n:'Evacuation route'}];
+var LINES=[{k:'fence',n:'Perimeter fence'},{k:'barrier',n:'Crowd barrier'},{k:'wall',n:'Wall / solid structure'},{k:'tape',n:'Tape / rope line'},{k:'shade',n:'Shade cloth fencing (green)'},{k:'shadeb',n:'Shade cloth fencing (black)'},{k:'drape',n:'Black draping'},{k:'truss',n:'Truss (draw any run or frame)'},{k:'stanchion',n:'Stanchion & rope (chrome posts, red rope)'},{k:'velvet',n:'VIP velvet rope (gold posts, red rope)'},{k:'belt',n:'Retractable belt barrier (black posts)'},{k:'ropepole',n:'Rope & timber poles (outdoor / VIP)'},{k:'plain',n:'Plain black line'},{k:'thin',n:'Thin line (hairline)'},{k:'vthin',n:'Venue shell (very thin line)'},{k:'brick',n:'Brick wall (hatched)'},{k:'shell',n:'Shell scheme wall'},{k:'evac',n:'Evacuation route'}];
 var LINEM={}; LINES.forEach(function(l){LINEM[l.k]=l});
 var ZCOL=[{c:'#5b6770',n:'Tent / structure'},{c:'#1c6bb0',n:'Hospitality'},{c:'#b7791f',n:'VIP'},{c:'#c62828',n:'Restricted'},{c:'#12804a',n:'General admission'},{c:'#7c3aed',n:'Backstage'}];
 var PAPER={A5:{w:210,h:148},A4:{w:297,h:210},A3:{w:420,h:297},A2:{w:594,h:420},A1:{w:841,h:594},A0:{w:1189,h:841}};

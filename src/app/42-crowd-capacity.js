@@ -46,7 +46,7 @@ function blocksFloor(q){
 function crowdUnit(o){
  var ly=(S.meta.layouts||[]).filter(function(l){return l.src===o.id})[0],reg=fpPoly(o),rb=pBox(reg),
   items=S.objs.filter(function(q){if(q.id===o.id||!blocksFloor(q)||(q.lay&&(!ly||q.lay!==ly.id)))return false;var c=pBox(corners(q));return !(c.x1<rb.x0||c.x0>rb.x1||c.y1<rb.y0||c.y0>rb.y1)});
- var gross=unitGross(o),seats=0,fp=Math.min(gross,coveredArea(reg,items.map(corners)));items.forEach(function(q){var l=LIBM[q.k];if(l&&l.seats)seats+=l.seats});
+ var gross=unitGross(o),seats=0,fp=Math.min(gross,coveredArea(reg,items.map(corners)));items.forEach(function(q){var l=LIBM[q.k];if(l&&l.seats)seats+=(l.s==='chairs'?seatN(q):l.seats)});
  var net=Math.max(0,gross-fp),use=o.use||'sgen',d=o.dens>0?+o.dens:dOf(use),cap,how;
  if(o.pax>0){cap=Math.round(o.pax);how='fixed'}
  else if(use==='seat'&&seats>0){cap=seats;how='seats'}
@@ -98,6 +98,8 @@ function sasrea(C){
   R.push({reg:'Reg 13(1)(g)',what:'First-aid room: 1 per 10,000, at least one above 1,000',need:fr+'',have:fa+' first aid post'+(fa===1?'':'s')+' placed',ok:fa>=fr})}
  return R}
 function cfmt(n){return Math.round(n).toLocaleString('en-ZA')}
+/* every seat drawn on the visible plan: arena chairs, table seats, benches */
+function seatsDrawn(){var n=0;S.objs.forEach(function(o){if(o.t!=='rect'||!vo(o))return;var l=LIBM[o.k];if(l&&l.seats&&l.s!=='urinal')n+=(l.s==='chairs'?seatN(o):l.seats)});return n}
 function crowdLines(){
  var m=S.meta,L=[],RED='#c62828';
  if(m.only){var ly=layoutOf(m.only),host=ly&&S.objs.filter(function(o){return o.id===ly.src})[0];if(!host||!isUnit(host))return L;
@@ -106,6 +108,7 @@ function crowdLines(){
   if(u.nex)L.push(['Exit width',(Math.round(u.ew*10)/10)+' m ('+u.nex+')']);return L}
  var C=crowdAll();if(!C.units.length&&!C.open&&!C.att)return L;
  if(C.att>0)L.push([(+m.staff>0?'Attendance + staff':'Expected attendance'),cfmt(C.att)]);
+ var ts=seatsDrawn();if(ts>0)L.push(['Seats drawn on plan',cfmt(ts)]);
  L.push(['Planned capacity',cfmt(C.total)+(C.att>0?(C.over?'  OVER':'  OK'):''),C.over?RED:null]);
  C.units.slice(0,6).forEach(function(u){L.push(['   '+u.name,cfmt(u.cap)])});
  if(C.units.length>6)L.push(['   + '+(C.units.length-6)+' more structures','']);

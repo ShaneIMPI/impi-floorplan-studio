@@ -7,6 +7,20 @@ function makeAt(arm,p){
  if(kind==='sign'){return {t:'sign',k:k,x:p.x,y:p.y,s:1.2,rot:0}}
  if(kind==='door'){var D=DOORM[k];return {t:'door',k:k,x:p.x,y:p.y,w:D.w,rot:0,label:D.lab}}
 }
+/* arena chairs: how many seats an item holds, and snapping one item flush against its neighbours */
+var SEATW=.5,ROWPITCH=.95;
+function seatN(o){return Math.max(1,Math.round(o.w/SEATW))}
+function seatSnap(o){
+ var L=LIBM[o.k];if(!L||L.s!=='chairs')return false;
+ var best=null,bd=.45,r=o.rot*D2R,cs=Math.cos(r),sn=Math.sin(r);
+ S.objs.forEach(function(q){if(q===o||q.t!=='rect'||!vo(q))return;var l=LIBM[q.k];if(!l||l.s!=='chairs')return;
+  var dr=((q.rot-o.rot)%180+180)%180;if(dr>1&&dr<179)return;
+  var dx=o.x-q.x,dy=o.y-q.y,lx=dx*cs+dy*sn,ly=-dx*sn+dy*cs,sx=(o.w+q.w)/2,T=[];
+  [-1,1].forEach(function(k){T.push([k*sx,0])});                                         /* side by side, same row */
+  [-1,1].forEach(function(k){var a=(q.w-o.w)/2;T.push([-a,k*ROWPITCH],[a,k*ROWPITCH],[0,k*ROWPITCH]);  /* next row, lined up left, right or centre */
+   T.push([-sx,k*ROWPITCH],[sx,k*ROWPITCH])});
+  T.forEach(function(t){var d=Math.hypot(lx-t[0],ly-t[1]);if(d<bd){bd=d;best={x:q.x+t[0]*cs-t[1]*sn,y:q.y+t[0]*sn+t[1]*cs}}})});
+ if(best){o.x=best.x;o.y=best.y;S.snapPt=null;return true}return false}
 function shiftObj(o,dx,dy){if(o.t==='dim'){o.a.x+=dx;o.a.y+=dy;o.b.x+=dx;o.b.y+=dy}else if(o.pts){o.pts.forEach(function(p){p.x+=dx;p.y+=dy})}else{o.x+=dx;o.y+=dy}}
 function applyMove(o,or,dx,dy){if(o.t==='dim'){o.a={x:or.a.x+dx,y:or.a.y+dy};o.b={x:or.b.x+dx,y:or.b.y+dy}}else if(o.pts){o.pts=or.pts.map(function(q){return {x:q.x+dx,y:q.y+dy}})}else{o.x=or.x+dx;o.y=or.y+dy}}
 function cloneObj(o,dx,dy){var n=JSON.parse(JSON.stringify(o));n.id=newId();shiftObj(n,dx,dy);return n}

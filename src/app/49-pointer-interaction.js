@@ -82,7 +82,7 @@ function onDown(e,p){
  }
  if(t==='marq'){drag={k:'marq',a:w};S.tmp={t:'marq',a:w,b:w};return}
  if(t==='place'){
-  var sp=placePos(w,S.arm);var ob=makeAt(S.arm,sp);snapH();ob.id=newId();if(S.meta.only)ob.lay=S.meta.only;else if(S.venueMode)ob.vn=1;S.objs.push(ob);setSel([ob.id]);drag={k:'move',o:ob,orig:JSON.parse(JSON.stringify(ob)),w0:w,moved:false,fresh:true};draw();return;
+  var sp=placePos(w,S.arm);var ob=makeAt(S.arm,sp);snapH();ob.id=newId();if(S.meta.only)ob.lay=S.meta.only;else if(S.venueMode)ob.vn=1;S.objs.push(ob);seatSnap(ob);setSel([ob.id]);drag={k:'move',o:ob,orig:JSON.parse(JSON.stringify(ob)),w0:w,moved:false,fresh:true};draw();return;
  }
  if(t==='area'||t==='dim'){var q=snapW(w);drag={k:'draw',t:t,a:q};S.tmp={t:t,a:q,b:q};draw();return}
  if(t==='line'||t==='poly'){drag={k:'linetap',sx:p.x,sy:p.y};return}
@@ -101,6 +101,7 @@ function onMove(e,p){
   if(Math.abs(dx2)+Math.abs(dy2)>0||d.fresh)d.moved=true;
   if(d.fresh&&S.tool==='place'){var sp=placePos(w,S.arm);d.o.x=sp.x;d.o.y=sp.y}
   else (d.grp||[{o:d.o,orig:d.orig}]).forEach(function(q){applyMove(q.o,q.orig,dx2,dy2)});
+  if(!d.grp||d.grp.length<2)seatSnap(d.o);
   draw();return;
  }
  if(d.k==='handle'){
