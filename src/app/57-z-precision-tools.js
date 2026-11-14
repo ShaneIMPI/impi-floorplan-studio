@@ -64,6 +64,16 @@ function underlaySnap(p){
   if(dist<bs){bs=dist;best={x:pt.x,y:pt.y,j:isJ}}});
  return best}
 
+/* ----- curve: simplify a dense freehand-dragged trace down to a light, smooth run of points ----- */
+function rdpPts(P,eps){
+ if(P.length<3)return P.slice();
+ function rec(a,b){
+  if(b-a<2)return [];
+  var A=P[a],B=P[b],dx=B.x-A.x,dy=B.y-A.y,L=Math.hypot(dx,dy),mx=-1,mi=-1,i;
+  for(i=a+1;i<b;i++){var Q=P[i],d=L<1e-9?Math.hypot(Q.x-A.x,Q.y-A.y):Math.abs(dy*(Q.x-A.x)-dx*(Q.y-A.y))/L;if(d>mx){mx=d;mi=i}}
+  if(mx<=eps)return [];
+  return rec(a,mi).concat([P[mi]]).concat(rec(mi,b))}
+ return [P[0]].concat(rec(0,P.length-1)).concat([P[P.length-1]])}
 /* ----- ortho: lock the segment being drawn to the plan's own axes ----- */
 function planAxis(){var a=0;S.layers.some(function(L){if(L.vis&&L.kind==='plan'){a=L.rot||0;return true}});return a*D2R}
 function orthoFix(q){
@@ -97,13 +107,15 @@ function syncPrec(){
  $$('#tools [data-act=perim]').forEach(function(x){x.classList.toggle('on',!!S.perim&&S.tool==='line')});
  $$('#tools [data-act=gap]').forEach(function(x){x.classList.toggle('on',!!S.gapNext)});
  $$('#tools [data-act=ortho]').forEach(function(x){x.classList.toggle('on',!!S.ortho)});
+ $$('#tools [data-act=curve]').forEach(function(x){x.classList.toggle('on',!!S.curve)});
  $$('#tools [data-act=venue]').forEach(function(x){x.classList.toggle('on',!!S.venueMode)})}
 function togglePencil(){
  if(S.pencil&&S.perim&&S.tool==='line'){S.pencil=false;syncPrec();toast('Pencil off');return}
  if(S.pencil&&(S.tool==='line'||S.tool==='poly')){S.pencil=false;setTool('select');syncPrec();toast('Pencil off');return}
  S.traceSnap=true;syncTrace();var pm=S.perim;setTool('line');S.perim=pm;S.pencil=true;S.lineStyle=S.lineStyle&&S.lineStyle!=='evac'?S.lineStyle:'wall';$('#lineSel').value=S.lineStyle;syncPrec();draw();
- toast('Pencil: tap along the plan lines, they snap exactly. A magnifier shows the point. Use Shape for buildings, Ortho for straight walls, Venue to mark it permanent.',7000)}
-function toggleOrtho(){S.ortho=!S.ortho;syncPrec();toast(S.ortho?'Ortho on: lines run along the plan\'s own horizontal and vertical':'Ortho off',3500)}
+ toast('Pencil: tap along the plan lines, they snap exactly. A magnifier shows the point. Set the weight box for thinner or bolder lines, turn on Curve to drag along a curved wall, use Shape for buildings, Ortho for straight walls, Venue to mark it permanent.',8000)}
+function toggleOrtho(){S.ortho=!S.ortho;if(S.ortho&&S.curve){S.curve=false}syncPrec();toast(S.ortho?'Ortho on: lines run along the plan\'s own horizontal and vertical':'Ortho off',3500)}
+function toggleCurve(){S.curve=!S.curve;if(S.curve&&S.ortho){S.ortho=false}syncPrec();toast(S.curve?'Curve on: in Line or Shape, press and drag along a curved wall — it is traced smoothly, snapped to the plan if Pencil is on too. Release to continue with taps or another drag.':'Curve off',S.curve?8000:3000)}
 
 /* ----- venue (permanent) objects ----- */
 function venueCount(){return S.objs.filter(function(o){return o.vn}).length}

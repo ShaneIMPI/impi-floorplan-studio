@@ -254,7 +254,7 @@ function loadBrand(){BRAND_CFG={name:BRAND_NAME,logos:[BRAND_LOGO],lines:BRAND_F
 function loadImgCached(src){if(!src)return Promise.resolve(null);if(IMGC[src]!==undefined)return Promise.resolve(IMGC[src]);return new Promise(function(res){var im=new Image();im.onload=function(){IMGC[src]=im;res(im)};im.onerror=function(){IMGC[src]=null;res(null)};im.src=src})}
 
 /* ---------- state ---------- */
-var S={view:{x:0,y:0,z:10},layers:[],objs:[],sel:null,tool:'select',arm:null,grid:1,issues:[],tmp:null,tab:'lib',nid:1,nl:1,custom:[],calib:null,mv:null,hover:null,snapPt:null,
+var S={view:{x:0,y:0,z:10},layers:[],objs:[],sel:null,tool:'select',arm:null,grid:1,issues:[],tmp:null,tab:'lib',nid:1,nl:1,custom:[],calib:null,mv:null,hover:null,snapPt:null,lineWt:1,curve:false,
  meta:{title:'SITE & FLOOR PLAN',event:'[EVENT NAME]',venue:'[VENUE]',client:'[CLIENT]',date:today(),rev:'A',drawn:'[DRAWN BY]',ref:'FP-'+today().replace(/-/g,'')+'-001',company:'IMPI RMS',paper:'A3',scale:'auto',extent:'content',north:0,minAisle:2,bg:true,logo:null,eventLogo:null,showFront:true,watermark:false,only:null,evac:false,gridMinor:1,gridShow:true,evAll:true,evEntr:true,layouts:[],mode:'outdoor',gridMod:0,gridPrint:true,gridLabels:true,gx:0,gy:0}};
 var hist=[],redoS=[];
 var R={z:1,u:1};
@@ -1573,8 +1573,8 @@ function drawTmp(c){
  if(t.t==='area'){var o={t:'area',x:(t.a.x+t.b.x)/2,y:(t.a.y+t.b.y)/2,w:Math.abs(t.b.x-t.a.x),h:Math.abs(t.b.y-t.a.y),rot:0,col:'#e8590c',label:''};if(o.w>0&&o.h>0)drawArea(c,o)}
  else if(t.t==='dim'){dimLine(c,t.a,t.b,0,null,'#e8590c')}
  else if(t.t==='marq'){c.save();c.strokeStyle='#e8590c';c.fillStyle='rgba(232,89,12,.08)';c.lineWidth=px(1.4);c.setLineDash([px(6),px(4)]);c.fillRect(t.a.x,t.a.y,t.b.x-t.a.x,t.b.y-t.a.y);c.strokeRect(t.a.x,t.a.y,t.b.x-t.a.x,t.b.y-t.a.y);c.restore()}
- else if(t.t==='line'&&t.pts.length){var P=t.pts.slice();if(t.cur)P.push(t.cur);if(P.length>2&&t.poly)drawPoly(c,{pts:P,col:'#e8590c',nodim:true});else if(P.length>1)drawLineObj(c,{pts:P,style:t.style||'fence',gaps:tmpGaps(t,P),segl:S.perim?1:0});c.save();c.fillStyle='#e8590c';t.pts.forEach(function(p){c.beginPath();c.arc(p.x,p.y,px(4),0,TAU);c.fill()});
-  if(t.cur){var L=0,Q=t.pts.concat([t.cur]);for(var i=0;i<Q.length-1;i++)L+=Math.hypot(Q[i+1].x-Q[i].x,Q[i+1].y-Q[i].y);var l=Q[Q.length-1];txt(c,fm(L),l.x,l.y-px(14),12,{col:'#e8590c',bold:true})}c.restore()}
+ else if(t.t==='line'&&(t.pts.length||(t.live&&t.live.length))){var P=t.pts.slice();if(t.live&&t.live.length)P=P.concat(t.live);else if(t.cur)P.push(t.cur);if(P.length>2&&t.poly)drawPoly(c,{pts:P,col:'#e8590c',nodim:true});else if(P.length>1)drawLineObj(c,{pts:P,style:t.style||'fence',wt:t.wt,gaps:tmpGaps(t,P),segl:S.perim?1:0});c.save();c.fillStyle='#e8590c';t.pts.forEach(function(p){c.beginPath();c.arc(p.x,p.y,px(4),0,TAU);c.fill()});
+  if(t.cur&&!(t.live&&t.live.length)){var L=0,Q=t.pts.concat([t.cur]);for(var i=0;i<Q.length-1;i++)L+=Math.hypot(Q[i+1].x-Q[i].x,Q[i+1].y-Q[i].y);var l=Q[Q.length-1];txt(c,fm(L),l.x,l.y-px(14),12,{col:'#e8590c',bold:true})}c.restore()}
 }
 var RS={nw:[-1,-1],n:[0,-1],ne:[1,-1],e:[1,0],se:[1,1],s:[0,1],sw:[-1,1],w:[-1,0]};
 function handlesFor(o){
@@ -1855,6 +1855,7 @@ function setTool(t,arm){
  $$('#tools .tool').forEach(function(b){b.classList.toggle('on',b.dataset.tool===t||(t==='place'&&b.dataset.tool==='select'&&false))});
  cv.style.cursor=t==='pan'||t==='layermove'?'grab':t==='select'?'default':'crosshair';
  $('#lineSel').classList.toggle('on',t==='line');if(t==='line')$('#lineSel').value=S.lineStyle||'fence';
+ $('#wtIn').classList.toggle('on',t==='line'||t==='poly');if(t==='line'||t==='poly')$('#wtIn').value=S.lineWt||1;
  $('#doneBtn').textContent=t==='layermove'?'Done aligning':(t==='poly'?'Finish shape':'Finish line');$('#doneBtn').classList.toggle('on',((t==='line'||t==='poly')&&!!S.tmp&&S.tmp.pts.length>1)||t==='layermove');
  toolHint();syncPrec();if(S.tab==='lib')renderPanel();draw();
 }
@@ -1864,7 +1865,7 @@ function finishLine(){
  var pts=t.pts.map(function(p){return {x:p.x,y:p.y}});
  if(t.poly){if(pts.length<3){toast('A shape needs at least 3 corners');cancelLine();draw();return}
   var n=S.objs.filter(function(o){return o.t==='area'||o.t==='poly'}).length+1;S.tmp=null;var sn=S.siteNext;S.siteNext=false;addObj(sn?{t:'poly',pts:pts,col:'#12804a',fo:.05,site:1,label:'Event site'}:{t:'poly',pts:pts,col:ZCOL[0].c,label:'Zone '+n});$('#doneBtn').classList.remove('on');setTool('select');return}
- var o={t:'line',style:t.style,pts:pts,closed:!!t.closeIt};if(t.gaps&&t.gaps.length)o.gaps=t.gaps.slice();if(S.perim){o.perim=1;o.segl=1}S.perim=false;S.gapNext=false;if(t.style==='evac'){o.ev=1;o.man=1;o.keep=1;if(S.meta.only)o.lay=S.meta.only}S.tmp=null;addObj(o);$('#doneBtn').classList.remove('on');setTool('select');
+ var o={t:'line',style:t.style,pts:pts,closed:!!t.closeIt};if(t.wt&&Math.abs(t.wt-1)>.001)o.wt=t.wt;if(t.gaps&&t.gaps.length)o.gaps=t.gaps.slice();if(S.perim){o.perim=1;o.segl=1}S.perim=false;S.gapNext=false;if(t.style==='evac'){o.ev=1;o.man=1;o.keep=1;if(S.meta.only)o.lay=S.meta.only}S.tmp=null;addObj(o);$('#doneBtn').classList.remove('on');setTool('select');
 }
 cv.addEventListener('pointerdown',function(e){
  cv.setPointerCapture(e.pointerId);var p=rectOf(e);ptrs[e.pointerId]=p;var ids=Object.keys(ptrs);
@@ -1925,7 +1926,7 @@ function onDown(e,p){
   var sp=placePos(w,S.arm);var ob=makeAt(S.arm,sp);snapH();ob.id=newId();if(S.meta.only)ob.lay=S.meta.only;else if(S.venueMode)ob.vn=1;S.objs.push(ob);seatSnap(ob);setSel([ob.id]);drag={k:'move',o:ob,orig:JSON.parse(JSON.stringify(ob)),w0:w,moved:false,fresh:true};draw();return;
  }
  if(t==='area'||t==='dim'){var q=snapW(w);drag={k:'draw',t:t,a:q};S.tmp={t:t,a:q,b:q};draw();return}
- if(t==='line'||t==='poly'){drag={k:'linetap',sx:p.x,sy:p.y};return}
+ if(t==='line'||t==='poly'){drag={k:'linetap',sx:p.x,sy:p.y,sw:w};return}
  if(t==='text'){drag={k:'texttap',sx:p.x,sy:p.y,w:snapW(w,null,true)};return}
  if(t==='facept'){drag={k:'facepttap',sx:p.x,sy:p.y};return}
  if(t==='calib'){drag={k:'calibtap',sx:p.x,sy:p.y};return}
@@ -1966,6 +1967,22 @@ function onMove(e,p){
  if(d.k==='marq'){S.tmp.b=w;draw();return}
  if(d.k==='draw'){var q2=snapW(w);S.tmp.b=q2;draw();return}
  if(d.k==='layer'){d.L.x=d.x0+(w.x-d.w0.x);d.L.y=d.y0+(w.y-d.w0.y);draw();return}
+ if(d.k==='linetap'&&S.curve&&(S.tool==='line'||S.tool==='poly')&&Math.hypot(p.x-d.sx,p.y-d.sy)>6){
+  d.k='curvetrace';d.raw=[d.sw];d.lastP={x:d.sx,y:d.sy};drag=d;
+ }
+ if(d.k==='curvetrace'){
+  var mdist=Math.hypot(p.x-d.lastP.x,p.y-d.lastP.y);
+  if(mdist>=2){
+   d.lastP=p;
+   var sp=w;
+   if(S.pencil&&TRACE_TOOLS[S.tool]){var u=underlaySnap(w);if(u)sp={x:u.x,y:u.y}}
+   var raw=d.raw,last=raw[raw.length-1];
+   if(!last||Math.hypot(sp.x-last.x,sp.y-last.y)>1e-4){raw.push(sp);if(raw.length>4000)raw.shift()}
+   if(!S.tmp)S.tmp={t:'line',pts:[],style:S.lineStyle||'fence',cur:null,poly:S.tool==='poly',wt:S.lineWt||1};
+   S.tmp.live=raw;draw();
+  }
+  return;
+ }
  if((d.k==='linetap'&&S.pencil||d.k==='calibtap')&&e.pointerType==='touch'){S.hover=w;S.hp=p;S.hpt=true;var sq=snapW(w);if(d.k==='linetap'&&S.tmp&&S.tmp.pts&&S.tmp.pts.length)S.tmp.cur=orthoFix(sq);draw();return}
  if(d.k==='linetap'||d.k==='texttap'||d.k==='calibtap'||d.k==='gotap'||d.k==='dogtap'||d.k==='facepttap'){if(Math.hypot(p.x-d.sx,p.y-d.sy)>8){drag={k:'pan',sx:d.sx,sy:d.sy,vx:S.view.x-(p.x-d.sx)+(p.x-d.sx),vy:S.view.y,moved:true};drag.sx=p.x;drag.sy=p.y;drag.vx=S.view.x;drag.vy=S.view.y}}
 }
@@ -1990,9 +2007,20 @@ function onUp(e){
    else{var ids=[];S.objs.forEach(function(o){if(!vo(o)||o.lk)return;var b=boundsOf(o),inside=b.x0>=x0&&b.x1<=x1&&b.y0>=y0&&b.y1<=y1,touch=b.x1>=x0&&b.x0<=x1&&b.y1>=y0&&b.y0<=y1;if(cross?touch:inside)ids.push(o.id)});setSel(ids);if(ids.length)toast(ids.length+' selected')}}
   if(S.tool==='marq')setTool('select');renderSelbar();renderPanel();draw();return}
  if(d.k==='layer'){draw();return}
+ if(d.k==='curvetrace'){
+  var raw2=d.raw||[];
+  if(raw2.length>1){
+   var eps=Math.max(.02,3/S.view.z),simp=rdpPts(raw2,eps);
+   if(!S.tmp)S.tmp={t:'line',pts:[],style:S.lineStyle||'fence',cur:null,poly:S.tool==='poly',wt:S.lineWt||1};
+   var n0=S.tmp.pts.length,startAt=(n0&&simp.length&&Math.hypot(S.tmp.pts[n0-1].x-simp[0].x,S.tmp.pts[n0-1].y-simp[0].y)<1e-6)?1:0,ci;
+   for(ci=startAt;ci<simp.length;ci++)S.tmp.pts.push({x:simp[ci].x,y:simp[ci].y});
+   delete S.tmp.live;S.snapPt=null;$('#doneBtn').classList.toggle('on',S.tmp.pts.length>1);
+  }
+  draw();return;
+ }
  var p=rectOf(e);
  if(d.k==='linetap'){
-  var q=orthoFix(snapW(s2w(p)));if(!S.tmp)S.tmp={t:'line',pts:[],style:S.lineStyle||'fence',cur:null,poly:S.tool==='poly'};
+  var q=orthoFix(snapW(s2w(p)));if(!S.tmp)S.tmp={t:'line',pts:[],style:S.lineStyle||'fence',cur:null,poly:S.tool==='poly',wt:S.lineWt||1};
   if(S.tmp.poly&&S.tmp.pts.length>=3&&Math.hypot(S.tmp.pts[0].x-q.x,S.tmp.pts[0].y-q.y)<12/S.view.z){finishLine();return}
   var last=S.tmp.pts[S.tmp.pts.length-1];
   if(S.perim&&S.tool==='line'&&S.tmp.pts.length>=3&&Math.hypot(S.tmp.pts[0].x-q.x,S.tmp.pts[0].y-q.y)<12/S.view.z){
@@ -2075,20 +2103,21 @@ function resize(){var W=cv.clientWidth,H=cv.clientHeight;cv.width=Math.round(W*D
 new ResizeObserver(resize).observe($('#stage'));
 
 /* ---------- tools bar ---------- */
-var IC={select:'M5 3l12 7-5 1.5L10 17z',pan:'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',dim:'M3 17L17 3l4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2',area:'M4 6h16v12H4zM4 9h2M4 15h2M18 9h2M18 15h2',line:'M3 18l6-8 5 5 7-9',trace:'M12 3v5M12 16v5M3 12h5M16 12h5M10 12a2 2 0 104 0a2 2 0 10-4 0',evac:'M3 12h12M10 6l6 6-6 6M3 4v16M20 8v8',text:'M5 6h14M12 6v13M9 19h6',fit:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',undo:'M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-4',redo:'M15 14l5-5-5-5M20 9H10a6 6 0 000 12h4',marq:'M4 4h4M12 4h4M20 4v4M20 12v4M20 20h-4M12 20H8M4 20v-4M4 12V8',poly:'M5 18l2-11 8-3 5 9-4 6z',lib:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z'};
+var IC={select:'M5 3l12 7-5 1.5L10 17z',pan:'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',dim:'M3 17L17 3l4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2',area:'M4 6h16v12H4zM4 9h2M4 15h2M18 9h2M18 15h2',line:'M3 18l6-8 5 5 7-9',trace:'M12 3v5M12 16v5M3 12h5M16 12h5M10 12a2 2 0 104 0a2 2 0 10-4 0',evac:'M3 12h12M10 6l6 6-6 6M3 4v16M20 8v8',text:'M5 6h14M12 6v13M9 19h6',fit:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',undo:'M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-4',redo:'M15 14l5-5-5-5M20 9H10a6 6 0 000 12h4',marq:'M4 4h4M12 4h4M20 4v4M20 12v4M20 20h-4M12 20H8M4 20v-4M4 12V8',poly:'M5 18l2-11 8-3 5 9-4 6z',lib:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',curve:'M3 17c2-9 5-11 7-7s3 9 7 9 4-5 4-8'};
 function svg(n){return '<svg viewBox="0 0 24 24"><path d="'+IC[n]+'"/></svg>'}
 function buildTools(){
  var T=[['select','Select'],['marq','Box select'],['pan','Pan'],['dim','Measure'],['area','Zone'],['poly','Shape'],['line','Line / fence'],['text','Note']],h='';
  T.forEach(function(t){h+='<button class="tool" data-tool="'+t[0]+'" aria-label="'+t[1]+'">'+svg(t[0])+t[1]+'</button>'});
- h+='<div class="sep"></div><button class="tool" data-act="perim" aria-label="Perimeter: click along an existing fence" title="Click along an existing fence line, leave gaps where there is no fence">'+svg('perim')+'Perimeter</button><button class="tool" data-act="gap" aria-label="Gap in the fence" title="Press, then tap where the fence starts again, to leave a measured gap">'+svg('gap')+'Gap</button><button class="tool" data-act="pencil" aria-label="Pencil: exact tracing" title="Exact tracing over an imported plan, with a magnifier">'+svg('pencil')+'Pencil</button><button class="tool" data-act="ortho" aria-label="Ortho" title="Keep lines straight along the plan">'+svg('ortho')+'Ortho</button><button class="tool" data-act="venue" aria-label="Venue layer" title="Permanent venue features">'+svg('venue')+'Venue</button><div class="sep"></div><button class="tool" data-act="lib" aria-label="Library">'+svg('lib')+'Library</button><button class="tool" data-act="glock" aria-label="Grid lock" title="Grid lock: everything snaps to the snap grid by its edges, nothing else pulls it off. Turn off to snap to other objects and plan lines instead">'+svg('trace')+'Grid lock</button><button class="tool" data-act="trace" aria-label="Snap to plan lines" title="When tracing over an imported plan, snap to its lines and corners">'+svg('trace')+'Snap lines</button><button class="tool" data-act="evac" aria-label="Evacuation plan">'+svg('evac')+'Evacuation</button><div class="sep"></div>';
+ h+='<div class="sep"></div><button class="tool" data-act="perim" aria-label="Perimeter: click along an existing fence" title="Click along an existing fence line, leave gaps where there is no fence">'+svg('perim')+'Perimeter</button><button class="tool" data-act="gap" aria-label="Gap in the fence" title="Press, then tap where the fence starts again, to leave a measured gap">'+svg('gap')+'Gap</button><button class="tool" data-act="pencil" aria-label="Pencil: exact tracing" title="Exact tracing over an imported plan, with a magnifier">'+svg('pencil')+'Pencil</button><button class="tool" data-act="ortho" aria-label="Ortho" title="Keep lines straight along the plan">'+svg('ortho')+'Ortho</button><button class="tool" data-act="curve" aria-label="Curve" title="Press and drag along a curved wall to trace it smoothly, instead of tapping point by point">'+svg('curve')+'Curve</button><button class="tool" data-act="venue" aria-label="Venue layer" title="Permanent venue features">'+svg('venue')+'Venue</button><div class="sep"></div><button class="tool" data-act="lib" aria-label="Library">'+svg('lib')+'Library</button><button class="tool" data-act="glock" aria-label="Grid lock" title="Grid lock: everything snaps to the snap grid by its edges, nothing else pulls it off. Turn off to snap to other objects and plan lines instead">'+svg('trace')+'Grid lock</button><button class="tool" data-act="trace" aria-label="Snap to plan lines" title="When tracing over an imported plan, snap to its lines and corners">'+svg('trace')+'Snap lines</button><button class="tool" data-act="evac" aria-label="Evacuation plan">'+svg('evac')+'Evacuation</button><div class="sep"></div>';
  h+='<select id="snapSel" aria-label="Snap grid"><option value="0.01">Snap 1 cm</option><option value="0.05">Snap 5 cm</option><option value="0.1">Snap 0.1 m</option><option value="0.25">Snap 0.25 m</option><option value="0.5">Snap 0.5 m</option><option value="1" selected>Snap 1 m</option><option value="1.5">Snap 1.5 m</option><option value="2">Snap 2 m</option><option value="3">Snap 3 m</option><option value="5">Snap 5 m</option><option value="0">Snap off</option><option value="custom">Custom…</option></select>';
   h+='<select id="viewSel" aria-label="View"></select>';
  h+='<select id="lineSel" aria-label="Line style">'+LINES.filter(function(l){return l.k!=='evac'}).map(function(l){return '<option value="'+l.k+'">'+l.n+'</option>'}).join('')+'</select>';
+ h+='<input id="wtIn" type="number" min="0.1" step="0.1" value="1" aria-label="Line weight" title="Line weight for the next line drawn — lower is thinner (try 0.3–0.5 for a venue shell), higher is bolder" style="width:58px">';
  h+='<div class="sep"></div><button class="tool" data-act="undo\" aria-label="Undo">'+svg('undo')+'Undo</button><button class="tool" data-act="redo" aria-label="Redo">'+svg('redo')+'Redo</button><button class="tool" data-act="fit" aria-label="Fit view">'+svg('fit')+'Fit</button>';
  $('#tools').innerHTML=h;
  $('#tools').onclick=function(e){var b=e.target.closest('.tool');if(!b)return;
   if(b.dataset.tool){if(b.dataset.tool==='line'){S.lineStyle=S.lineStyle||'fence'}S.pencil=false;S.perim=false;S.gapNext=false;setTool(b.dataset.tool)}
-  else if(b.dataset.act==='pencil')togglePencil();else if(b.dataset.act==='perim')togglePerim();else if(b.dataset.act==='gap')toggleGap();else if(b.dataset.act==='ortho')toggleOrtho();else if(b.dataset.act==='venue')venueModal();
+  else if(b.dataset.act==='pencil')togglePencil();else if(b.dataset.act==='perim')togglePerim();else if(b.dataset.act==='gap')toggleGap();else if(b.dataset.act==='ortho')toggleOrtho();else if(b.dataset.act==='curve')toggleCurve();else if(b.dataset.act==='venue')venueModal();
   else if(b.dataset.act==='undo')undo();else if(b.dataset.act==='redo')redo();else if(b.dataset.act==='fit')fitAll();
   else if(b.dataset.act==='lib'){S.tab='lib';openPanel()}else if(b.dataset.act==='glock'){S.gridLock=S.gridLock===false;try{localStorage.setItem('fps_glock',S.gridLock?'1':'0')}catch(e){}syncGLock();toast(S.gridLock?'Grid lock is on: everything snaps to the '+S.grid+' m grid by its edges':'Grid lock is off: items also snap to other objects and to the plan\'s lines',4000)}else if(b.dataset.act==='trace'){S.traceSnap=S.traceSnap===false;syncTrace();toast(S.traceSnap===false?'Snap to plan lines is off':'Snap to plan lines is on: tracing locks onto the imported plan\'s lines and corners',3500)}else if(b.dataset.act==='evac')setEvac(!S.meta.evac)
  };
@@ -2096,6 +2125,8 @@ function buildTools(){
  $('#evBar').onclick=function(e){var t=e.target.closest('button');if(t)act(t.dataset.ev)};
  $('#viewSel').onchange=function(){var v=this.value;if(v==='__new'){this.value=S.meta.only||'';newLayout();return}setView(v)};
  $('#lineSel').onchange=function(){S.lineStyle=this.value;if(S.tmp&&S.tmp.t==='line')S.tmp.style=this.value;draw()};
+ $('#wtIn').value=S.lineWt||1;
+ $('#wtIn').onchange=function(){S.lineWt=parseFloat(this.value)||1;if(S.tmp&&S.tmp.t==='line')S.tmp.wt=S.lineWt;draw()};
  $('#snapSel').onchange=function(){var sel=this,v=sel.value;
   if(v==='custom'){ask('Custom snap distance',[{l:'Snap grid in metres (for example 0.05). 0 = off',v:S.grid||0.5,type:'number',step:'any'}],function(r){var g=parseFloat(r[0]);if(!(g>=0)){sel.value=String(S.grid);return}var val=String(g);if(![].some.call(sel.options,function(op){return op.value===val})){var op=document.createElement('option');op.value=val;op.textContent='Snap '+g+' m';sel.insertBefore(op,sel.querySelector('[value=custom]'))}sel.value=val;S.grid=g},'Set');sel.value=String(S.grid);return}
   S.grid=parseFloat(v)};
@@ -2885,6 +2916,16 @@ function underlaySnap(p){
   if(dist<bs){bs=dist;best={x:pt.x,y:pt.y,j:isJ}}});
  return best}
 
+/* ----- curve: simplify a dense freehand-dragged trace down to a light, smooth run of points ----- */
+function rdpPts(P,eps){
+ if(P.length<3)return P.slice();
+ function rec(a,b){
+  if(b-a<2)return [];
+  var A=P[a],B=P[b],dx=B.x-A.x,dy=B.y-A.y,L=Math.hypot(dx,dy),mx=-1,mi=-1,i;
+  for(i=a+1;i<b;i++){var Q=P[i],d=L<1e-9?Math.hypot(Q.x-A.x,Q.y-A.y):Math.abs(dy*(Q.x-A.x)-dx*(Q.y-A.y))/L;if(d>mx){mx=d;mi=i}}
+  if(mx<=eps)return [];
+  return rec(a,mi).concat([P[mi]]).concat(rec(mi,b))}
+ return [P[0]].concat(rec(0,P.length-1)).concat([P[P.length-1]])}
 /* ----- ortho: lock the segment being drawn to the plan's own axes ----- */
 function planAxis(){var a=0;S.layers.some(function(L){if(L.vis&&L.kind==='plan'){a=L.rot||0;return true}});return a*D2R}
 function orthoFix(q){
@@ -2918,13 +2959,15 @@ function syncPrec(){
  $$('#tools [data-act=perim]').forEach(function(x){x.classList.toggle('on',!!S.perim&&S.tool==='line')});
  $$('#tools [data-act=gap]').forEach(function(x){x.classList.toggle('on',!!S.gapNext)});
  $$('#tools [data-act=ortho]').forEach(function(x){x.classList.toggle('on',!!S.ortho)});
+ $$('#tools [data-act=curve]').forEach(function(x){x.classList.toggle('on',!!S.curve)});
  $$('#tools [data-act=venue]').forEach(function(x){x.classList.toggle('on',!!S.venueMode)})}
 function togglePencil(){
  if(S.pencil&&S.perim&&S.tool==='line'){S.pencil=false;syncPrec();toast('Pencil off');return}
  if(S.pencil&&(S.tool==='line'||S.tool==='poly')){S.pencil=false;setTool('select');syncPrec();toast('Pencil off');return}
  S.traceSnap=true;syncTrace();var pm=S.perim;setTool('line');S.perim=pm;S.pencil=true;S.lineStyle=S.lineStyle&&S.lineStyle!=='evac'?S.lineStyle:'wall';$('#lineSel').value=S.lineStyle;syncPrec();draw();
- toast('Pencil: tap along the plan lines, they snap exactly. A magnifier shows the point. Use Shape for buildings, Ortho for straight walls, Venue to mark it permanent.',7000)}
-function toggleOrtho(){S.ortho=!S.ortho;syncPrec();toast(S.ortho?'Ortho on: lines run along the plan\'s own horizontal and vertical':'Ortho off',3500)}
+ toast('Pencil: tap along the plan lines, they snap exactly. A magnifier shows the point. Set the weight box for thinner or bolder lines, turn on Curve to drag along a curved wall, use Shape for buildings, Ortho for straight walls, Venue to mark it permanent.',8000)}
+function toggleOrtho(){S.ortho=!S.ortho;if(S.ortho&&S.curve){S.curve=false}syncPrec();toast(S.ortho?'Ortho on: lines run along the plan\'s own horizontal and vertical':'Ortho off',3500)}
+function toggleCurve(){S.curve=!S.curve;if(S.curve&&S.ortho){S.ortho=false}syncPrec();toast(S.curve?'Curve on: in Line or Shape, press and drag along a curved wall — it is traced smoothly, snapped to the plan if Pencil is on too. Release to continue with taps or another drag.':'Curve off',S.curve?8000:3000)}
 
 /* ----- venue (permanent) objects ----- */
 function venueCount(){return S.objs.filter(function(o){return o.vn}).length}

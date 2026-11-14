@@ -465,6 +465,33 @@ await test('Grid lock: an off-grid item lands on the 1 m grid by its edges when 
   const whole = v => Math.abs(v - Math.round(v)) < 1e-9;
   ok(whole(r.ax) && whole(r.ay) && Math.abs(r.bx - 9.33) < 1e-6 && whole(r.px) && whole(r.py) && r.q.x === 4 && r.q.y === 3, JSON.stringify(r));
 });
+await test('Line weight: a chosen weight carries onto a plain tapped line', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = S.objs; S.objs = []; S.tmp = null; T.setDrag(null);
+    S.view = { x: 0, y: 0, z: 50 }; S.tool = 'line'; S.curve = false; S.pencil = false; S.lineWt = 0.7; S.lineStyle = 'wall';
+    T.onDown({ button: 0, pointerType: 'mouse' }, { x: 100, y: 100 }); T.onUp({ pointerType: 'mouse' });
+    T.onDown({ button: 0, pointerType: 'mouse' }, { x: 300, y: 100 }); T.onUp({ pointerType: 'mouse' });
+    T.finishLine();
+    const o = S.objs[S.objs.length - 1]; S.objs = keep; S.lineWt = 1;
+    return { wt: o && o.wt, n: o && o.pts && o.pts.length }; });
+  ok(r.n === 2 && Math.abs(r.wt - 0.7) < 1e-6, JSON.stringify(r));
+});
+await test('Curve trace: dragging along an arc with Curve on traces a smooth multi-point run, not one straight segment', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = S.objs; S.objs = []; S.tmp = null; T.setDrag(null);
+    S.view = { x: 0, y: 0, z: 50 }; S.tool = 'line'; S.curve = true; S.pencil = false; S.lineWt = 0.4; S.lineStyle = 'wall';
+    const cx = 300, cy = 400, rad = 100;
+    const pt = a => ({ x: cx + rad * Math.cos(a), y: cy - rad * Math.sin(a) });
+    const a0 = Math.PI, a1 = Math.PI / 2;
+    T.onDown({ button: 0, pointerType: 'mouse' }, pt(a0));
+    for (let i = 1; i <= 12; i++) { const a = a0 + (a1 - a0) * i / 12; T.onMove({ pointerType: 'mouse' }, pt(a)); }
+    T.onUp({ pointerType: 'mouse' });
+    T.finishLine();
+    const o = S.objs[S.objs.length - 1]; S.objs = keep; S.curve = false; S.lineWt = 1;
+    let bow = 0;
+    if (o && o.pts && o.pts.length > 1) { const A = o.pts[0], B = o.pts[o.pts.length - 1], L = Math.hypot(B.x - A.x, B.y - A.y) || 1;
+      o.pts.forEach(q => { const d = Math.abs((B.y - A.y) * (q.x - A.x) - (B.x - A.x) * (q.y - A.y)) / L; bow = Math.max(bow, d); }); }
+    return { n: o && o.pts && o.pts.length, wt: o && o.wt, bow }; });
+  ok(r.n >= 4 && Math.abs(r.wt - 0.4) < 1e-6 && r.bow > 0.3, JSON.stringify(r));
+});
 await test('auto-trace: outline and walls come out of a synthetic plan at the right size', async () => {
   const r = await page.evaluate(() => { const T = __T;
     const cn = document.createElement('canvas'); cn.width = 1200; cn.height = 800; const c = cn.getContext('2d');
