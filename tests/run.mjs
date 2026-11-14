@@ -534,6 +534,36 @@ await test('Straighten jagged sections: simplifying a noisy auto-traced wall rem
     return { before, after, first, last }; });
   ok(r.before === 21 && r.after < r.before && r.after >= 2 && r.first.x === 0 && Math.abs(r.last.x - 40) < 1e-6, JSON.stringify(r));
 });
+await test('Delete points: tapping a corner in Delete-points mode removes it immediately (no double-tap), shrinking the shape from that corner', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = { objs: S.objs, sel: S.sel, ms: S.ms, tool: S.tool, ptDel: S.ptDel };
+    S.objs = []; S.ms = []; S.tool = 'select'; S.view = { x: 0, y: 0, z: 50 };
+    const o = { t: 'line', id: 801, style: 'wall', closed: true, pts: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 6 }, { x: 0, y: 6 }] };
+    S.objs.push(o); T.setSel([801]); S.ptDel = 801;
+    T.onDown({ button: 0, pointerType: 'mouse' }, T.w2s({ x: 0, y: 0 }));           // single tap, no double-click needed
+    const after1 = o.pts.length, stillSelected = S.objs.some(x => x.id === 801);
+    S.objs = keep.objs; S.sel = keep.sel; S.ms = keep.ms; S.tool = keep.tool; S.ptDel = keep.ptDel;
+    return { after1, stillSelected }; });
+  ok(r.after1 === 3 && r.stillSelected, JSON.stringify(r));
+});
+await test('Delete points: repeatedly tapping corners shrinks a shape all the way down to nothing, with no artificial floor', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = { objs: S.objs, sel: S.sel, ms: S.ms, tool: S.tool, ptDel: S.ptDel };
+    S.objs = []; S.ms = []; S.tool = 'select'; S.view = { x: 0, y: 0, z: 50 };
+    const o = { t: 'line', id: 802, style: 'wall', closed: true, pts: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 6 }, { x: 0, y: 6 }] };
+    S.objs.push(o); T.setSel([802]); S.ptDel = 802;
+    const steps = [];
+    for (let i = 0; i < 6; i++) {
+      const cur = S.objs.filter(x => x.id === 802)[0];
+      if (!cur) { steps.push('gone'); break; }
+      T.onDown({ button: 0, pointerType: 'mouse' }, T.w2s(cur.pts[0]));
+      const now = S.objs.filter(x => x.id === 802)[0];
+      steps.push(now ? now.pts.length : 'gone');
+    }
+    const remaining = S.objs.length, ptDelAfter = S.ptDel;
+    S.objs = keep.objs; S.sel = keep.sel; S.ms = keep.ms; S.tool = keep.tool; S.ptDel = keep.ptDel;
+    return { steps, remaining, ptDelAfter }; });
+  // a line's floor is 2 points (one segment); 4 -> 3 -> 2 keep existing, then the next tap (which would leave 1) removes the whole shape
+  ok(r.steps[0] === 3 && r.steps[1] === 2 && r.steps[2] === 'gone' && r.steps.slice(3).every(s => s === 'gone') && r.remaining === 0 && r.ptDelAfter === null, JSON.stringify(r));
+});
 await test('auto-trace: outline and walls come out of a synthetic plan at the right size', async () => {
   const r = await page.evaluate(() => { const T = __T;
     const cn = document.createElement('canvas'); cn.width = 1200; cn.height = 800; const c = cn.getContext('2d');

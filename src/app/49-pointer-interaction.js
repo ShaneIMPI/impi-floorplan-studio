@@ -70,7 +70,14 @@ function onDown(e,p){
   o=getSel();
   if(o&&!o.lk){var h=hitHandle(o,p);if(h){snapH();
    if(h.id[0]==='m'&&(o.t==='line'||o.t==='poly')){var mi=+h.id.slice(1),PP=o.pts,pa=PP[mi],pb=PP[(mi+1)%PP.length];var gaI=o.t==='line'?gapArr(o):null;PP.splice(mi+1,0,{x:(pa.x+pb.x)/2,y:(pa.y+pb.y)/2});if(gaI){gapsInsert(gaI,mi);gapSet(o,gaI)}h={id:'v'+(mi+1)}}
-   else if(h.id[0]==='v'){var nt=Date.now();if(lastHT&&lastHT.o===o.id&&lastHT.id===h.id&&nt-lastHT.t<450&&o.pts.length>(o.t==='poly'?3:2)){var rI=+h.id.slice(1),gaR=o.t==='line'?gapsRemove(o,gapArr(o),rI):null;o.pts.splice(rI,1);if(gaR)gapSet(o,gaR);lastHT=null;changed(true);toast('Point removed');return}lastHT={o:o.id,id:h.id,t:nt}}
+   else if(h.id[0]==='v'){
+    if(S.ptDel===o.id){var rI0=+h.id.slice(1),gaR0=o.t==='line'?gapsRemove(o,gapArr(o),rI0):null;o.pts.splice(rI0,1);if(gaR0)gapSet(o,gaR0);
+     if(o.pts.length<(o.t==='poly'?3:2)){S.objs=S.objs.filter(function(x){return x.id!==o.id});setSel([]);S.ptDel=null;changed(true);renderSelbar();renderPanel();draw();toast('Shape removed');return}
+     changed(true);renderPanel();draw();toast('Point removed ('+o.pts.length+' left) — tap another, or the button again when done');return}
+    var nt=Date.now();if(lastHT&&lastHT.o===o.id&&lastHT.id===h.id&&nt-lastHT.t<450){var rI=+h.id.slice(1),gaR=o.t==='line'?gapsRemove(o,gapArr(o),rI):null;o.pts.splice(rI,1);if(gaR)gapSet(o,gaR);lastHT=null;
+     if(o.pts.length<(o.t==='poly'?3:2)){S.objs=S.objs.filter(function(x){return x.id!==o.id});setSel([]);changed(true);renderSelbar();renderPanel();draw();toast('Shape removed');return}
+     changed(true);toast('Point removed');return}
+    lastHT={o:o.id,id:h.id,t:nt}}
    drag={k:'handle',h:h.id,o:o,orig:JSON.parse(JSON.stringify(o)),moved:false,sh:e.shiftKey};return}}
   var hit=hitTest(w);
   if(hit){
