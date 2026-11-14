@@ -329,3 +329,15 @@ Earlier builds quoted regulation numbers from a 2009 draft that never came into 
 
 Not from either source (kept as editable planning figures): exit flow of 82 people per minute per metre (UK Green Guide), tent spacing, assembly-point distance, medical staffing ratios (2009 draft).
 Open-sided tents (gazebo, Bedouin, any tent ticked "Open-sided", or all tents via the Sheet tab) are counted as open ground. Zones drawn outdoors are open; zones drawn in indoor mode are rooms.
+
+## Municipality (local by-laws), November 2026
+A municipality must be chosen for every plan: the app asks when a plan opens without one, the Sheet tab has the selector, and the readiness check fails without it. Data lives in `src/app/42-z-regions.js`.
+
+| Municipality | Source read | Applied |
+|---|---|---|
+| City of Tshwane | Fire Brigade Service By-laws 2016 (LAN 396, 9 March 2016) | tents 4.5 m apart (s 32); certificate of fitness 30 days ahead (s 42(6)); No Smoking sign check; fire lanes, open flame, cooking rules listed |
+| City of Johannesburg | Emergency Services By-laws 2004; JOC requirements | certificate of fitness 30 days ahead (s 20(2)); tents need rational design (s 10(1)(f)), no fixed spacing so 3 m planning figure; listed rules |
+| City of Ekurhuleni | City notice on the SASREA committee; event application form | 21 days ahead; toilets 1 per 100; Emergency Services By-law text not readable, tent spacing left at 3 m |
+| City of Cape Town | Events By-law 2009 (amended 2016); Community Fire Safety By-law 2002 | tents 4.5 m apart (s 16); lead time by size: 15 / 20 / 25 / 60 working days (Schedule 1); population certificate over 50 people (s 21) |
+
+Working days skip weekends but not public holidays. A typed-in tent gap in the readiness settings still overrides the municipality's figure.

@@ -16,7 +16,7 @@ function buildTools(){
   else if(b.dataset.act==='undo')undo();else if(b.dataset.act==='redo')redo();else if(b.dataset.act==='fit')fitAll();
   else if(b.dataset.act==='lib'){S.tab='lib';openPanel()}else if(b.dataset.act==='glock'){S.gridLock=S.gridLock===false;try{localStorage.setItem('fps_glock',S.gridLock?'1':'0')}catch(e){}syncGLock();toast(S.gridLock?'Grid lock is on: everything snaps to the '+S.grid+' m grid by its edges':'Grid lock is off: items also snap to other objects and to the plan\'s lines',4000)}else if(b.dataset.act==='trace'){S.traceSnap=S.traceSnap===false;syncTrace();toast(S.traceSnap===false?'Snap to plan lines is off':'Snap to plan lines is on: tracing locks onto the imported plan\'s lines and corners',3500)}else if(b.dataset.act==='evac')setEvac(!S.meta.evac)
  };
- renderViewSel();syncEvac();try{if(localStorage.getItem('fps_glock')==='0')S.gridLock=false}catch(e){}syncGLock();syncTrace();syncPrec();$('#layBar').onclick=function(e){var t=e.target.closest('button');if(!t)return;var k=t.dataset.lb;if(k==='back')setView(null);else exportSheet(k)};
+ renderViewSel();syncEvac();try{if(localStorage.getItem('fps_glock')==='0')S.gridLock=false}catch(e){}syncGLock();syncTrace();syncPrec();setTimeout(regionAsk,1500);$('#layBar').onclick=function(e){var t=e.target.closest('button');if(!t)return;var k=t.dataset.lb;if(k==='back')setView(null);else exportSheet(k)};
  $('#evBar').onclick=function(e){var t=e.target.closest('button');if(t)act(t.dataset.ev)};
  $('#viewSel').onchange=function(){var v=this.value;if(v==='__new'){this.value=S.meta.only||'';newLayout();return}setView(v)};
  $('#lineSel').onchange=function(){S.lineStyle=this.value;if(S.tmp&&S.tmp.t==='line')S.tmp.style=this.value;draw()};

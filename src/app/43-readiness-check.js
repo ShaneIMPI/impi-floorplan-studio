@@ -18,7 +18,7 @@ var RDY=[
  {k:'aidD',n:'First aid counts as nearby within (m)',d:30},
  {k:'sgn',n:'Exit sign must be within this distance of an exit door (m)',d:4}
 ];
-function rv(k){var v=(S.meta.rdy||{})[k];if(v!=null&&isFinite(v)&&v>=0)return +v;for(var i=0;i<RDY.length;i++)if(RDY[i].k===k)return RDY[i].d;return 0}
+function rv(k){var v=(S.meta.rdy||{})[k];if(v!=null&&isFinite(v)&&v>=0)return +v;if(k==='gap'){var RG=regionOf();if(RG)return RG.gap}for(var i=0;i<RDY.length;i++)if(RDY[i].k===k)return RDY[i].d;return 0}
 function segD(p,a,b){var dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy,t=l?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l)):0;return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy))}
 function inPoly(p,P){var c=false,i,j;for(i=0,j=P.length-1;i<P.length;j=i++)if((P[i].y>p.y)!==(P[j].y>p.y)&&p.x<(P[j].x-P[i].x)*(p.y-P[i].y)/(P[j].y-P[i].y)+P[i].x)c=!c;return c}
 function segX(a,b,c,d){function o(p,q,r){return (q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x)}var d1=o(a,b,c),d2=o(a,b,d),d3=o(c,d,a),d4=o(c,d,b);return d1*d2<0&&d3*d4<0}
@@ -48,6 +48,7 @@ function rdyRun(){
  var unc=S.layers.filter(function(L){return L.vis!==false&&!L.cal});
  if(unc.length)add('warn','Plan basics','Background image'+(unc.length>1?'s are':' is')+' not calibrated ('+unc.map(function(L){return L.name||'image'}).join(', ')+'). Anything traced over it may not be to scale.',[],'Images tab → Calibrate.');
  if(!(att>0))add('fail','Plan basics','Expected attendance has not been entered. Capacity and exit checks cannot be judged without it.',[],'Sheet tab → Expected attendance.');
+ if(!regionOf())add('fail','Municipality','No municipality is selected, so no local by-laws are applied.',[],'Sheet tab → Municipality.');
  if(!m.tstart||!m.tend)add('warn','Plan basics','Event start and end times are not entered.',[],'Sheet tab → Event times.');
  if(!objs.length){add('fail','Plan basics','The plan is empty.');return F}
  if(C.open&&C.open.occ>=C.open.area)add('warn','Capacity','The event area ('+cfmt(C.open.area)+' m²) is no bigger than the structures on it ('+cfmt(C.open.occ)+' m²), so no open ground is counted. Check the area figure or boundary.',[],'Crowd & capacity → enter the whole fenced area.');
@@ -142,6 +143,8 @@ function rdyRun(){
  bs.slice(0,12).forEach(function(b){var n1=(LIBM[b[0].k]||{}).n||'structure',n2=(LIBM[b[1].k]||{}).n||'structure';add('fail','Tent spacing',n1+' and '+n2+' are '+(b[2]<0.05?'touching or overlapping':(Math.round(b[2]*10)/10)+' m apart')+' (minimum '+b[3]+' m).',[b[0].id,b[1].id],'Move them apart or confirm with the fire officer that this is allowed.')});
  if(bs.length>12)add('fail','Tent spacing',(bs.length-12)+' more pairs are closer than '+gp+' m.');
  if(tp.length>1&&!sp)add('pass','Tent spacing','All '+tp.length+' tents / marquees are at least '+gp+' m apart.');
+ /* 8b the municipality's own by-laws */
+ regionFindings(add,C,objs);
  /* 9 evacuation routes */
  if(!S.objs.some(function(o){return o.ev}))add('info','Evacuation plan','No evacuation routes generated yet. Use the Evacuation view → Generate to add them to the plan.');
  return F}
@@ -156,7 +159,7 @@ function rdyModal(){
   var idx=F.indexOf(f);
   h+='<div style="display:flex;gap:8px;padding:7px 0;border-top:1px solid #e3e8ec;align-items:flex-start"><span style="flex:none;min-width:58px;font-weight:700;font-size:11px;color:'+cc[f.sev]+'">'+lab[f.sev]+'</span><div style="flex:1;font-size:13px"><small style="color:#5b6b78">'+esc(f.cat)+'</small><br>'+esc(f.msg)+(f.fix&&f.sev!=='pass'?'<br><small style="color:#5b6b78">How to fix: '+esc(f.fix)+'</small>':'')+'</div>'+(f.ids&&f.ids.length?'<button class="btn sm" data-rshow="'+idx+'">Show</button>':'')+'</div>'});
  h+='<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">Settings used by this check (editable)</summary><div class="row2" style="margin-top:6px">'+RDY.map(function(x){return '<label class="fld">'+esc(x.n)+'<input type="number" step="any" min="0" data-rset="'+x.k+'" value="'+rv(x.k)+'"></label>'}).join('')+'</div><p class="note"><a href="#" id="rdy_reset">Reset to defaults</a></p></details>';
- h+='<p class="note">Each check names the rule it comes from: the SASREA Regulations of 3 March 2017, SANS 10400-A (population) and SANS 10400-T (fire protection and escape). Tent spacing and the assembly-point distance are fire by-law planning figures, not from either. This is a planning check, not a legal opinion: the local authority, the fire department and the ESSPC decide. Distances are straight lines, so real walking routes are longer. The aisle width check is separate (Objects tab).</p>';
+ h+='<p class="note">Each check names the rule it comes from: the SASREA Regulations of 3 March 2017, SANS 10400-A (population) and SANS 10400-T (fire protection and escape). Tent spacing comes from the selected municipality\'s fire by-law where it gives one; the assembly-point distance is a planning figure. This is a planning check, not a legal opinion: the local authority, the fire department and the ESSPC decide. Distances are straight lines, so real walking routes are longer. The aisle width check is separate (Objects tab).</p>';
  h+='<div class="mrow" style="justify-content:flex-start"><button class="btn" id="rdy_dl">Download report</button></div>';
  box(h);var mb=$('#modal .mbox');if(mb){mb.style.maxWidth='720px';mb.style.maxHeight='86vh';mb.style.overflow='auto'}
  $$('[data-rshow]',$('#modal')).forEach(function(b){b.onclick=function(){var f=F[+b.dataset.rshow],os=S.objs.filter(function(o){return f.ids.indexOf(o.id)>=0});if(!os.length)return;

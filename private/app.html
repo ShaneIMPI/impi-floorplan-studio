@@ -1015,7 +1015,7 @@ function crowdLines(){
   if(C.att>0){var ok=C.evTime<=15;L.push(['Evacuation time',(C.evTime<10?C.evTime.toFixed(1):Math.round(C.evTime))+' min (limit 15)',ok?null:RED])}}
  else if(C.att>0)L.push(['Exits','none placed',RED]);
  if(C.att>0){var r0=sasrea(C)[0];L.push(['SASREA exit width',r0.have+' / '+r0.need,r0.ok?null:RED])}
- L.push(['Basis','SANS 10400 · SASREA 2017']);
+ var RG=regionOf();L.push(['Basis','SANS 10400 · SASREA 2017']);if(RG&&RG.k!=='other')L.push(['By-laws',RG.n.replace('City of ','')]);
  return L}
 function crowdModal(){
  var m=S.meta,C=crowdAll(),h='<h3>Crowd &amp; capacity</h3><p class="note"><b>'+esc(m.event||'')+'</b><br>'+esc(m.venue||'')+' · '+esc(m.date||'')+((m.tstart||m.tend)?' · '+esc(m.tstart||'')+(m.tend?' – '+esc(m.tend):''):'')+'</p>';
@@ -1037,6 +1037,70 @@ function crowdModal(){
  h+='<p class="note">Floor figures follow SANS 10400-A (1 m² per person standing, or the seats drawn). Enclosed structures are capped by what their exits can serve under SANS 10400-T Table 10 (120 people at 1.1 m to 190 at 1.8 m per exit, the widest exit left out). Open-sided tents and shade netting are open ground. The exit flow rate (82 people per minute per metre, level ground) is a planning figure from the UK Green Guide, since neither SASREA nor SANS 10400 gives one. Capacity reacts to each structure\'s internal layout: furniture is taken off the usable floor, and table seats are counted when a structure is set to "seated at tables".</p>';
  box(h);$('#modal').onclick=function(e){var t=e.target.closest('[data-act]');if(t&&t.dataset.act)act(t.dataset.act)};var mb=$('#modal .mbox');if(mb){mb.style.maxWidth='760px';mb.style.maxHeight='86vh';mb.style.overflow='auto'}
 }
+/* ---------- municipality: each metro has its own events and fire by-laws ----------
+   Read in November 2026. gap = clear distance between tents (m); lead = days the application must be in before the event;
+   wd = those are working days; rules = shown in the readiness check, each with its section. Where a by-law could not be read the note says so. */
+var REGIONS=[
+ {k:'tshwane',n:'City of Tshwane (Pretoria)',law:'Fire Brigade Service By-laws, 2016 (LAN 396 of 9 March 2016)',gap:4.5,lead:30,leadRef:'s 42(6): certificate of fitness applied for at least 30 calendar days before a public gathering',
+  rules:[
+   ['s 32(2)(a),(b)','Tents at least 4.5 m from each other (stakes and guy ropes included), from a boundary and from anything combustible'],
+   ['s 32(2)(c),(d)','A tent holding more than 25 people, or used after dark, must meet SANS 10400-T (exits, seating, aisles, extinguishers); density per Reg A21'],
+   ['s 32(2)(e)-(h)','No cooking in a tent the public uses; no open fire in a tent or within 5 m of it; no smoking, with a No Smoking sign at each entrance'],
+   ['s 42(1),(7)','No public gathering without a certificate of fitness; a temporary population certificate lasts at most 30 days'],
+   ['s 35(1)(d)','Fire lanes at least 4 m wide and 4 m high, kept clear'],
+   ['s 29, s 28(1)','Escape routes unobstructed and signed; emergency lighting after dark; escape doors unlocked']]},
+ {k:'joburg',n:'City of Johannesburg',law:'Emergency Services By-laws, 2004',gap:3,lead:30,leadRef:'s 20(2): certificate of fitness applied for at least 30 days before a public gathering; the JOC also asks 30 days\' notice',
+  rules:[
+   ['s 10(1)(f)','Tents and temporary structures for a public gathering need a rational design under the National Building Regulations. The by-law gives no fixed spacing, so the 3 m here is a planning figure'],
+   ['s 19(1), s 22(d),(e)','No public gathering in a building or temporary structure without a certificate of fitness, which states the maximum occupancy and the number and size of emergency exits'],
+   ['s 13','Escape doors open in the direction of escape and need no key to get out; escape routes unobstructed'],
+   ['s 14(1)(d)','Emergency vehicle entrances at least 4 m wide and 4.2 m high'],
+   ['s 46(4),(5), s 32(2)','LP gas at a public exhibition and fireworks displays each need written permission applied for 14 days ahead'],
+   ['JOC requirements','Floor, site and gas plans, structure approvals, medical, security, evacuation and traffic plans; 8 hard copies']]},
+ {k:'ekurhuleni',n:'City of Ekurhuleni',law:'SASREA committee process and event application form (Emergency Services By-law not readable online)',gap:3,lead:21,leadRef:'City notice: applications to the SASREA committee at least 21 days before the event (14 in exceptional cases)',toil100:true,
+  rules:[
+   ['Event application form','Toilets: one per 100 people'],
+   ['Event application form','Tents or marquees over 100 m², stages over 1 m high and grandstands need building consent'],
+   ['Event application form','Traffic management plan 90 days ahead where a road closes or more than 100 vehicles are expected'],
+   ['Not verified','The Emergency Services By-law text could not be read, so tent spacing stays at the 3 m planning figure. Confirm with Disaster and Emergency Management Services (011 999 8833)']]},
+ {k:'capetown',n:'City of Cape Town',law:'Events By-law, 2009 (amended 2016) and Community Fire Safety By-law, 2002',gap:4.5,lead:0,leadRef:'Events By-law Schedule 1',ct:true,
+  rules:[
+   ['Events By-law s 2(2), s 4(1)','A permit is needed for any event of 200 or more people, or any with amplified sound or temporary structures'],
+   ['Events By-law s 5(4B)','Over 2,000 people: SAPS approval and a risk categorisation'],
+   ['Fire Safety By-law s 16(2)(aA),(b)','Tents at least 4.5 m from each other (stakes and guy ropes included) and from anything combustible'],
+   ['Fire Safety By-law s 16(2)(e)-(h)','No cooking in a tent the public uses; no open fire in a tent or within 5 m of it; no smoking, with signs at each entrance'],
+   ['Fire Safety By-law s 21(1),(4)','Population certificate for any public assembly of more than 50 people including staff; a temporary one lasts at most 30 days'],
+   ['Fire Safety By-law s 12(1)(d)','Fire lanes at least 4 m wide and 4 m high']]},
+ {k:'other',n:'Other municipality (national rules only)',law:'No local by-law loaded',gap:3,lead:0,leadRef:'',rules:[['','Only SASREA and SANS 10400 are applied. Get the local fire and events by-laws from the municipality']]}
+];
+function regionOf(){var k=S.meta.region;for(var i=0;i<REGIONS.length;i++)if(REGIONS[i].k===k)return REGIONS[i];return null}
+/* Cape Town Events By-law Schedule 1: size band → working days the application must be in before the event */
+function ctBand(att){return att>10000?['Very large (10,001+)',60]:att>5000?['Large (5,001 to 10,000)',25]:att>2000?['Medium (2,001 to 5,000)',20]:['Small (200 to 2,000)',15]}
+function daysTo(dateStr,wd){var d=new Date(dateStr+'T00:00:00'),t=new Date();t.setHours(0,0,0,0);if(isNaN(d))return null;if(!wd)return Math.round((d-t)/864e5);var n=0,s=d<t?-1:1,c=new Date(t);while((s>0&&c<d)||(s<0&&c>d)){c.setDate(c.getDate()+s);var g=c.getDay();if(g!==0&&g!==6)n+=s}return n}
+function regionFindings(add,C,objs){
+ var R=regionOf(),m=S.meta;
+ if(!R)return;
+ var cat='By-laws: '+R.n;add('info',cat,'Applied: '+R.law+'.');
+ R.rules.forEach(function(r){add('info',cat,(r[0]?r[0]+': ':'')+r[1]+'.')});
+ var need=R.lead,ref=R.leadRef,wd=false;
+ if(R.ct&&C.att>0){var b=ctBand(C.att);need=b[1];wd=true;ref='Events By-law Schedule 1: '+b[0]+' events apply at least '+b[1]+' working days ahead'}
+ if(need>0&&m.date){var left=daysTo(m.date,wd);
+  if(left!==null&&left>=0){if(left<need)add('warn',cat,'The event is in '+left+(wd?' working':'')+' day'+(left===1?'':'s')+'. '+ref+'. If the application is not in yet, it is late.');else add('pass',cat,left+(wd?' working':'')+' days to the event; '+ref+'.')}}
+ if(R.ct&&C.att>0&&C.att<200)add('info',cat,'Under 200 people: the Events By-law applies only if there is amplified sound or a temporary structure (s 2(2)(a)).');
+ if(R.toil100&&C.att>0){var tc=cntKeys({toilet:1,toilet_wb:1,trailer_abl:6,trailer_acc:1}),th=+m.toilets>0?+m.toilets:tc,tn=Math.ceil(C.att/100);
+  add(th>=tn?'pass':'fail',cat,'Toilets at one per 100 people (event application form): '+tn+' needed, '+th+' on the plan.',[],'Sheet tab → Toilets provided, or draw them.')}
+ if(R.gap>3){var closed=objs.filter(function(o){if(o.t!=='rect')return false;var l=LIBM[o.k];return l&&l.c==='Tents'&&l.s!=='stall'&&!isOpenStruct(o)}),ns=objs.filter(function(o){return o.t==='sign'&&o.k==='no_smoking'});
+  var miss=closed.filter(function(t){return !ns.some(function(s){return Math.hypot(s.x-t.x,s.y-t.y)<=Math.max(t.w,t.h)/2+4})});
+  if(closed.length){if(miss.length)add('warn',cat,miss.length+' enclosed tent'+(miss.length>1?'s have':' has')+' no No Smoking sign at the entrance.',miss.map(function(t){return t.id}),'Signs → No smoking, at each tent entrance.');else add('pass',cat,'Every enclosed tent has a No Smoking sign.')}}
+}
+function regionModal(force){
+ var cur=S.meta.region,h='<h3>Which municipality is this event in?</h3><p class="note">Every metro has its own events and fire by-laws. Pick one so the right tent spacing, application deadlines and local rules are checked. You can change it on the Sheet tab.</p><div style="display:flex;flex-direction:column;gap:8px;margin:10px 0">';
+ REGIONS.forEach(function(r){h+='<button class="btn'+(cur===r.k?' pri':'')+'" data-reg="'+r.k+'" style="text-align:left;padding:10px 12px"><b>'+esc(r.n)+'</b><br><small style="font-weight:400">'+esc(r.law)+'</small></button>'});
+ h+='</div>';box(h);var mc=$('#mc');if(mc&&!cur)mc.style.display='none';
+ $$('[data-reg]',$('#modal')).forEach(function(b){b.onclick=function(){setRegion(b.dataset.reg);$('#modal').classList.remove('on');$('#modal').innerHTML=''}})}
+function setRegion(k){S.meta.region=k;var R=regionOf();saveLocal();renderPanel();draw();if(R)toast(R.n+' by-laws applied'+(R.gap>3?': tents '+R.gap+' m apart':''),4500)}
+/* ask once a plan is open and no municipality has been chosen */
+function regionAsk(){if(S.meta.region||window.__T)return;var m=$('#modal');if(m&&m.classList.contains('on')){setTimeout(regionAsk,3000);return}regionModal()}
 /* ---------- approval readiness check ---------- */
 var RDY=[
  {k:'minEx',n:'Minimum number of exits for the venue',d:2},
@@ -1057,7 +1121,7 @@ var RDY=[
  {k:'aidD',n:'First aid counts as nearby within (m)',d:30},
  {k:'sgn',n:'Exit sign must be within this distance of an exit door (m)',d:4}
 ];
-function rv(k){var v=(S.meta.rdy||{})[k];if(v!=null&&isFinite(v)&&v>=0)return +v;for(var i=0;i<RDY.length;i++)if(RDY[i].k===k)return RDY[i].d;return 0}
+function rv(k){var v=(S.meta.rdy||{})[k];if(v!=null&&isFinite(v)&&v>=0)return +v;if(k==='gap'){var RG=regionOf();if(RG)return RG.gap}for(var i=0;i<RDY.length;i++)if(RDY[i].k===k)return RDY[i].d;return 0}
 function segD(p,a,b){var dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy,t=l?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l)):0;return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy))}
 function inPoly(p,P){var c=false,i,j;for(i=0,j=P.length-1;i<P.length;j=i++)if((P[i].y>p.y)!==(P[j].y>p.y)&&p.x<(P[j].x-P[i].x)*(p.y-P[i].y)/(P[j].y-P[i].y)+P[i].x)c=!c;return c}
 function segX(a,b,c,d){function o(p,q,r){return (q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x)}var d1=o(a,b,c),d2=o(a,b,d),d3=o(c,d,a),d4=o(c,d,b);return d1*d2<0&&d3*d4<0}
@@ -1087,6 +1151,7 @@ function rdyRun(){
  var unc=S.layers.filter(function(L){return L.vis!==false&&!L.cal});
  if(unc.length)add('warn','Plan basics','Background image'+(unc.length>1?'s are':' is')+' not calibrated ('+unc.map(function(L){return L.name||'image'}).join(', ')+'). Anything traced over it may not be to scale.',[],'Images tab → Calibrate.');
  if(!(att>0))add('fail','Plan basics','Expected attendance has not been entered. Capacity and exit checks cannot be judged without it.',[],'Sheet tab → Expected attendance.');
+ if(!regionOf())add('fail','Municipality','No municipality is selected, so no local by-laws are applied.',[],'Sheet tab → Municipality.');
  if(!m.tstart||!m.tend)add('warn','Plan basics','Event start and end times are not entered.',[],'Sheet tab → Event times.');
  if(!objs.length){add('fail','Plan basics','The plan is empty.');return F}
  if(C.open&&C.open.occ>=C.open.area)add('warn','Capacity','The event area ('+cfmt(C.open.area)+' m²) is no bigger than the structures on it ('+cfmt(C.open.occ)+' m²), so no open ground is counted. Check the area figure or boundary.',[],'Crowd & capacity → enter the whole fenced area.');
@@ -1181,6 +1246,8 @@ function rdyRun(){
  bs.slice(0,12).forEach(function(b){var n1=(LIBM[b[0].k]||{}).n||'structure',n2=(LIBM[b[1].k]||{}).n||'structure';add('fail','Tent spacing',n1+' and '+n2+' are '+(b[2]<0.05?'touching or overlapping':(Math.round(b[2]*10)/10)+' m apart')+' (minimum '+b[3]+' m).',[b[0].id,b[1].id],'Move them apart or confirm with the fire officer that this is allowed.')});
  if(bs.length>12)add('fail','Tent spacing',(bs.length-12)+' more pairs are closer than '+gp+' m.');
  if(tp.length>1&&!sp)add('pass','Tent spacing','All '+tp.length+' tents / marquees are at least '+gp+' m apart.');
+ /* 8b the municipality's own by-laws */
+ regionFindings(add,C,objs);
  /* 9 evacuation routes */
  if(!S.objs.some(function(o){return o.ev}))add('info','Evacuation plan','No evacuation routes generated yet. Use the Evacuation view → Generate to add them to the plan.');
  return F}
@@ -1195,7 +1262,7 @@ function rdyModal(){
   var idx=F.indexOf(f);
   h+='<div style="display:flex;gap:8px;padding:7px 0;border-top:1px solid #e3e8ec;align-items:flex-start"><span style="flex:none;min-width:58px;font-weight:700;font-size:11px;color:'+cc[f.sev]+'">'+lab[f.sev]+'</span><div style="flex:1;font-size:13px"><small style="color:#5b6b78">'+esc(f.cat)+'</small><br>'+esc(f.msg)+(f.fix&&f.sev!=='pass'?'<br><small style="color:#5b6b78">How to fix: '+esc(f.fix)+'</small>':'')+'</div>'+(f.ids&&f.ids.length?'<button class="btn sm" data-rshow="'+idx+'">Show</button>':'')+'</div>'});
  h+='<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">Settings used by this check (editable)</summary><div class="row2" style="margin-top:6px">'+RDY.map(function(x){return '<label class="fld">'+esc(x.n)+'<input type="number" step="any" min="0" data-rset="'+x.k+'" value="'+rv(x.k)+'"></label>'}).join('')+'</div><p class="note"><a href="#" id="rdy_reset">Reset to defaults</a></p></details>';
- h+='<p class="note">Each check names the rule it comes from: the SASREA Regulations of 3 March 2017, SANS 10400-A (population) and SANS 10400-T (fire protection and escape). Tent spacing and the assembly-point distance are fire by-law planning figures, not from either. This is a planning check, not a legal opinion: the local authority, the fire department and the ESSPC decide. Distances are straight lines, so real walking routes are longer. The aisle width check is separate (Objects tab).</p>';
+ h+='<p class="note">Each check names the rule it comes from: the SASREA Regulations of 3 March 2017, SANS 10400-A (population) and SANS 10400-T (fire protection and escape). Tent spacing comes from the selected municipality\'s fire by-law where it gives one; the assembly-point distance is a planning figure. This is a planning check, not a legal opinion: the local authority, the fire department and the ESSPC decide. Distances are straight lines, so real walking routes are longer. The aisle width check is separate (Objects tab).</p>';
  h+='<div class="mrow" style="justify-content:flex-start"><button class="btn" id="rdy_dl">Download report</button></div>';
  box(h);var mb=$('#modal .mbox');if(mb){mb.style.maxWidth='720px';mb.style.maxHeight='86vh';mb.style.overflow='auto'}
  $$('[data-rshow]',$('#modal')).forEach(function(b){b.onclick=function(){var f=F[+b.dataset.rshow],os=S.objs.filter(function(o){return f.ids.indexOf(o.id)>=0});if(!os.length)return;
@@ -2025,7 +2092,7 @@ function buildTools(){
   else if(b.dataset.act==='undo')undo();else if(b.dataset.act==='redo')redo();else if(b.dataset.act==='fit')fitAll();
   else if(b.dataset.act==='lib'){S.tab='lib';openPanel()}else if(b.dataset.act==='glock'){S.gridLock=S.gridLock===false;try{localStorage.setItem('fps_glock',S.gridLock?'1':'0')}catch(e){}syncGLock();toast(S.gridLock?'Grid lock is on: everything snaps to the '+S.grid+' m grid by its edges':'Grid lock is off: items also snap to other objects and to the plan\'s lines',4000)}else if(b.dataset.act==='trace'){S.traceSnap=S.traceSnap===false;syncTrace();toast(S.traceSnap===false?'Snap to plan lines is off':'Snap to plan lines is on: tracing locks onto the imported plan\'s lines and corners',3500)}else if(b.dataset.act==='evac')setEvac(!S.meta.evac)
  };
- renderViewSel();syncEvac();try{if(localStorage.getItem('fps_glock')==='0')S.gridLock=false}catch(e){}syncGLock();syncTrace();syncPrec();$('#layBar').onclick=function(e){var t=e.target.closest('button');if(!t)return;var k=t.dataset.lb;if(k==='back')setView(null);else exportSheet(k)};
+ renderViewSel();syncEvac();try{if(localStorage.getItem('fps_glock')==='0')S.gridLock=false}catch(e){}syncGLock();syncTrace();syncPrec();setTimeout(regionAsk,1500);$('#layBar').onclick=function(e){var t=e.target.closest('button');if(!t)return;var k=t.dataset.lb;if(k==='back')setView(null);else exportSheet(k)};
  $('#evBar').onclick=function(e){var t=e.target.closest('button');if(t)act(t.dataset.ev)};
  $('#viewSel').onchange=function(){var v=this.value;if(v==='__new'){this.value=S.meta.only||'';newLayout();return}setView(v)};
  $('#lineSel').onchange=function(){S.lineStyle=this.value;if(S.tmp&&S.tmp.t==='line')S.tmp.style=this.value;draw()};
@@ -2120,7 +2187,7 @@ function clearProject(){
  snapH();var m=S.meta;
  S.objs=[];S.layers=[];S.sel=null;S.issues=[];S.tmp=null;S.perim=false;S.gapNext=false;S.pencil=false;
  m.title='SITE & FLOOR PLAN';m.event='[EVENT NAME]';m.venue='[VENUE]';m.client='[CLIENT]';m.date=today();m.rev='A';m.drawn='[DRAWN BY]';m.ref='FP-'+today().replace(/-/g,'')+'-001';
- m.tstart='';m.tend='';m.attend=0;m.staff=0;m.toilets=0;m.allOpen=false;m.certCap=0;m.siteArea=0;delete m.dens;m.only=null;m.layouts=[];m.evac=false;m.north=0;m.scale='auto';m.extent='content';m.mode='outdoor';m.gridMod=0;m.gx=0;m.gy=0;
+ m.tstart='';m.tend='';m.attend=0;m.staff=0;m.toilets=0;m.allOpen=false;delete m.region;setTimeout(regionAsk,600);m.certCap=0;m.siteArea=0;delete m.dens;m.only=null;m.layouts=[];m.evac=false;m.north=0;m.scale='auto';m.extent='content';m.mode='outdoor';m.gridMod=0;m.gx=0;m.gy=0;
  if(S.cloud){S.cloud.planId=null;S.cloud.rev=null}
  if(typeof syncEvac==='function')syncEvac();if(typeof renderViewSel==='function')renderViewSel();
  setTool('select');changed(true);fitAll();toast('Project cleared. Blank sheet ready.')}
@@ -2306,7 +2373,7 @@ function layHTML(){
 }
 function sheetHTML(){
  var m=S.meta,h='<h4>Clear project</h4><p class="note">Finished a redraw? Wipe the sheet for the next one. Your company name, logo and paper size stay.</p><div class="btns"><button class="btn sm dng" data-act="clearp">'+(S.clrArm==='p'?'Click again to confirm: clears everything':'Clear project (blank)')+'</button>'+(S.objs.some(function(o){return o.vn})?'<button class="btn sm" data-act="clearev">'+(S.clrArm==='e'?'Click again to confirm: removes event objects':'Clear event only (keep venue)')+'</button>':'')+'</div><h4>Title block</h4>';
- h+=fld('m_event','Event name',m.event)+fld('m_title','Drawing title',m.title)+'<div class="row2">'+fld('m_venue','Venue',m.venue)+fld('m_client','Client',m.client)+'</div><div class="row3">'+fld('m_date','Date',m.date)+fld('m_rev','Revision',m.rev)+fld('m_drawn','Drawn by',m.drawn)+'</div>'+fld('m_ref','Reference no.',m.ref)+(isAdmin()?fld('m_company','Company name (watermark &amp; title block)',m.company):'<p class="note">Company name, logo and footer are fixed to '+esc(BRAND_NAME)+' on every sheet.</p>');
+ h+=fld('m_event','Event name',m.event)+fld('m_title','Drawing title',m.title)+'<div class="row2">'+fld('m_venue','Venue',m.venue)+fld('m_client','Client',m.client)+'</div><label class="fld">Municipality (sets the local by-laws that are checked)<select id="m_region"><option value="">Choose…</option>'+REGIONS.map(function(r){return '<option value="'+r.k+'"'+(m.region===r.k?' selected':'')+'>'+esc(r.n)+'</option>'}).join('')+'</select></label><div class="row3">'+fld('m_date','Date',m.date)+fld('m_rev','Revision',m.rev)+fld('m_drawn','Drawn by',m.drawn)+'</div>'+fld('m_ref','Reference no.',m.ref)+(isAdmin()?fld('m_company','Company name (watermark &amp; title block)',m.company):'<p class="note">Company name, logo and footer are fixed to '+esc(BRAND_NAME)+' on every sheet.</p>');
  if(isAdmin())h+='<div class="btns"><button class="btn sm" data-act="logo">'+(m.logo?'Replace logo':'Upload logo')+'</button>'+(m.logo?'<button class="btn sm dng" data-act="nologo">Remove logo</button>':'')+'</div>';
  h+='<h4>Event logo</h4><p class="note">Shown at the top of the right-hand panel on the sheet, above the event details. Any image or PDF works (PNG, JPG, SVG, WebP, GIF, PDF…); a transparent PNG looks best.</p><div class="btns"><button class="btn sm pri" data-act="elogo">'+(m.eventLogo?'Replace event logo':'Upload event logo')+'</button>'+(m.eventLogo?'<button class="btn sm dng" data-act="noelogo">Remove</button>':'')+'</div>';
  h+='<h4>Event times &amp; crowd</h4><div class="row3">'+fld('m_tstart','Start time',m.tstart||'','time')+fld('m_tend','End time',m.tend||'','time')+fld('m_attend','Expected attendance',m.attend||'','number','min="0" step="1"')+'</div><div class="row2">'+fld('m_flow','Exit flow (people / min / m)',m.flow||82,'number','min="10" step="1"')+fld('m_evt','Your own clearance target, min (SASREA limit is 15)',m.evT||8,'number','min="1" step="0.5"')+'</div><div class="row2">'+fld('m_sitearea','Event site area, m² (if the venue has fencing you have not drawn)',m.siteArea||'','number','min="0" step="1"')+fld('m_cert','Venue certified capacity (fitness certificate)',m.certCap||'','number','min="0" step="1"')+'</div><div class="row2">'+fld('m_staff','Staff, crew &amp; artists on site (counted in the crowd)',m.staff||'','number','min="0" step="1"')+fld('m_toil','Toilets provided (if not drawn)',m.toilets||'','number','min="0" step="1"')+'</div><p class="note">Space per person (m² each). Typical planning figures: confirm against SANS 10400, the approved risk category and your ESSPC / fire department.</p><div class="row2">'+DENS.map(function(x){return fld('m_d_'+x.k,x.n,dOf(x.k),'number','min="0.1" step="0.05"')}).join('')+'</div><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_crowd"'+(m.crowd!==false?' checked':'')+'> Show the crowd &amp; capacity summary on the sheet</label><div class="btns"><button class="btn sm pri" data-act="crowd">Crowd &amp; capacity calculation…</button> <button class="btn sm pri" data-act="ready">Approval readiness check…</button></div>';
@@ -2368,6 +2435,7 @@ function wirePanel(b){
   [['m_gmod','gridMod'],['m_gmin','gridMinor'],['m_gx','gx'],['m_gy','gy']].forEach(function(q){var el=$('#'+q[0],b);if(el)el.onchange=function(){var v=parseFloat(el.value);if(isNaN(v)||((q[1]==='gridMod'||q[1]==='gridMinor')&&v<0))v=0;S.meta[q[1]]=v;if(q[1]==='gridMod'&&v>0)setSnap(v);saveLocal();draw()}});
   var mf0=$('#m_front',b);if(mf0)mf0.onchange=function(){S.meta.showFront=mf0.checked;saveLocal();draw()};
   var mg0=$('#m_gshow',b);if(mg0)mg0.onchange=function(){S.meta.gridShow=mg0.checked;saveLocal();draw()};
+  var mrg=$('#m_region',b);if(mrg)mrg.onchange=function(){if(mrg.value)setRegion(mrg.value);else{delete S.meta.region;saveLocal();renderPanel()}};
   var mao=$('#m_allopen',b);if(mao)mao.onchange=function(){S.meta.allOpen=mao.checked;saveLocal();draw();renderPanel()};
   var mg1=$('#m_gprint',b);if(mg1)mg1.onchange=function(){S.meta.gridPrint=mg1.checked;saveLocal()};
   var mg2=$('#m_glab',b);if(mg2)mg2.onchange=function(){S.meta.gridLabels=mg2.checked;saveLocal();draw()};

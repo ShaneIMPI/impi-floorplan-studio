@@ -79,7 +79,7 @@ const GOOD = `()=>{${ADD}const T=__T;add('item:marq10',0,0);add('item:marq10',14
  [[0,0],[14,0]].forEach(a=>{add('sign:fire_ext',a[0]+3,a[1]+3);add('sign:exit_box',a[0]+5,a[1]);add('sign:exit_box',a[0]-5,a[1])});
  add('sign:first_aid',7,8);add('sign:assembly',7,60);add('sign:assembly',-10,40);add('door:entrance',7,-15);add('sign:exit_box',7,-14);add('item:vehicle',25,60);add('sign:disabled',25,50);
  T.addObj({t:'poly',pts:[{x:-15,y:-15},{x:35,y:-15},{x:35,y:70},{x:-15,y:70}],site:1,label:'Event site'});
- const m=T.S.meta;m.attend=150;m.toilets=6;m.tstart='10:00';m.tend='18:00';}`;
+ const m=T.S.meta;m.attend=150;m.toilets=6;m.tstart='10:00';m.tend='18:00';m.region='other';m.date='';}`;
 /* a plan with deliberate problems */
 const BAD = `()=>{${ADD}const T=__T;add('item:marq10',0,0);add('item:marq10',11,0);add('item:marq1020',40,0);
  add('door:exit',0,5);add('door:exit',45,0,{w:0.9});T.S.meta.attend=800;}`;
@@ -198,6 +198,23 @@ await test('SASREA 2017 regulations: 1 m of gate per 1,000 (Reg 5(18)(d)), 15 mi
   ok(r.b.find(x => x[0] === 'Reg 5(18)(d)')[1] === true, 'with 4 m of gates the width check passes');
   ok(r.b.find(x => /5\(18\)\(b\)/.test(x[0]))[1] === false, 'a 1 m gate is under the 1.2 m minimum');
   ok(!r.a.some(x => /4\(1\)\(a\)|3\(12\)|12\(t\)/.test(x[0])), 'no draft regulation numbers are quoted');
+});
+await test('municipality: must be chosen; Tshwane and Cape Town set 4.5 m between tents; Cape Town lead time follows the event size', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S; S.objs = []; delete S.meta.region; S.meta.attend = 3000; S.meta.date = '';
+    const a = T.rdyRun().filter(x => x.cat === 'Municipality').map(x => x.sev);
+    const mk = x => T.addObj(Object.assign(T.makeAt('item:marq10', { x, y: 0 }), { w: 10, h: 10 })); mk(0); mk(14);
+    const sp = () => T.rdyRun().filter(x => x.cat === 'Tent spacing').map(x => x.sev + ':' + x.msg.slice(-16));
+    S.meta.region = 'joburg'; const j = sp(); S.meta.region = 'tshwane'; const t = sp(); S.meta.region = 'capetown'; const c = sp();
+    const d = new Date(); d.setDate(d.getDate() + 10); S.meta.date = d.toISOString().slice(0, 10); const late = T.rdyRun().filter(x => /By-laws: City of Cape Town/.test(x.cat) && x.sev === 'warn' && /working day/.test(x.msg)).map(x => x.msg);
+    S.meta.region = 'ekurhuleni'; S.meta.toilets = 0; const ek = T.rdyRun().filter(x => /Ekurhuleni/.test(x.cat) && /one per 100/.test(x.msg) && x.sev === 'fail').map(x => x.msg);
+    S.objs = []; S.meta.attend = 0; S.meta.date = ''; S.meta.region = 'other';
+    return { a, j, t, c, late, ek, bands: [150, 2001, 5001, 10001].map(n => T.ctBand(n)[1]), n: T.REGIONS.length }; });
+  ok(r.a.length === 1 && r.a[0] === 'fail', 'no municipality is a fail: ' + JSON.stringify(r.a));
+  ok(r.j.some(x => /^pass/.test(x)), 'Johannesburg (3 m): 4 m apart passes: ' + JSON.stringify(r.j));
+  ok(r.t.some(x => /^fail:.*4\.5 m/.test(x)) && r.c.some(x => /^fail:.*4\.5 m/.test(x)), 'Tshwane and Cape Town (4.5 m): 4 m apart fails: ' + JSON.stringify([r.t, r.c]));
+  ok(r.late.length === 1 && /20 working days/.test(r.late[0]), 'Cape Town medium event 10 days out is late: ' + JSON.stringify(r.late));
+  ok(r.ek.length === 1 && /30 needed/.test(r.ek[0]), 'Ekurhuleni toilets 1 per 100: ' + JSON.stringify(r.ek));
+  ok(JSON.stringify(r.bands) === '[15,20,25,60]' && r.n === 5, JSON.stringify(r.bands));
 });
 await test('SANS 10400-T Table 10: people per exit width, widest exit left out, exits needed', async () => {
   const r = await page.evaluate(() => { const T = __T; return { r: [.7, .75, 1, 1.1, 1.2, 1.5, 1.8, 4].map(T.sansRoute), e1: T.sansEscape([1.8]).cap, e2: T.sansEscape([1.8, 1.1]).cap, e3: T.sansEscape([1.8, 1.8, 1.2]).cap, n: [20, 26, 190, 241, 400, 955].map(T.sansExitsFor), t: T.sansToilets(1500), t2: T.sansToilets(150) }; });

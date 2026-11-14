@@ -149,7 +149,7 @@ function crowdLines(){
   if(C.att>0){var ok=C.evTime<=15;L.push(['Evacuation time',(C.evTime<10?C.evTime.toFixed(1):Math.round(C.evTime))+' min (limit 15)',ok?null:RED])}}
  else if(C.att>0)L.push(['Exits','none placed',RED]);
  if(C.att>0){var r0=sasrea(C)[0];L.push(['SASREA exit width',r0.have+' / '+r0.need,r0.ok?null:RED])}
- L.push(['Basis','SANS 10400 · SASREA 2017']);
+ var RG=regionOf();L.push(['Basis','SANS 10400 · SASREA 2017']);if(RG&&RG.k!=='other')L.push(['By-laws',RG.n.replace('City of ','')]);
  return L}
 function crowdModal(){
  var m=S.meta,C=crowdAll(),h='<h3>Crowd &amp; capacity</h3><p class="note"><b>'+esc(m.event||'')+'</b><br>'+esc(m.venue||'')+' · '+esc(m.date||'')+((m.tstart||m.tend)?' · '+esc(m.tstart||'')+(m.tend?' – '+esc(m.tend):''):'')+'</p>';

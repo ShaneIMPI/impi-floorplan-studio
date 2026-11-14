@@ -84,7 +84,7 @@ function clearProject(){
  snapH();var m=S.meta;
  S.objs=[];S.layers=[];S.sel=null;S.issues=[];S.tmp=null;S.perim=false;S.gapNext=false;S.pencil=false;
  m.title='SITE & FLOOR PLAN';m.event='[EVENT NAME]';m.venue='[VENUE]';m.client='[CLIENT]';m.date=today();m.rev='A';m.drawn='[DRAWN BY]';m.ref='FP-'+today().replace(/-/g,'')+'-001';
- m.tstart='';m.tend='';m.attend=0;m.staff=0;m.toilets=0;m.allOpen=false;m.certCap=0;m.siteArea=0;delete m.dens;m.only=null;m.layouts=[];m.evac=false;m.north=0;m.scale='auto';m.extent='content';m.mode='outdoor';m.gridMod=0;m.gx=0;m.gy=0;
+ m.tstart='';m.tend='';m.attend=0;m.staff=0;m.toilets=0;m.allOpen=false;delete m.region;setTimeout(regionAsk,600);m.certCap=0;m.siteArea=0;delete m.dens;m.only=null;m.layouts=[];m.evac=false;m.north=0;m.scale='auto';m.extent='content';m.mode='outdoor';m.gridMod=0;m.gx=0;m.gy=0;
  if(S.cloud){S.cloud.planId=null;S.cloud.rev=null}
  if(typeof syncEvac==='function')syncEvac();if(typeof renderViewSel==='function')renderViewSel();
  setTool('select');changed(true);fitAll();toast('Project cleared. Blank sheet ready.')}
