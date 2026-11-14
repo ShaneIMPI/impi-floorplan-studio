@@ -492,6 +492,48 @@ await test('Curve trace: dragging along an arc with Curve on traces a smooth mul
     return { n: o && o.pts && o.pts.length, wt: o && o.wt, bow }; });
   ok(r.n >= 4 && Math.abs(r.wt - 0.4) < 1e-6 && r.bow > 0.3, JSON.stringify(r));
 });
+await test('Rotate tool: a single traced wall (line/poly) rotates 90° about its own centre, point-for-point', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = { objs: S.objs, sel: S.sel, ms: S.ms };
+    S.objs = []; S.ms = [];
+    const o = { t: 'line', id: 501, style: 'wall', closed: true, pts: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 6 }, { x: 0, y: 6 }] };
+    S.objs.push(o); T.setSel([501]);
+    T.rotateSel(90);
+    const after = o.pts.map(p => ({ x: +p.x.toFixed(4), y: +p.y.toFixed(4) }));
+    S.objs = keep.objs; S.sel = keep.sel; S.ms = keep.ms;
+    return { after }; });
+  // a 10x6 rectangle rotated 90° about its own centre (5,3) becomes a 6x10 rectangle centred on the same point
+  const xs = r.after.map(p => p.x), ys = r.after.map(p => p.y);
+  const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys);
+  ok(Math.abs(w - 6) < 1e-3 && Math.abs(h - 10) < 1e-3, JSON.stringify(r));
+});
+await test('Rotate tool: a multi-object selection rotates together, 180°, about the shared selection centre', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = { objs: S.objs, sel: S.sel, ms: S.ms };
+    S.objs = []; S.ms = [];
+    const a = { t: 'rect', id: 601, k: 'trestle', x: 2, y: 2, w: 1, h: 1, rot: 0, label: '' };
+    const b = { t: 'rect', id: 602, k: 'trestle', x: 8, y: 2, w: 1, h: 1, rot: 0, label: '' };
+    S.objs.push(a, b); T.setSel([601, 602]);
+    T.rotateSel(180);
+    const out = { ax: +a.x.toFixed(3), ay: +a.y.toFixed(3), bx: +b.x.toFixed(3), by: +b.y.toFixed(3), arot: a.rot, brot: b.rot };
+    S.objs = keep.objs; S.sel = keep.sel; S.ms = keep.ms;
+    return out; });
+  // both squares are axis-aligned (rot 0) and the same size, so the group's bounding-box centre is exactly (5,2);
+  // 180° about it swaps a and b's x positions and leaves y the same; each object's own rot also turns by 180
+  ok(Math.abs(r.ax - 8) < 1e-3 && Math.abs(r.ay - 2) < 1e-3 && Math.abs(r.bx - 2) < 1e-3 && Math.abs(r.by - 2) < 1e-3 && r.arot === 180 && r.brot === 180, JSON.stringify(r));
+});
+await test('Straighten jagged sections: simplifying a noisy auto-traced wall removes zig-zag points but keeps the endpoints and overall shape', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = { objs: S.objs, sel: S.sel, ms: S.ms };
+    S.objs = []; S.ms = [];
+    // a mostly-straight run with small (±3cm) jitter typical of auto-trace noise on a flat wall
+    const pts = []; for (let i = 0; i <= 20; i++) { const j = (i % 2 === 0) ? 0.03 : -0.03; pts.push({ x: i * 2, y: j }); }
+    const o = { t: 'line', id: 701, style: 'wall', closed: false, pts };
+    S.objs.push(o); T.setSel([701]);
+    const before = o.pts.length;
+    T.act('simplify');
+    const after = o.pts.length, first = o.pts[0], last = o.pts[o.pts.length - 1];
+    S.objs = keep.objs; S.sel = keep.sel; S.ms = keep.ms;
+    return { before, after, first, last }; });
+  ok(r.before === 21 && r.after < r.before && r.after >= 2 && r.first.x === 0 && Math.abs(r.last.x - 40) < 1e-6, JSON.stringify(r));
+});
 await test('auto-trace: outline and walls come out of a synthetic plan at the right size', async () => {
   const r = await page.evaluate(() => { const T = __T;
     const cn = document.createElement('canvas'); cn.width = 1200; cn.height = 800; const c = cn.getContext('2d');

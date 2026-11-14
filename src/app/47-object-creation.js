@@ -46,6 +46,21 @@ function alignSel(m){
   shiftObj(o,dx,dy)});
  changed(true);
 }
+/* rotate the whole selection (one or many objects, including lines/polys) about the selection's own centre */
+function rotateSel(deg){
+ var a=selObjs().filter(function(o){return !o.lk});if(!a.length){toast('Select something to rotate first');return}
+ snapH();
+ var B=a.map(boundsOf),u={x0:Infinity,y0:Infinity,x1:-Infinity,y1:-Infinity};
+ B.forEach(function(b){u.x0=Math.min(u.x0,b.x0);u.y0=Math.min(u.y0,b.y0);u.x1=Math.max(u.x1,b.x1);u.y1=Math.max(u.y1,b.y1)});
+ var cx=(u.x0+u.x1)/2,cy=(u.y0+u.y1)/2,r=deg*D2R;
+ function rp(p){var v=rotv(p.x-cx,p.y-cy,r);return {x:cx+v.x,y:cy+v.y}}
+ a.forEach(function(o){
+  if(o.t==='dim'){o.a=rp(o.a);o.b=rp(o.b)}
+  else if(o.pts){o.pts=o.pts.map(rp)}
+  else{var q=rp({x:o.x,y:o.y});o.x=q.x;o.y=q.y;if(o.rot!==undefined)o.rot=((o.rot+deg)%360+360)%360}
+ });
+ changed(true);renderSelbar();renderPanel();draw();
+}
 function arraySel(){
  var o=getSel();if(!o||o.t==='dim'||o.t==='line'||o.t==='text'||o.t==='poly'){toast('Array works on items, zones, signs and doors');return}
  var d=dimsOf(o);
