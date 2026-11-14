@@ -77,9 +77,9 @@ const ADD = `window.add=(arm,x,y,ex)=>{const T=__T,o=T.makeAt(arm,{x,y});Object.
 const GOOD = `()=>{${ADD}const T=__T;add('item:marq10',0,0);add('item:marq10',14,0);
  [[-5,0,-90],[5,0,90],[9,0,-90],[19,0,90]].forEach(a=>add('door:exit',a[0],a[1],{rot:a[2]}));
  [[0,0],[14,0]].forEach(a=>{add('sign:fire_ext',a[0]+3,a[1]+3);add('sign:exit_box',a[0]+5,a[1]);add('sign:exit_box',a[0]-5,a[1])});
- add('sign:first_aid',7,8);add('sign:assembly',7,60);
+ add('sign:first_aid',7,8);add('sign:assembly',7,60);add('sign:assembly',-10,40);add('door:entrance',7,-15);add('sign:exit_box',7,-14);add('item:vehicle',25,60);add('sign:disabled',25,50);
  T.addObj({t:'poly',pts:[{x:-15,y:-15},{x:35,y:-15},{x:35,y:70},{x:-15,y:70}],site:1,label:'Event site'});
- const m=T.S.meta;m.attend=150;m.tstart='10:00';m.tend='18:00';}`;
+ const m=T.S.meta;m.attend=150;m.toilets=6;m.tstart='10:00';m.tend='18:00';}`;
 /* a plan with deliberate problems */
 const BAD = `()=>{${ADD}const T=__T;add('item:marq10',0,0);add('item:marq10',11,0);add('item:marq1020',40,0);
  add('door:exit',0,5);add('door:exit',45,0,{w:0.9});T.S.meta.attend=800;}`;
@@ -187,15 +187,46 @@ await test('crowd: open ground takes off structures once, even when they overlap
     T.addObj(Object.assign(T.makeAt('item:marq10', { x: 100, y: 100 }), { w: 10, h: 10 })); const c = T.crowdAll().open; T.S.meta.siteArea = 0; return { base: base.occ, occ: c.occ }; });
   ok(Math.abs(r.occ - 100) < 1.5, 'zone + a tent on it count as one 100 m2: ' + JSON.stringify(r));
 });
-await test('SASREA checks: 1 m of exit per 1,000, 15 minutes, toilets and medical from the attendance', async () => {
+await test('SASREA 2017 regulations: 1 m of gate per 1,000 (Reg 5(18)(d)), 15 minutes (Reg 5(3)(a)), toilets from SANS 10400 Table 7', async () => {
   const r = await page.evaluate(() => { const T = __T; T.S.objs = []; T.S.meta.siteArea = 5000; T.S.meta.attend = 3000; T.S.meta.staff = 500; T.S.meta.toilets = 0;
     const d = T.addObj({ t: 'door', k: 'eexit', x: 0, y: 0, w: 3, rot: 0 }); const a = T.sasrea(T.crowdAll());
     T.addObj({ t: 'door', k: 'eexit', x: 5, y: 0, w: 1, rot: 0 }); const b = T.sasrea(T.crowdAll()); T.S.meta.staff = 0; T.S.meta.attend = 0; T.S.meta.siteArea = 0; return { a: a.map(x => [x.reg, x.need, x.ok]), b: b.map(x => [x.reg, x.ok]) }; });
-  const ex = r.a.find(x => x[0] === 'Reg 4(1)(a)(iv)'), t12 = r.a.find(x => x[0] === 'Reg 3(12)'), toi = r.a.find(x => x[0] === 'Reg 12(t)');
-  ok(ex[1] === '3.5 m' && ex[2] === false, 'exit width for 3,500 people with 3 m: ' + JSON.stringify(ex));
-  ok(t12[2] === true, '3,500 / (3 m x 82) = 14.2 min is inside 15: ' + JSON.stringify(t12));
-  ok(toi[1] === '35' && toi[2] === false, 'toilets for 3,500 people: ' + JSON.stringify(toi));
-  ok(r.b.find(x => x[0] === 'Reg 4(1)(a)(iv)')[1] === true, 'with 4 m of exits the width check passes');
+  const ex = r.a.find(x => x[0] === 'Reg 5(18)(d)'), t15 = r.a.find(x => x[0] === 'Reg 5(3)(a)'), t10 = r.a.find(x => x[0] === 'Reg 5(3)(b)'), toi = r.a.find(x => /Reg 5\(4\)/.test(x[0]));
+  ok(ex[1] === '3.5 m' && ex[2] === false, 'gate width for 3,500 people with 3 m: ' + JSON.stringify(ex));
+  ok(t15[2] === true && t10[2] === null, '3,500 / (3 m x 82) = 14.2 min: inside 15, over 10: ' + JSON.stringify([t15, t10]));
+  ok(toi[1] === '43' && toi[2] === false, 'toilets for 3,500 (1,750 each): 5 male WCs + 16 urinals + 22 female WCs = 43: ' + JSON.stringify(toi));
+  ok(r.b.find(x => x[0] === 'Reg 5(18)(d)')[1] === true, 'with 4 m of gates the width check passes');
+  ok(r.b.find(x => /5\(18\)\(b\)/.test(x[0]))[1] === false, 'a 1 m gate is under the 1.2 m minimum');
+  ok(!r.a.some(x => /4\(1\)\(a\)|3\(12\)|12\(t\)/.test(x[0])), 'no draft regulation numbers are quoted');
+});
+await test('SANS 10400-T Table 10: people per exit width, widest exit left out, exits needed', async () => {
+  const r = await page.evaluate(() => { const T = __T; return { r: [.7, .75, 1, 1.1, 1.2, 1.5, 1.8, 4].map(T.sansRoute), e1: T.sansEscape([1.8]).cap, e2: T.sansEscape([1.8, 1.1]).cap, e3: T.sansEscape([1.8, 1.8, 1.2]).cap, n: [20, 26, 190, 241, 400, 955].map(T.sansExitsFor), t: T.sansToilets(1500), t2: T.sansToilets(150) }; });
+  ok(JSON.stringify(r.r) === '[0,25,25,120,130,160,190,190]', JSON.stringify(r.r));
+  ok(r.e1 === 25 && r.e2 === 120 && r.e3 === 320, JSON.stringify([r.e1, r.e2, r.e3]));
+  ok(JSON.stringify(r.n) === '[1,2,2,3,4,7]', JSON.stringify(r.n));
+  ok(r.t.pans === 31 && r.t.fwc === 16 && r.t2.pans === 6, JSON.stringify([r.t, r.t2]));
+});
+await test('capacity: an enclosed marquee is capped by its exits, an open-sided one is part of the open ground', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S; S.objs = []; S.meta.siteArea = 1000; S.meta.attend = 0; S.meta.allOpen = false;
+    const t = T.addObj(Object.assign(T.makeAt('item:marq1020', { x: 0, y: 0 }), { w: 20, h: 10 })); const a = T.crowdAll();
+    T.addObj({ t: 'door', k: 'exit', x: -10, y: 0, w: 1.8, rot: 90 }); T.addObj({ t: 'door', k: 'exit', x: 10, y: 0, w: 1.8, rot: 90 }); const b = T.crowdAll();
+    S.meta.allOpen = true; const c = T.crowdAll(); S.meta.allOpen = false; t.opn = true; const d = T.crowdAll();
+    const f = (S.meta.attend = 500, t.opn = false, T.rdyRun().filter(x => x.sev === 'fail' && /Table 10/.test(x.msg)).length); S.meta.attend = 0; S.meta.siteArea = 0;
+    return { a: [a.units.length, a.units[0].cap, a.total], b: [b.units[0].cap, b.units[0].pop, b.units[0].lim, b.total], c: [c.units.length, c.merged.length, c.total, c.open.cap], d: [d.units.length, d.total], f }; });
+  ok(r.a[0] === 1 && r.a[1] === 200 && Math.abs(r.a[2] - 1000) <= 2, 'no exits drawn yet: floor figure 200 + 800 open: ' + JSON.stringify(r.a));
+  ok(r.b[0] === 190 && r.b[1] === 200 && r.b[2] === true && Math.abs(r.b[3] - 990) <= 2, 'two 1.8 m exits serve 190 (one left out): ' + JSON.stringify(r.b));
+  ok(r.c[0] === 0 && r.c[1] === 1 && r.c[2] === 1000 && r.c[3] === 1000, 'all tents open: the whole 1,000 m² is open ground: ' + JSON.stringify(r.c));
+  ok(r.d[0] === 0 && r.d[1] === 1000, 'ticked open-sided behaves the same: ' + JSON.stringify(r.d));
+  ok(r.f >= 1, 'the readiness check cites Table 10 when the exits are short');
+});
+await test('seating: a row longer than 28 seats and rows too close together are flagged', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S; S.objs = []; S.meta.attend = 0;
+    const row = (y, n) => { for (let i = 0; i < n; i++) T.addObj({ t: 'rect', k: 'chair10', x: 2.5 + i * 5, y, w: 5, h: .5, rot: 0, label: '' }); };
+    row(0, 3); row(.95, 3); const a = T.rdyRun().filter(x => x.cat === 'Seating'); S.objs = []; row(0, 2); row(.95, 2); const b = T.rdyRun().filter(x => x.cat === 'Seating'); S.objs = []; row(0, 2); row(.7, 2); const c = T.rdyRun().filter(x => x.cat === 'Seating'); S.objs = [];
+    return { a: a.map(x => x.sev + ':' + x.msg.slice(0, 22)), b: b.map(x => x.sev), c: c.map(x => x.sev + ':' + x.msg.slice(0, 30)), runs: 0 }; });
+  ok(r.a.some(x => /^fail:A row of 30 seats/.test(x)), JSON.stringify(r.a));
+  ok(r.b.length === 1 && r.b[0] === 'pass', '20-seat rows at 0.95 m pass: ' + JSON.stringify(r.b));
+  ok(r.c.some(x => /^fail:.*too close/.test(x) || /^fail:1 pair/.test(x)), JSON.stringify(r.c));
 });
 await test('export: Auto-fit leaves the grid off the sheet, a fixed scale still prints it', async () => {
   const r = await page.evaluate(async () => { const T = __T; T.S.objs = []; T.S.layers = []; T.S.meta.evac = false; T.S.meta.only = null; T.S.meta.attend = 0;
@@ -407,6 +438,15 @@ await test('auto-trace: a thick curved wall on a white plan is traced as its own
     const res = T.traceVenue(L, { outline: true, walls: true, minWall: 3, close: 1.2, smooth: 6, heavy: .2, mode: 'shell' });
     let low = 0; res.walls.forEach(w => (w.pts || []).forEach(q => { low = Math.max(low, q.y); })); return { o: res.outlines.length, w: res.walls.length, low: Math.round(low * 10) / 10, many: res.walls.some(w => w.pts && w.pts.length > 8) }; });
   ok(r.o === 1 && r.w >= 1 && r.many && r.low > 19 && r.low < 21.5, JSON.stringify(r));
+});
+await test('Grid lock: an off-grid item lands on the 1 m grid by its edges when moved, and new items are placed edge-on-grid', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = S.objs; S.objs = []; S.grid = 1; S.gridLock = true;
+    const a = { t: 'rect', k: 'gaz3', x: 4.37, y: 2.61, w: 3, h: 3, rot: 0, label: '', id: 9101 }, b = { t: 'rect', k: 'trestle', x: 9.2, y: 2.61, w: 2.4, h: 1.8, rot: 0, label: '', id: 9102 };
+    S.objs.push(a, b); T.gridAlign(a, [a, b]); const p = T.placePos({ x: 7.3, y: 7.3 }, 'item:trestle'); const q = T.snapW({ x: 4.36, y: 2.6 });
+    S.gridLock = false; const q2 = T.snapW({ x: 5.86, y: 4.1 }); S.gridLock = true; S.objs = keep;
+    return { ax: a.x - 1.5, ay: a.y - 1.5, bx: b.x, px: p.x - 1.2, py: p.y - .9, q, q2 }; });
+  const whole = v => Math.abs(v - Math.round(v)) < 1e-9;
+  ok(whole(r.ax) && whole(r.ay) && Math.abs(r.bx - 9.33) < 1e-6 && whole(r.px) && whole(r.py) && r.q.x === 4 && r.q.y === 3, JSON.stringify(r));
 });
 await test('auto-trace: outline and walls come out of a synthetic plan at the right size', async () => {
   const r = await page.evaluate(() => { const T = __T;

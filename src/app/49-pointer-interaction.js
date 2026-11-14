@@ -101,6 +101,7 @@ function onMove(e,p){
   if(Math.abs(dx2)+Math.abs(dy2)>0||d.fresh)d.moved=true;
   if(d.fresh&&S.tool==='place'){var sp=placePos(w,S.arm);d.o.x=sp.x;d.o.y=sp.y}
   else (d.grp||[{o:d.o,orig:d.orig}]).forEach(function(q){applyMove(q.o,q.orig,dx2,dy2)});
+  if(!(d.fresh&&S.tool==='place'))gridAlign(d.o,d.grp?d.grp.map(function(q){return q.o}):null);
   if(!d.grp||d.grp.length<2)seatSnap(d.o);
   draw();return;
  }

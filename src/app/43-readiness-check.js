@@ -1,15 +1,19 @@
 /* ---------- approval readiness check ---------- */
 var RDY=[
- {k:'gap',n:'Minimum gap between tents / marquees (m)',d:3},
- {k:'gapGz',n:'Minimum gap between two gazebos (m)',d:1.5},
  {k:'minEx',n:'Minimum number of exits for the venue',d:2},
- {k:'exW',n:'Minimum clear width of one exit (m)',d:1.1},
- {k:'two',n:'A structure holding more than this many people needs 2+ exits',d:50},
- {k:'travel',n:'Maximum straight-line distance to an exit (m)',d:45},
- {k:'asm',n:'Assembly point: minimum distance from any structure (m)',d:20},
- {k:'fireA',n:'Floor area per fire extinguisher (m²)',d:200},
+ {k:'exW',n:'Minimum clear width of a venue exit, m (SASREA Reg 5(18)(b): 1.2)',d:1.2},
+ {k:'two',n:'An enclosed structure holding more than this needs 2+ exits (SANS 10400-T 4.17.2: 25)',d:25},
+ {k:'apart',n:'Two exits of one structure at least this far apart, m (SANS 10400-T 4.17.1: 5)',d:5},
+ {k:'travel',n:'Longest travel to an exit, m (SANS 10400-T 4.16: 45)',d:45},
+ {k:'asmN',n:'Assembly areas needed (SASREA Reg 5(12): 2)',d:2},
+ {k:'asm',n:'Assembly point: minimum distance from any structure, m (planning figure)',d:20},
+ {k:'fireA',n:'Floor area per fire extinguisher, m² (SANS 10400-T Table 11: 200)',d:200},
  {k:'fireMin',n:'Structures from this area (m²) need fire equipment',d:20},
  {k:'fireD',n:'Fire equipment counts if within this distance of the structure (m)',d:5},
+ {k:'seatRun',n:'Most seats in one row between aisles (SASREA Reg 6(3)(g): 28)',d:28},
+ {k:'aisle',n:'Narrowest aisle between seat blocks, m (SANS 10400-T 4.49.4: 1.1)',d:1.1},
+ {k:'gap',n:'Minimum gap between tents / marquees, m (fire by-law figure, not SASREA or SANS 10400)',d:3},
+ {k:'gapGz',n:'Minimum gap between two gazebos, m (fire by-law figure)',d:1.5},
  {k:'aidCap',n:'Structures holding at least this many people need first aid nearby',d:200},
  {k:'aidD',n:'First aid counts as nearby within (m)',d:30},
  {k:'sgn',n:'Exit sign must be within this distance of an exit door (m)',d:4}
@@ -25,6 +29,15 @@ function polyGap(A,B){
  for(i=0;i<A.length;i++)for(j=0;j<B.length;j++){m=Math.min(m,segD(A[i],B[j],B[(j+1)%B.length]),segD(B[j],A[i],A[(i+1)%A.length]))}
  return m}
 function ptPolyD(p,P){if(inPoly(p,P))return 0;var m=Infinity;for(var i=0;i<P.length;i++)m=Math.min(m,segD(p,P[i],P[(i+1)%P.length]));return m}
+/* arena chairs grouped into unbroken runs along each row: seats in the run, its ends, and the row it sits in */
+function seatRuns(){
+ var G={},runs=[];
+ S.objs.forEach(function(o){if(o.t!=='rect'||o.hd||o.ev||o.lay)return;var l=LIBM[o.k];if(!l||l.s!=='chairs')return;
+  var rt=((o.rot%180)+180)%180;if(rt>179.5)rt=0;var r=rt*D2R,cs=Math.cos(r),sn=Math.sin(r),al=o.x*cs+o.y*sn,ry=-o.x*sn+o.y*cs,key=Math.round(rt)+'|'+Math.round(ry/.1);
+  (G[key]=G[key]||[]).push({o:o,a0:al-o.w/2,a1:al+o.w/2,ry:ry,rt:Math.round(rt),n:seatN(o),dp:o.h})});
+ Object.keys(G).forEach(function(k){var L=G[k].sort(function(p,q){return p.a0-q.a0}),cur=null;
+  L.forEach(function(it){if(cur&&it.a0-cur.a1<.3){cur.a1=Math.max(cur.a1,it.a1);cur.n+=it.n;cur.ids.push(it.o.id)}else{cur={a0:it.a0,a1:it.a1,n:it.n,ids:[it.o.id],ry:it.ry,rt:it.rt,dp:it.dp};runs.push(cur)}})});
+ return runs}
 function rdyRun(){
  var F=[],objs=S.objs.filter(function(o){return !o.hd&&!o.ev&&!o.lay}),m=S.meta;
  function add(sev,cat,msg,ids,fix){F.push({sev:sev,cat:cat,msg:msg,ids:ids||[],fix:fix||''})}
@@ -51,29 +64,53 @@ function rdyRun(){
   else add('pass','Exits',ne+' exits placed.');
   var narrow=exits.filter(function(e){return (e.w||0)+1e-6<rv('exW')});
   if(narrow.length)add('fail','Exits',narrow.length+' exit'+(narrow.length>1?'s are':' is')+' narrower than '+rv('exW')+' m ('+narrow.map(function(e){return (Math.round((e.w||0)*100)/100)+' m'}).join(', ')+').',narrow.map(function(e){return e.id}),'Widen the door or add another exit.');
-  if(att>0){var need=att/(C.flow*C.T);
-   if(C.exW+1e-6<need)add('fail','Exits','Total exit width is '+(Math.round(C.exW*10)/10)+' m but about '+(Math.round(need*10)/10)+' m is needed to clear '+cfmt(att)+' people in '+C.T+' min ('+C.flow+' people/min/m). Clearance would take about '+(C.evTime<10?C.evTime.toFixed(1):Math.round(C.evTime))+' min.',exits.map(function(e){return e.id}),'Add or widen exits.');
-   else add('pass','Exits','Exit width '+(Math.round(C.exW*10)/10)+' m clears the expected crowd in about '+(C.evTime<10?C.evTime.toFixed(1):Math.round(C.evTime))+' min (target '+C.T+').')}
+  if(att>0&&C.evTime!==null&&C.evTime<=15&&C.evTime>C.T)add('warn','Exits','The crowd clears in about '+(C.evTime<10?C.evTime.toFixed(1):Math.round(C.evTime))+' min: inside the SASREA 15 minutes but over your own target of '+C.T+' min.',exits.map(function(e){return e.id}),'Add or widen exits, or change the target on the Sheet tab.');
  }
+ /* 3b SASREA Regulations 2017, row by row */
+ sasrea(C).forEach(function(r){var cat='SASREA '+r.reg,msg=r.what+'. Needed: '+r.need+'. On the plan: '+r.have+'.';
+  if(r.ok===true)add('pass',cat,msg);else if(r.ok===false)add('fail',cat,msg,/gate|evacuat|safety/i.test(r.what)?exits.map(function(e){return e.id}):[],'See Crowd & capacity for the figures.');else add('warn',cat,msg+' Cannot be judged from the drawing alone.')});
+ if(att>0&&att<2000&&!(+m.certCap>=2000))add('info','SASREA','Expected attendance is under 2,000. The Act defines a venue as holding at least 2,000 (s 1), so SASREA may not strictly apply; the checks are still good practice and the local authority and by-laws decide.');
+ if(C.total>C.sans&&C.sans>0)add('warn','Capacity','The plan counts '+cfmt(C.total)+' people but the SANS 10400-A design population (Reg A21: fixed seats, or 1 person per m²) is '+cfmt(C.sans)+'. Denser standing needs the local authority\'s agreement or a rational design.',[],'Use "Standing (1 m² each)" or get the higher figure certified.');
+ if(C.merged&&C.merged.length)add('info','Open structures',C.merged.length+' open-sided tent'+(C.merged.length>1?'s are':' is')+' counted as part of the open ground, not as closed rooms.');
  /* 4 per structure */
  var tents=objs.filter(function(o){if(o.t!=='rect')return false;var l=LIBM[o.k];return l&&l.c==='Tents'&&l.s!=='stall'});
  var asm=signs('assembly'),fire=objs.filter(function(o){return o.t==='sign'&&(o.k==='fire_ext'||o.k==='hose_reel')}),aid=objs.filter(function(o){return (o.t==='sign'&&o.k==='first_aid')||(o.t==='rect'&&o.k==='faid')});
+ var panic=false;
  units.forEach(function(u){
   var o=u.o,P=selOutline(o).pts,id=[o.id],nm=u.name+' ('+cfmt(u.gross)+' m²)';
   var near=function(arr,d){return arr.filter(function(q){return ptPolyD({x:q.x,y:q.y},P)<=d})};
-  if(u.cap>0&&!u.opn){
-   if(u.nex===0)add('fail','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.cap)+' people but has no exit at it.',id,'Place exit doors on its edge.');
+  if(u.pop>0&&!u.opn){
+   var cat='Structure: '+nm,xs=u.exs||[],eid=xs.map(function(e){return e.id}),nx=Math.max(u.pop>rv('two')?2:1,sansExitsFor(u.pop));
+   if(u.nex===0)add('fail',cat,'"'+nm+'" is enclosed and holds '+cfmt(u.pop)+' people but has no exit at it (SANS 10400-T 4.16).',id,'Place exit doors on its edge, or tick "Open-sided" if its sides are open.');
    else{
-    if(u.cap>rv('two')&&u.nex<2)add('fail','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.cap)+' people but has only one exit (more than '+rv('two')+' people needs two or more).',id,'Add a second exit, ideally on the opposite side.');
-    var nd=u.cap/(C.flow*C.T);if(u.ew+1e-6<nd)add('fail','Structure: '+nm,'"'+nm+'" exit width '+(Math.round(u.ew*10)/10)+' m, needs about '+(Math.round(nd*10)/10)+' m for '+cfmt(u.cap)+' people.',id,'Widen or add exits at this structure.')}
-   if(exits.length){var far=0;P.forEach(function(p){var best=Infinity;exits.forEach(function(e){best=Math.min(best,dist(p,e))});far=Math.max(far,best)});
-    if(far>rv('travel'))add('fail','Structure: '+nm,'Farthest point of "'+nm+'" is about '+Math.round(far)+' m from the nearest exit (limit '+rv('travel')+' m, straight line; the walked route is longer).',id,'Add an exit nearer to that end.')}
+    if(u.nex<nx)add('fail',cat,'"'+nm+'" holds '+cfmt(u.pop)+' people and has '+u.nex+' exit'+(u.nex===1?'':'s')+'; it needs '+nx+' (SANS 10400-T 4.17.2: more than 25 people two exits, more than 240 three; 4.21.2: no exit serves more than 190 and the widest is left out).',id.concat(eid),'Add exits, spread around the structure.');
+    if(u.esc.cap<u.pop)add('fail',cat,'The exits of "'+nm+'" can serve '+cfmt(u.esc.cap)+' people under SANS 10400-T Table 10 (120 at 1.1 m up to 190 at 1.8 m each, widest exit left out), but the floor holds '+cfmt(u.pop)+'. Its capacity is cut to '+cfmt(u.cap)+'.',id.concat(eid),'Add exits or widen them towards 1.8 m.');
+    var mw=u.pop>25?1.1:.75,nr=xs.filter(function(e){return (e.w||0)+1e-6<mw});
+    if(nr.length)add('fail',cat,nr.length+' exit'+(nr.length>1?'s':'')+' of "'+nm+'" '+(nr.length>1?'are':'is')+' under '+mw+' m clear (SANS 10400-T '+(u.pop>25?'Table 10':'4.17.1')+').',nr.map(function(e){return e.id}),'Widen the door.');
+    var close=false,i2,j2;for(i2=0;i2<xs.length;i2++)for(j2=i2+1;j2<xs.length;j2++)if(dist(xs[i2],xs[j2])+1e-6<rv('apart'))close=true;
+    if(close&&u.nex>=2)add('fail',cat,'Two exits of "'+nm+'" are less than '+rv('apart')+' m apart (SANS 10400-T 4.17.1).',eid,'Move one to another side.');
+    var far=0;P.forEach(function(p){var best=Infinity;xs.forEach(function(e){best=Math.min(best,dist(p,e))});far=Math.max(far,best)});
+    if(far>rv('travel'))add('fail',cat,'Farthest point of "'+nm+'" is about '+Math.round(far)+' m from its nearest exit (SANS 10400-T 4.16 limit '+rv('travel')+' m; straight line, the walked route is longer).',id,'Add an exit nearer to that end.');
+    if(!F.some(function(f){return f.cat===cat&&f.sev==='fail'}))add('pass',cat,'"'+nm+'": '+u.nex+' exits serve '+cfmt(u.esc.cap)+' people for '+cfmt(u.pop)+' on the floor (SANS 10400-T 4.17, 4.21).')}
+   if(u.pop>60&&!panic){panic=true;add('info','Exit doors','Enclosed structures holding more than 60 people need panic bars on any lockable exit door, doors opening outwards, lit exit signs and emergency lighting (SANS 10400-T 4.16.10, 4.17.3, 4.29.4, 4.30).')}
   }
   if(u.gross>=rv('fireMin')){var nf=near(fire,rv('fireD')).length,rq=Math.max(1,Math.ceil(u.gross/rv('fireA')));
-   if(nf<rq)add('fail','Structure: '+nm,'"'+nm+'" has '+nf+' fire extinguisher'+(nf===1?'':'s')+' at it; '+rq+' needed ('+cfmt(u.gross)+' m² at 1 per '+rv('fireA')+' m²).',id,'Signs → Fire → extinguisher.')}
-  if(u.cap>=rv('aidCap')&&!near(aid,rv('aidD')).length)add('warn','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.cap)+' people but there is no first aid point within '+rv('aidD')+' m.',id,'Place a first aid post or sign near it.');
+   if(nf<rq)add('fail','Structure: '+nm,'"'+nm+'" has '+nf+' fire extinguisher'+(nf===1?'':'s')+' at it; '+rq+' needed ('+cfmt(u.gross)+' m² at 1 per '+rv('fireA')+' m², SANS 10400-T 4.37 Table 11).',id,'Signs → Fire → extinguisher.')}
+  if(u.pop>=rv('aidCap')&&!near(aid,rv('aidD')).length)add('warn','Structure: '+nm,'"'+nm+'" holds '+cfmt(u.pop)+' people but there is no first aid point within '+rv('aidD')+' m.',id,'Place a first aid post or sign near it.');
  });
- var nopn=units.filter(function(u){return u.opn}).length;if(nopn)add('info','Open structures',nopn+' open-sided structure'+(nopn>1?'s are':' is')+' not checked for exits (people can leave in any direction).');
+ var nopn=units.filter(function(u){return u.opn}).length;if(nopn)add('info','Open structures',nopn+' open zone'+(nopn>1?'s or structures are':' or structure is')+' not checked for exits: people can leave in any direction, so the venue exits serve them.');
+ if(m.mode==='indoor'){var big=units.filter(function(u){return !u.opn&&u.gross>250});if(big.length&&!objs.some(function(o){return o.t==='sign'&&o.k==='hose_reel'}))add('warn','Fire equipment','Indoor floor over 250 m² with no hose reel shown. SANS 10400-T 4.34 asks for one per 500 m².',big.map(function(u){return u.o.id}),'Signs → Fire → hose reel, at the venue\'s real positions.')}
+ /* 4b seating rows */
+ var runs=seatRuns();
+ if(runs.length){var sr=rv('seatRun'),long=runs.filter(function(r){return r.n>sr}),ai=rv('aisle'),nar2=[],tight=[];
+  long.slice(0,6).forEach(function(r){add('fail','Seating','A row of '+r.n+' seats has no aisle break. The most between two aisles is '+sr+', or 14 with an aisle at one end only (SASREA Reg 6(3)(g)).',r.ids,'Split the row with an aisle of at least '+ai+' m.')});
+  if(long.length>6)add('fail','Seating',(long.length-6)+' more rows are longer than '+sr+' seats.');
+  runs.forEach(function(a){runs.forEach(function(b){if(a===b||a.rt!==b.rt)return;
+   if(Math.abs(a.ry-b.ry)<.06&&b.a0>a.a1){var g=b.a0-a.a1;if(g>=.3&&g+1e-6<ai&&nar2.length<200)nar2.push(a.ids.concat(b.ids))}
+   var dr=b.ry-a.ry;if(dr>.06&&dr<1.6&&b.a0<a.a1-.2&&b.a1>a.a0+.2){var cl=dr-a.dp,pass=Math.ceil(Math.max(a.n,b.n)/2),nd=pass<=14?.3:pass<=24?.4:.5;if(cl+1e-6<nd)tight.push([a.ids.concat(b.ids),cl,nd])}})});
+  if(nar2.length)add('fail','Seating',nar2.length+' gap'+(nar2.length>1?'s':'')+' between seat blocks '+(nar2.length>1?'are':'is')+' narrower than '+ai+' m, too tight to count as an aisle (SANS 10400-T 4.49.4).',nar2[0],'Open the aisle to '+ai+' m or close the gap.');
+  if(tight.length){tight.sort(function(p,q){return p[1]-q[1]});add('fail','Seating',tight.length+' pair'+(tight.length>1?'s':'')+' of rows '+(tight.length>1?'are':'is')+' too close: '+(Math.round(tight[0][1]*100))+' cm clear between rows where '+(tight[0][2]*100)+' cm is needed (SANS 10400-T 4.49.3(c); SASREA Reg 6(3)(g) asks 400 mm).',tight[0][0],'Use a row spacing of 0.95 m.')}
+  if(!long.length&&!nar2.length&&!tight.length)add('pass','Seating',runs.length+' seat rows: none longer than '+sr+' seats, aisles at least '+ai+' m, rows far enough apart.')}
  if(units.length&&units.every(function(u){return u.gross<rv('fireMin')}))add('info','Fire equipment','All structures are under '+rv('fireMin')+' m², so none needs its own fire equipment under these settings.');
  if(!fire.length&&objs.length>3&&!F.some(function(f){return f.cat.indexOf('Structure')===0&&/fire extinguisher/.test(f.msg)}))add('fail','Fire equipment','No fire extinguishers or hose reels are placed anywhere on the plan.',[],'Signs → Fire.');
  /* 5 first aid, venue */
@@ -82,17 +119,18 @@ function rdyRun(){
  /* 6 assembly */
  if(!asm.length)add('fail','Assembly point','No assembly point is placed.',[],'Signs → Safe → Assembly point.');
  else{
+  if(asm.length<rv('asmN'))add('fail','Assembly point','Only '+asm.length+' assembly point placed; SASREA Reg 5(12) asks for at least '+rv('asmN')+', accessible, level, lit and signed.',asm.map(function(a){return a.id}),'Add a second one on another side of the site.');
   var allP=tents.map(function(o){return {o:o,P:selOutline(o).pts}}).concat(units.filter(function(u){return u.o.t!=='rect'}).map(function(u){return {o:u.o,P:selOutline(u.o).pts}}));
   var bad=[];asm.forEach(function(a){var inside=null,mind=Infinity;tents.forEach(function(t){var P=selOutline(t).pts,d=ptPolyD({x:a.x,y:a.y},P);if(d<mind)mind=d;if(d===0)inside=t});
    if(inside)add('fail','Assembly point','An assembly point is inside "'+((LIBM[inside.k]||{}).n||'a structure')+'". It must be in the open, clear of buildings and tents.',[a.id],'Move it outside.');
    else if(mind<rv('asm'))bad.push(a)});
   if(bad.length&&bad.length===asm.length)add('warn','Assembly point','The nearest assembly point is only '+Math.round(Math.min.apply(null,bad.map(function(a){var b=Infinity;tents.forEach(function(t){b=Math.min(b,ptPolyD({x:a.x,y:a.y},selOutline(t).pts))});return b})))+' m from a structure (set minimum '+rv('asm')+' m). A collapse or fire could reach it.',bad.map(function(a){return a.id}),'Move it farther from structures.');
-  else if(!F.some(function(f){return f.cat==='Assembly point'}))add('pass','Assembly point',asm.length+' assembly point'+(asm.length>1?'s':'')+' placed, clear of structures.')}
+  else if(!F.some(function(f){return f.cat==='Assembly point'&&f.sev!=='pass'}))add('pass','Assembly point',asm.length+' assembly point'+(asm.length>1?'s':'')+' placed, clear of structures.')}
  /* 7 exit signs */
  var xs=objs.filter(function(o){return o.t==='sign'&&(o.k==='exit_run'||o.k==='exit_run_r'||o.k==='exit_box'||o.k==='exit_sign')});
  var nosign=exits.filter(function(e){return !xs.some(function(s){return dist(s,e)<=rv('sgn')})});
  if(exits.length&&nosign.length)add('warn','Exit signage',nosign.length+' exit'+(nosign.length>1?'s have':' has')+' no exit sign within '+rv('sgn')+' m.',nosign.map(function(e){return e.id}),'Signs → Safe → Emergency exit sign.');
- else if(exits.length)add('pass','Exit signage','Every exit has an exit sign.');
+ else if(exits.length)add('pass','Exit signage','Every exit has an exit sign (SASREA Reg 5(9), 5(14); SANS 10400-T 4.29).');
  /* 8 tent spacing */
  var tp=tents.map(function(t){return {o:t,P:selOutline(t).pts}}),gp=rv('gap'),sp=0,bs=[],isGz=function(o){return (LIBM[o.k]||{}).s==='gazebo'};
  for(var i=0;i<tp.length;i++)for(var j=i+1;j<tp.length;j++){
@@ -118,7 +156,7 @@ function rdyModal(){
   var idx=F.indexOf(f);
   h+='<div style="display:flex;gap:8px;padding:7px 0;border-top:1px solid #e3e8ec;align-items:flex-start"><span style="flex:none;min-width:58px;font-weight:700;font-size:11px;color:'+cc[f.sev]+'">'+lab[f.sev]+'</span><div style="flex:1;font-size:13px"><small style="color:#5b6b78">'+esc(f.cat)+'</small><br>'+esc(f.msg)+(f.fix&&f.sev!=='pass'?'<br><small style="color:#5b6b78">How to fix: '+esc(f.fix)+'</small>':'')+'</div>'+(f.ids&&f.ids.length?'<button class="btn sm" data-rshow="'+idx+'">Show</button>':'')+'</div>'});
  h+='<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">Settings used by this check (editable)</summary><div class="row2" style="margin-top:6px">'+RDY.map(function(x){return '<label class="fld">'+esc(x.n)+'<input type="number" step="any" min="0" data-rset="'+x.k+'" value="'+rv(x.k)+'"></label>'}).join('')+'</div><p class="note"><a href="#" id="rdy_reset">Reset to defaults</a></p></details>';
- h+='<p class="note">These are planning checks, not a legal opinion. The numbers are starting points: confirm the real limits with SANS 10400, the approved risk category, and your ESSPC / fire department, then set them here. Distances are straight lines, so real walking routes are longer. The aisle width check is separate (Objects tab).</p>';
+ h+='<p class="note">Each check names the rule it comes from: the SASREA Regulations of 3 March 2017, SANS 10400-A (population) and SANS 10400-T (fire protection and escape). Tent spacing and the assembly-point distance are fire by-law planning figures, not from either. This is a planning check, not a legal opinion: the local authority, the fire department and the ESSPC decide. Distances are straight lines, so real walking routes are longer. The aisle width check is separate (Objects tab).</p>';
  h+='<div class="mrow" style="justify-content:flex-start"><button class="btn" id="rdy_dl">Download report</button></div>';
  box(h);var mb=$('#modal .mbox');if(mb){mb.style.maxWidth='720px';mb.style.maxHeight='86vh';mb.style.overflow='auto'}
  $$('[data-rshow]',$('#modal')).forEach(function(b){b.onclick=function(){var f=F[+b.dataset.rshow],os=S.objs.filter(function(o){return f.ids.indexOf(o.id)>=0});if(!os.length)return;
@@ -133,7 +171,7 @@ function sitePanel(o){return '<h4>Event site</h4>'+pchk('site','Event site bound
 function crowdPanel(o){
  var u=crowdUnit(o),C=crowdAll(),h='<h4>Crowd capacity</h4>'+pchk('nc','Leave out of the crowd calculation',o.nc);
  if(!o.nc){h+=psel('use','Used as',DENS.map(function(x){return [x.k,x.n+' · '+dOf(x.k)+' m² each']}),o.use||'sgen')+'<div class="row2">'+pf('dens','Own density (m² each, 0 = preset)',o.dens||0,'number','step="any" min="0"')+pf('pax','Fixed headcount (0 = calculate)',o.pax||0,'number','step="1" min="0"')+'</div>';
-  h+='<div class="note">Area <b>'+cfmt(u.gross)+' m²</b>'+(u.hasLay?' · usable after its internal layout <b>'+cfmt(u.net)+' m²</b>':'')+(u.seats?' · table seats <b>'+u.seats+'</b>':'')+'<br>Capacity: <b>'+cfmt(u.cap)+' people</b>'+(u.how==='seats'?' (table seats)':u.how==='fixed'?' (fixed)':' ('+u.d+' m² each)')+''+(u.opn?'<br>Open-sided: no exits required here':'<br>Exits at this structure: <b>'+(Math.round(u.ew*10)/10)+' m</b>'+(u.cap>0?' (needs '+(Math.round(u.cap/(C.flow*C.T)*10)/10)+' m)':''))+'</div>'+pchk('opn','Open-sided structure (no exits needed, people can leave in any direction)',u.opn)}
+  h+='<div class="note">Area <b>'+cfmt(u.gross)+' m²</b>'+(u.hasLay?' · usable after its internal layout <b>'+cfmt(u.net)+' m²</b>':'')+(u.seats?' · table seats <b>'+u.seats+'</b>':'')+'<br>Capacity: <b>'+cfmt(u.cap)+' people</b>'+(u.how==='seats'?' (table seats)':u.how==='fixed'?' (fixed)':' ('+u.d+' m² each)')+''+(u.lim?' <span style="color:#c62828">limited by its exits; the floor would hold '+cfmt(u.pop)+'</span>':'')+(u.opn?'<br>Open-sided: counted as event space, no exits required here':'<br>Enclosed: <b>'+u.nex+' exit'+(u.nex===1?'':'s')+'</b> serving <b>'+cfmt(u.esc.cap)+'</b> people (SANS 10400-T Table 10); '+cfmt(u.pop)+' people need '+sansExitsFor(u.pop))+'</div>'+pchk('opn','Open-sided (sides open: counts as event space, not a closed room, and needs no exits of its own)',u.opn)}
  return h}
 function lineLen(o){var s=0,P=o.pts,pp=o.closed?P.concat([P[0]]):P,gs=o.gaps||[];for(var i=0;i<pp.length-1;i++){if(gs.indexOf(i)>=0)continue;s+=Math.hypot(pp[i+1].x-pp[i].x,pp[i+1].y-pp[i].y)}return s}
 function lineLenAll(o){var s=0,P=o.pts,pp=o.closed?P.concat([P[0]]):P;for(var i=0;i<pp.length-1;i++)s+=Math.hypot(pp[i+1].x-pp[i].x,pp[i+1].y-pp[i].y);return s}

@@ -35,6 +35,7 @@ function setSnap(v){S.grid=v;var sel=$('#snapSel');if(!sel)return;var val=String
 function placePos(w,arm){
  var g=+S.meta.gridMod,a=(arm||'').split(':'),L=a[0]==='item'?LIBM[a[1]]:null;
  if(g>0&&L&&L.c==='Exhibition'&&L.s==='stand'){var gx=+S.meta.gx||0,gy=+S.meta.gy||0;S.snapPt=null;return {x:gx+Math.round((w.x-L.w/2-gx)/g)*g+L.w/2,y:gy+Math.round((w.y-L.h/2-gy)/g)*g+L.h/2}}
+ if(gridLocked()&&L){S.snapPt=null;return {x:gRound(w.x-L.w/2)+L.w/2,y:gRound(w.y-L.h/2)+L.h/2}}
  return snapW(w);
 }
 function numPlan(st,op){
@@ -89,8 +90,21 @@ function autoNumber(){
  $('#mo').onclick=function(){var cf=cfg(),P=numPlan(target(),cf);close();snapH();P.list.forEach(function(x){x.o.label=x.label});changed(true);toast(P.list.length+' stands numbered in '+P.groups+(cf.axis==='row'?' rows':' columns')+'. Add the stand names later under Sheet > Stand names.',6000)};
  m.onkeydown=function(e){if(e.key==='Escape')close()};
 }
+/* Grid lock: the snap grid always wins, and items line up by their edges, so everything sits on whole grid steps */
+function gridLocked(){return S.gridLock!==false&&S.grid>0&&S.tool!=='calib'&&S.tool!=='gorigin'&&S.tool!=='layermove'}
+function gRound(v){return Math.round(v/S.grid)*S.grid}
+function gridAnchor(o){
+ if(o.t==='dim')return o.a;if(o.pts)return o.pts[0];
+ if(o.t==='rect'||o.t==='area'){var K=corners(o),x=1e12,y=1e12;K.forEach(function(k){x=Math.min(x,k.x);y=Math.min(y,k.y)});return {x:x,y:y}}
+ return {x:o.x,y:o.y}}
+/* shift the things being moved so the lead one sits on the grid */
+function gridAlign(o,grp){
+ if(!gridLocked())return;var a=gridAnchor(o),dx=gRound(a.x)-a.x,dy=gRound(a.y)-a.y;
+ if(Math.abs(dx)<1e-9&&Math.abs(dy)<1e-9)return;(grp||[o]).forEach(function(q){shiftObj(q,dx,dy)})}
+function syncGLock(){$$('#tools [data-act=glock]').forEach(function(x){x.classList.toggle('on',S.gridLock!==false)})}
 function snapW(p,ex,noObj){
  S.snapPt=null;S.snapJ=false;
+ if(gridLocked())return {x:gRound(p.x),y:gRound(p.y)};
  if(!noObj){var best=null,bd=14/S.view.z;snapPts(ex).forEach(function(q){var d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;best=q}});if(best){S.snapPt={x:best.x,y:best.y};return {x:best.x,y:best.y}}
   if(S.traceSnap!==false&&TRACE_TOOLS[S.tool]){var u=underlaySnap(p);if(u){S.snapPt={x:u.x,y:u.y};S.snapJ=u.j;return {x:u.x,y:u.y}}}}
  if(S.grid>0)return {x:Math.round(p.x/S.grid)*S.grid,y:Math.round(p.y/S.grid)*S.grid};

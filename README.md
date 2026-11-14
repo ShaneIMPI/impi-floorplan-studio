@@ -303,3 +303,29 @@ With scale on Auto-fit the sheet now fits the drawn plan together with any clien
 ## Arena seating, ringside tables, and the venue shell tracer
 - Library (Furniture): Arena chair (single), row of 5, row of 10, and a 6-seat ringside table. A chair item dragged close to another snaps flush beside it, or into the next row at a 0.95 m row pitch. The sheet shows "Seats drawn on plan".
 - Auto-trace the venue: walls can now be drawn as the outlines of the thick walls (curved walls included) instead of straight centre lines only, and brochure-style plans (white building on a coloured page) are traced by the building shape, its open floors and coloured rooms. New line weight "Very thin (venue shell)" is the default for traced shells; it is also in the line styles list.
+
+## Grid lock (snap that always holds)
+- Toolbar toggle "Grid lock", on by default and remembered per browser. While on, the snap grid always wins: nothing snaps to other objects or plan lines, new items are placed with their edges on the grid, and moving an item that was off the grid pulls its top-left edge onto it. Arena chairs still snap to each other. Calibration is not affected. Turn it off to snap to object corners and imported plan lines as before.
+
+## Capacity and evacuation rules (SASREA and SANS 10400), November 2026
+Sources read: SASREA Act 2 of 2010; SASREA Regulations, Government Gazette 40661 of 3 March 2017; National Building Regulations Reg A21 Table 2 (SANS 10400-A); SANS 10400-T:2011 (fire protection); SANS 10400 sanitary fixture table for the public at peak demand.
+Earlier builds quoted regulation numbers from a 2009 draft that never came into force (Reg 4(1)(a)(iv), 3(12), 3(9), 12(t), 13). They are replaced by the gazetted numbers.
+
+| Rule | Source | In the app |
+|---|---|---|
+| Population: fixed seats, or 1 person per m² | SANS 10400-A Reg A21 Table 2 (A1, A2, A4, A5) | default density; "SANS design population" figure |
+| One exit serves at most 25; more than 25 needs 2 exits; more than 240 needs 3 | SANS 10400-T 4.17.2 | enclosed structures |
+| People per exit by width: 120 at 1.1 m, +10 per 100 mm, 190 at 1.8 m; never more than 190; widest exit left out | SANS 10400-T 4.21, Table 10 | caps an enclosed structure's capacity |
+| Exits at least 5 m apart; travel to an exit 45 m | SANS 10400-T 4.17.1, 4.16 | enclosed structures |
+| Extinguishers 1 per 200 m²; hose reel 1 per 500 m² indoors | SANS 10400-T 4.37 Table 11, 4.34 | per structure |
+| Seat rows: at most 28 between aisles; aisles 1.1 m; row clearance 300/400/500 mm | SASREA Reg 6(3)(g); SANS 10400-T 4.49 | arena chairs |
+| Egress gates 1 m per 1,000 | SASREA Reg 5(18)(d) | whole venue |
+| Evacuated in 15 min; place of safety in 10 min | SASREA Reg 5(3)(a), (b) | whole venue |
+| Gates and walkways at least 1.2 m | SASREA Reg 5(18)(b), 5(2) | whole venue |
+| Two assembly areas | SASREA Reg 5(12) | whole venue |
+| Turnstiles 1 per 1,000 | SASREA Reg 5(18)(e) | "check" only |
+| Toilets | SASREA Reg 5(4) → SANS 10400 Table 7 (peak) | computed from attendance |
+| Medical post, emergency vehicle parking, wheelchair provision | SASREA Reg 5(16), 5(17)(l), 5(11) | whole venue |
+
+Not from either source (kept as editable planning figures): exit flow of 82 people per minute per metre (UK Green Guide), tent spacing, assembly-point distance, medical staffing ratios (2009 draft).
+Open-sided tents (gazebo, Bedouin, any tent ticked "Open-sided", or all tents via the Sheet tab) are counted as open ground. Zones drawn outdoors are open; zones drawn in indoor mode are rooms.
