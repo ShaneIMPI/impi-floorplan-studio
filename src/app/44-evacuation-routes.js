@@ -1,7 +1,12 @@
 /* ---------- automatic evacuation routes ---------- */
-function evClear(){var n=0;S.objs=S.objs.filter(function(o){if(o.ev&&!o.keep&&!o.man&&(!S.meta.only||o.lay===S.meta.only)){n++;return false}return true});return n}
+/* An internal layout is its own separate drawing: a structure's own outline (the thing it's a layout "of") always
+   shows, on the whole plan and inside any layout view, as a reference frame. Anything actually drawn while inside
+   a layout is scoped to that layout alone — hidden from the whole plan, and from every other layout's view. */
+function isLayoutHost(o){return (S.meta.layouts||[]).some(function(l){return l.src===o.id})}
+function inView(o){if(isLayoutHost(o))return true;return S.meta.only?o.lay===S.meta.only:!o.lay}
+function evClear(){var n=0;S.objs=S.objs.filter(function(o){if(o.ev&&!o.keep&&!o.man&&inView(o)){n++;return false}return true});return n}
 function genEvac(){
- var vis=S.objs.filter(function(o){return !o.hd&&!o.ev&&(!S.meta.only||o.lay===S.meta.only)});
+ var vis=S.objs.filter(function(o){return !o.hd&&!o.ev&&inView(o)});
  var ex=vis.filter(function(o){return o.t==='door'&&(o.k==='exit'||o.k==='eexit'||(o.k==='entrance'&&S.meta.evEntr!==false))});
  if(!ex.length)ex=vis.filter(function(o){return o.t==='sign'&&(o.k==='exit_run'||o.k==='exit_run_r'||o.k==='exit_box'||o.k==='exit_sign')});
  if(!ex.length){toast('Place Exit, Emergency exit or Entrance doors first (Library → Doors), then generate',6000);return}
@@ -203,7 +208,7 @@ function newLayout(){
   S.meta.only=id;S.sel=null;S.ms=[];renderViewSel();fitAll();saveLocal();renderPanel();draw();changed(true);
   toast(sel.length?'Layout created with the selected outline. Draw everything inside it.':'Layout created. Draw the outline with Line / fence → Plain black line, then build inside.',5000)},'Create');
 }
-function vo(o){return !o.hd&&(!o.ev||S.meta.evac)&&(!S.meta.only||o.lay===S.meta.only)}
+function vo(o){return !o.hd&&(!o.ev||S.meta.evac)&&inView(o)}
 function ordered(){return S.objs.map(function(o,i){return [o,i]}).filter(function(p){return vo(p[0])}).sort(function(x,y){return ((x[0].zl||0)-(y[0].zl||0))||((PRI[x[0].t]||0)-(PRI[y[0].t]||0))||(x[1]-y[1])}).map(function(p){return p[0]})}
 var EVC='#0a8f3c',EVKEEP=/^(exit_run|exit_run_r|exit_box|exit_sign|assembly|first_aid|fire_ext|hose_reel|hydrant|call_point)$/;
 function evKeep(o){return o.ev||(o.t==='rect'&&o.k==='cover')||o.t==='door'||(o.t==='sign'&&EVKEEP.test(o.k))}

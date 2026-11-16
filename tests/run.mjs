@@ -564,6 +564,26 @@ await test('Delete points: repeatedly tapping corners shrinks a shape all the wa
   // a line's floor is 2 points (one segment); 4 -> 3 -> 2 keep existing, then the next tap (which would leave 1) removes the whole shape
   ok(r.steps[0] === 3 && r.steps[1] === 2 && r.steps[2] === 'gone' && r.steps.slice(3).every(s => s === 'gone') && r.remaining === 0 && r.ptDelAfter === null, JSON.stringify(r));
 });
+await test('Internal layouts: content drawn inside a layout stays off the whole plan, and the host structure stays visible everywhere', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = { objs: S.objs, sel: S.sel, ms: S.ms, only: S.meta.only, layouts: S.meta.layouts };
+    S.objs = []; S.ms = []; S.meta.layouts = [];
+    const host = { t: 'rect', id: 901, k: 'tent', x: 5, y: 5, w: 10, h: 8, rot: 0, label: 'Main marquee' };
+    S.objs.push(host); T.setSel([901]);
+    S.meta.layouts.push({ id: 'L1', name: 'Main marquee', src: 901, gx: 0, gy: 0 });
+    host.lay = 'L1';                              // the host gets tagged exactly as layoutForObj() does
+    S.meta.only = 'L1';                            // now "inside" the internal layout
+    const table = T.addObj({ t: 'rect', k: 'trestle', x: 1, y: 1, w: 1.8, h: .75, rot: 0, label: '' });
+    const idsInsideLayout = T.ordered().map(o => o.id);
+    S.meta.only = null;                            // back to the whole plan
+    const idsWholePlan = T.ordered().map(o => o.id);
+    const r = { idsInsideLayout, idsWholePlan, tableLay: table.lay };
+    S.objs = keep.objs; S.sel = keep.sel; S.ms = keep.ms; S.meta.only = keep.only; S.meta.layouts = keep.layouts;
+    return r; });
+  ok(r.tableLay === 'L1', 'furniture drawn inside a layout should be auto-tagged with that layout: ' + JSON.stringify(r));
+  ok(r.idsInsideLayout.includes(901) && r.idsInsideLayout.includes(r.idsInsideLayout.find(id => id !== 901)), 'inside the layout, both the host and its own furniture should show: ' + JSON.stringify(r));
+  ok(r.idsWholePlan.includes(901), 'the host structure (the tent) must still show on the whole plan: ' + JSON.stringify(r));
+  ok(!r.idsWholePlan.some(id => id !== 901), 'furniture drawn inside the internal layout must NOT leak onto the whole plan: ' + JSON.stringify(r));
+});
 await test('auto-trace: outline and walls come out of a synthetic plan at the right size', async () => {
   const r = await page.evaluate(() => { const T = __T;
     const cn = document.createElement('canvas'); cn.width = 1200; cn.height = 800; const c = cn.getContext('2d');

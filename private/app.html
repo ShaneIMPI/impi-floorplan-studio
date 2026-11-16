@@ -1300,9 +1300,14 @@ var PRI={area:0,poly:0,line:1,rect:2,door:3,sign:4,text:5,dim:6};
 function layoutOf(id){return (S.meta.layouts||[]).filter(function(l){return l.id===id})[0]}
 
 /* ---------- automatic evacuation routes ---------- */
-function evClear(){var n=0;S.objs=S.objs.filter(function(o){if(o.ev&&!o.keep&&!o.man&&(!S.meta.only||o.lay===S.meta.only)){n++;return false}return true});return n}
+/* An internal layout is its own separate drawing: a structure's own outline (the thing it's a layout "of") always
+   shows, on the whole plan and inside any layout view, as a reference frame. Anything actually drawn while inside
+   a layout is scoped to that layout alone — hidden from the whole plan, and from every other layout's view. */
+function isLayoutHost(o){return (S.meta.layouts||[]).some(function(l){return l.src===o.id})}
+function inView(o){if(isLayoutHost(o))return true;return S.meta.only?o.lay===S.meta.only:!o.lay}
+function evClear(){var n=0;S.objs=S.objs.filter(function(o){if(o.ev&&!o.keep&&!o.man&&inView(o)){n++;return false}return true});return n}
 function genEvac(){
- var vis=S.objs.filter(function(o){return !o.hd&&!o.ev&&(!S.meta.only||o.lay===S.meta.only)});
+ var vis=S.objs.filter(function(o){return !o.hd&&!o.ev&&inView(o)});
  var ex=vis.filter(function(o){return o.t==='door'&&(o.k==='exit'||o.k==='eexit'||(o.k==='entrance'&&S.meta.evEntr!==false))});
  if(!ex.length)ex=vis.filter(function(o){return o.t==='sign'&&(o.k==='exit_run'||o.k==='exit_run_r'||o.k==='exit_box'||o.k==='exit_sign')});
  if(!ex.length){toast('Place Exit, Emergency exit or Entrance doors first (Library → Doors), then generate',6000);return}
@@ -1504,7 +1509,7 @@ function newLayout(){
   S.meta.only=id;S.sel=null;S.ms=[];renderViewSel();fitAll();saveLocal();renderPanel();draw();changed(true);
   toast(sel.length?'Layout created with the selected outline. Draw everything inside it.':'Layout created. Draw the outline with Line / fence → Plain black line, then build inside.',5000)},'Create');
 }
-function vo(o){return !o.hd&&(!o.ev||S.meta.evac)&&(!S.meta.only||o.lay===S.meta.only)}
+function vo(o){return !o.hd&&(!o.ev||S.meta.evac)&&inView(o)}
 function ordered(){return S.objs.map(function(o,i){return [o,i]}).filter(function(p){return vo(p[0])}).sort(function(x,y){return ((x[0].zl||0)-(y[0].zl||0))||((PRI[x[0].t]||0)-(PRI[y[0].t]||0))||(x[1]-y[1])}).map(function(p){return p[0]})}
 var EVC='#0a8f3c',EVKEEP=/^(exit_run|exit_run_r|exit_box|exit_sign|assembly|first_aid|fire_ext|hose_reel|hydrant|call_point)$/;
 function evKeep(o){return o.ev||(o.t==='rect'&&o.k==='cover')||o.t==='door'||(o.t==='sign'&&EVKEEP.test(o.k))}
@@ -2439,7 +2444,7 @@ function sheetHTML(){
  h+='<div class="row2"><label class="fld">Plot area<select id="m_extent"><option value="content"'+(m.extent==='content'?' selected':'')+'>All drawn items</option><option value="view"'+(m.extent==='view'?' selected':'')+'>Current screen view (fixed scales only)</option></select></label>'+fld('m_north','North arrow (° clockwise)',m.north,'number','step="1"')+'</div>';
  h+='<label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_wm"'+(m.watermark?' checked':'')+'> Add a diagonal draft watermark to the sheet (leave off for submissions)</label><label class="fld" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="m_bg"'+(m.bg?' checked':'')+'> Include aerial / client plan underlay</label>';
  h+='<h4>Emergency evacuation</h4><p class="note">Place your exits (Doors), assembly point and zones/tents/stands, then press Generate. Green routes run from each area to the nearest exit, around structures and fences, and on to the assembly point. It is a separate plan: toggle it with the Evacuation button, and it exports as its own sheet.</p><div class="btns"><button class="btn sm pri" data-act="evgen">Generate evacuation routes</button><button class="btn sm" data-act="evac">'+(m.evac?'Back to operational plan':'Show evacuation plan')+'</button></div>';
- h+='<h4>Internal layouts (tent, VIP area…)</h4><p class="note">Click a tent, zone or closed outline on the plan and press <b>Internal layout</b> in the bar that appears. Each structure gets its own layout (its own view, grid from its corner, legend, scale and sheet). Switch to that layout to see and draw its internals only, with its own legend, scale and sheet. Switch back to Whole plan to see everything together.</p>';
+ h+='<h4>Internal layouts (tent, VIP area…)</h4><p class="note">Click a tent, zone or closed outline on the plan and press <b>Internal layout</b> in the bar that appears. Each structure gets its own layout (its own view, grid from its corner, legend, scale and sheet). What you draw inside a layout is its own separate drawing — it stays inside that layout and never appears on the whole plan or on any other layout; only the structure itself (the tent, the zone) shows everywhere, as a reference. Switch back to Whole plan to see just the structures again.</p>';
  var LY=m.layouts||[];
  if(LY.length){h+='<label class="fld">Current view<select id="m_view"><option value="">Whole plan</option>'+LY.map(function(l){return '<option value="'+l.id+'"'+(m.only===l.id?' selected':'')+'>'+esc(l.name)+'</option>'}).join('')+'</select></label>'}
  h+=(LY.length?'<div class="btns"><button class="btn sm pri" data-act="lxpdf">Download all layouts (one PDF)</button><button class="btn sm" data-act="lxpng">Download each as PNG</button></div>':'')+'<div class="btns"><button class="btn sm" data-act="newlay">New empty layout</button>'+(m.only?'<button class="btn sm" data-act="laysel">Add selected to this layout</button><button class="btn sm" data-act="layout">Remove selected from layout</button><button class="btn sm" data-act="layren">Rename</button><button class="btn sm dng" data-act="laydel">Delete layout</button>':'')+'</div>';
@@ -2547,7 +2552,7 @@ function act(a){
  else if(a==='sitearea'){var sa=$('#cm_sitearea'),v=sa?parseFloat(sa.value):0;S.meta.siteArea=v>0?v:0;var ce=$('#cm_cert'),cv=ce?parseFloat(ce.value):0;S.meta.certCap=cv>0?cv:0;saveLocal();draw();crowdModal();toast(v>0?'Event area set to '+Math.round(v)+' m²':'Event area cleared')}
  else if(a==='ready')rdyModal();
  else if(a==='evdraw'){S.lineStyle='evac';setTool('line');toast('Tap along the route from the area to the exit, then tap Finish. It is kept when you press Generate again.',6000)}
- else if(a==='evlock'){var evs=S.objs.filter(function(o){return o.ev&&(!S.meta.only||o.lay===S.meta.only)});if(!evs.length){toast('No routes yet');return}var lk=!evs.every(function(o){return o.keep});snapH();evs.forEach(function(o){if(lk)o.keep=1;else delete o.keep});changed(true);toast(lk?evs.length+' routes locked: Generate will leave them alone':'Routes unlocked')}
+ else if(a==='evlock'){var evs=S.objs.filter(function(o){return o.ev&&inView(o)});if(!evs.length){toast('No routes yet');return}var lk=!evs.every(function(o){return o.keep});snapH();evs.forEach(function(o){if(lk)o.keep=1;else delete o.keep});changed(true);toast(lk?evs.length+' routes locked: Generate will leave them alone':'Routes unlocked')}
  else if(a==='gapsclr'){var go=getSel();if(go){snapH();delete go.gaps;changed(true);renderPanel()}}
   else if(a==='evrev'){var ro=getSel();if(ro&&ro.pts){snapH();ro.pts.reverse();changed(true)}}
  else if(a==='autonum')autoNumber();else if(a==='stnames')standNamesModal();else if(a==='gorigin'){closePanel();setTool('gorigin')}
