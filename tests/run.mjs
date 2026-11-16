@@ -354,6 +354,26 @@ await test('venue: a new event keeps venue objects only and starts a separate pl
     T.venueNewEvent(); return { n: T.S.objs.length, vn: T.S.objs.every(o => o.vn), ev: T.S.meta.event, att: T.S.meta.attend }; });
   ok(r.n === 1 && r.vn && !r.ev && !r.att, JSON.stringify(r));
 });
+await test('White picket fence: a new fence style, draws as white pickets with a dark outline, and lists in the legend', async () => {
+  const r = await page.evaluate(() => { const T = __T, S = T.S, keep = { objs: S.objs };
+    const inLines = T.LINES.some(l => l.k === 'picket');
+    const cn = document.createElement('canvas'); cn.width = 400; cn.height = 100; const c = cn.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 400, 100); c.setTransform(30, 0, 0, 30, 10, 50);
+    let threw = false;
+    try { T.drawLineObj(c, { t: 'line', style: 'picket', pts: [{ x: 0, y: 0 }, { x: 10, y: 0 }] }); } catch (e) { threw = true; }
+    const g = cn.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0);
+    // somewhere along the fence's run there should be a dark outline pixel (not just blank white background)
+    let sawInk = false;
+    for (let x = 20; x < 380; x += 2) { const px = g.getImageData(x, 50, 1, 1).data; if (px[0] < 200 && px[3] > 0) { sawInk = true; break; } }
+    S.objs = []; const fenceObj = T.addObj({ t: 'line', style: 'picket', pts: [{ x: 0, y: 0 }, { x: 10, y: 0 }] });
+    const legend = T.legendData(), inLegend = legend.some(e => e.g === 'Lines' && e.k === 'picket');
+    S.objs = keep.objs;
+    return { inLines, threw, sawInk, inLegend }; });
+  ok(r.inLines, 'picket should be offered as a line style');
+  ok(!r.threw, 'drawing a picket-style line should not throw');
+  ok(r.sawInk, 'the picket fence should actually draw something visible, not just the base line');
+  ok(r.inLegend, 'a drawn picket fence should be listed in the Lines legend');
+});
 await test('stanchions and rope: four styles, posts at set spacing, VIP enclosures in the library', async () => {
   const r = await page.evaluate(() => { const T = __T, out = {};
     const cn = document.createElement('canvas'); cn.width = 400; cn.height = 100; const c = cn.getContext('2d'); c.setTransform(30, 0, 0, 30, 10, 50);

@@ -107,7 +107,7 @@ function doImportDxf(f,fl,sel,u,mode){
  toast('Imported to scale: '+Wm.toFixed(1)+' × '+Hm.toFixed(1)+' m'+(mode==='u'?'. Trace over it, or tick "Edit this plan" in the Images tab.':'.'),6000);
  if(matchMedia('(max-width:820px)').matches)openPanel()}
 
-var DXFCOL={fence:8,barrier:30,wall:7,tape:1,shade:3,shadeb:250,drape:250,plain:7,thin:7,brick:7,shell:7,evac:3,truss:9,stanchion:1,velvet:1,belt:5,ropepole:30};
+var DXFCOL={fence:8,picket:7,barrier:30,wall:7,tape:1,shade:3,shadeb:250,drape:250,plain:7,thin:7,brick:7,shell:7,evac:3,truss:9,stanchion:1,velvet:1,belt:5,ropepole:30};
 var DXFW={truss:.3,wall:.2,brick:.23,shell:.04};
 function exportDxf(){
  var objs=S.objs.filter(vo);if(!objs.length){toast('Draw something first');return}

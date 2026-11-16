@@ -179,6 +179,7 @@ function drawLineObj0(c,o,ic){
  else if(st==='brick'){c.strokeStyle=o.col||INK;c.lineWidth=px(5.2*wt);c.lineJoin='miter';c.lineCap='square'}
  else if(st==='shell'){c.strokeStyle=o.col||INK;c.lineWidth=px(3.4*wt);c.lineJoin='miter';c.lineCap='butt'}
  else if(st==='evac'){c.strokeStyle=o.col||EVC;c.lineWidth=px(3*wt);c.lineCap='round';if(o.alt)c.setLineDash([px(9),px(6)])}
+ else if(st==='picket'){c.strokeStyle=o.col||'#4a4030';c.lineWidth=px(.7*wt)}
  else{c.strokeStyle=o.col||INK;c.lineWidth=px(1.4*wt)}
  c.beginPath();c.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)c.lineTo(pts[i].x,pts[i].y);c.stroke();c.setLineDash([]);
  if(st==='evac')evArrows(c,pts,o.col||EVC);
@@ -199,6 +200,16 @@ function drawLineObj0(c,o,ic){
  if(st==='fence'){c.lineWidth=px(1.2*wt);var gap=px(14);
   for(i=0;i<pts.length-1;i++){var a=pts[i],b=pts[i+1],l=Math.hypot(b.x-a.x,b.y-a.y);if(l<1e-6)continue;var ux=(b.x-a.x)/l,uy=(b.y-a.y)/l,t=px(7);
    var n=Math.max(1,Math.floor(l/gap));c.beginPath();for(var j=0;j<=n;j++){var p={x:a.x+ux*(l*j/n),y:a.y+uy*(l*j/n)};c.moveTo(p.x-uy*t*.5-ux*t*.5,p.y+ux*t*.5-uy*t*.5);c.lineTo(p.x+uy*t*.5+ux*t*.5,p.y-ux*t*.5+uy*t*.5);c.moveTo(p.x-uy*t*.5+ux*t*.5,p.y+ux*t*.5+uy*t*.5);c.lineTo(p.x+uy*t*.5-ux*t*.5,p.y-ux*t*.5-uy*t*.5)}c.stroke()}}
+ if(st==='picket'){var pkInk=o.col||'#4a4030',pkw=px(4.2*wt),pkh=px(8.5*wt),pkStep=pkw+px(2.6);
+  for(i=0;i<pts.length-1;i++){var pa=pts[i],pb=pts[i+1],pl=Math.hypot(pb.x-pa.x,pb.y-pa.y);if(pl<1e-6)continue;
+   var pux=(pb.x-pa.x)/pl,puy=(pb.y-pa.y)/pl,pnx=-puy,pny=pux,pn=Math.max(1,Math.round(pl/pkStep)),phw=pkw/2,phh=pkh/2;
+   for(var pj=0;pj<=pn;pj++){var pd=pl*pj/pn,qx=pa.x+pux*pd,qy=pa.y+puy*pd;
+    c.beginPath();
+    c.moveTo(qx-pux*phw-pnx*phh,qy-puy*phw-pny*phh);
+    c.lineTo(qx+pux*phw-pnx*phh,qy+puy*phw-pny*phh);
+    c.lineTo(qx+pux*phw+pnx*phh,qy+puy*phw+pny*phh);
+    c.lineTo(qx-pux*phw+pnx*phh,qy-puy*phw+pny*phh);
+    c.closePath();c.fillStyle='#fff';c.fill();c.lineWidth=px(.6);c.strokeStyle=pkInk;c.stroke()}}}
  c.restore();
  if(o.label&&!ic&&o.lm!=='off'){var bl=0,bi2=0,bb;for(i=0;i<pts.length-1;i++){bb=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y);if(bb>bl){bl=bb;bi2=i}}
   if(bl>0){var A2=pts[bi2],B2=pts[bi2+1],an=Math.atan2(B2.y-A2.y,B2.x-A2.x);if(o.lm==='up')an=0;else an=normAng(an);var sz3=+o.ls>0?+o.ls:11;if(!(+o.ls>0))while(sz3>7&&tw(c,o.label,sz3,true)>bl*R.z/R.u*.95)sz3--;
